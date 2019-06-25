@@ -4,11 +4,7 @@
 
 ?>
 <div id="svea-checkout_coupon" class="svea-checkout-block discount">
-    <div class="svea-checkout-title" data-role="title">
-        <h4 id="svea-checkout-review-heading" role="heading" aria-level="2">
-            <?php echo $block->escapeHtml(__('Coupon Code')) ?>
-        </h4>
-    </div>
+
         <form id="discount-coupon-form"
               action="<?php /* @escapeNotVerified */ echo $block->getCouponSubmitUrl() ?>"
               method="post"

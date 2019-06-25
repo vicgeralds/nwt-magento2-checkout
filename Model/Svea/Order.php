@@ -1,27 +1,27 @@
 <?php
 
+
 namespace Svea\Checkout\Model\Svea;
 
+
+use Svea\Checkout\Model\Client\Api\Payment;
+use Svea\Checkout\Model\Client\ClientException;
+use Svea\Checkout\Model\Client\DTO\CancelPayment;
+use Svea\Checkout\Model\Client\DTO\ChargePayment;
+use Svea\Checkout\Model\Client\DTO\CreatePayment;
+use Svea\Checkout\Model\Client\DTO\CreatePaymentResponse;
+use Svea\Checkout\Model\Client\DTO\GetPaymentResponse;
+use Svea\Checkout\Model\Client\DTO\Payment\ConsumerType;
+use Svea\Checkout\Model\Client\DTO\Payment\CreatePaymentCheckout;
+use Svea\Checkout\Model\Client\DTO\Payment\CreatePaymentOrder;
+use Svea\Checkout\Model\Client\DTO\Payment\OrderItem;
+use Svea\Checkout\Model\Client\DTO\PaymentMethod;
+use Svea\Checkout\Model\Client\DTO\RefundPayment;
+use Svea\Checkout\Model\Client\DTO\UpdatePaymentCart;
+use Svea\Checkout\Model\Client\DTO\UpdatePaymentReference;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
-use Magento\Sales\Model\Order\Creditmemo;
 use Magento\Sales\Model\Order\Invoice;
-use Svea\Checkout\Model\Client\Api\Checkout;
-use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\CancelOrder;
-use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
-use Svea\Checkout\Model\Client\DTO\CreateOrder;
-use Svea\Checkout\Model\Client\DTO\DeliverOrder;
-use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
-use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
-use Svea\Checkout\Model\Client\DTO\Order\Address;
-use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
-use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
-use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
-use Svea\Checkout\Model\Client\DTO\RefundNewCreditRow;
-use Svea\Checkout\Model\Client\DTO\RefundPayment;
-use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
-use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 
 class Order
 {
@@ -32,19 +32,9 @@ class Order
     protected $items;
 
     /**
-     * @ar Locale $_locale;
+     * @var \Svea\Checkout\Model\Client\Api\Payment $paymentApi
      */
-    protected $_locale;
-
-    /**
-     * @var \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi
-     */
-    protected $checkoutApi;
-
-    /**
-     * @var \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi
-     */
-    protected $orderManagementApi;
+    protected $paymentApi;
 
     /**
      * @var \Svea\Checkout\Helper\Data $helper
@@ -56,27 +46,18 @@ class Order
      */
     protected $_countryFactory;
 
-    /** @var \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper */
-    protected $sveaCheckoutReferenceHelper;
-
-    protected $iframeSnippet = null;
 
     public function __construct(
-        \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi,
-        \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
-        \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper,
+        \Svea\Checkout\Model\Client\Api\Payment $paymentApi,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
-        Items $itemsHandler,
-        Locale $locale
+        Items $itemsHandler
     ) {
         $this->helper = $helper;
         $this->items = $itemsHandler;
-        $this->checkoutApi = $checkoutApi;
-        $this->sveaCheckoutReferenceHelper = $sveaCheckoutReferenceHelper;
-        $this->orderManagementApi = $orderManagementApi;
+        $this->paymentApi = $paymentApi;
         $this->_countryFactory  = $countryFactory;
-        $this->_locale = $locale;
+
     }
 
     /** @var $_quote Quote */
@@ -86,8 +67,9 @@ class Order
      * @throws LocalizedException
      * @return $this
      */
-    public function assignQuote(Quote $quote, $validate = true)
+    public function assignQuote(Quote $quote,$validate = true)
     {
+
         if ($validate) {
             if (!$quote->hasItems()) {
                 throw new LocalizedException(__('Empty Cart'));
@@ -95,22 +77,30 @@ class Order
             if ($quote->getHasError()) {
                 throw new LocalizedException(__('Cart has errors, cannot checkout.'));
             }
+
+            // TOdo we should check that the currency is valid (SEK, NOK, DKK)
         }
 
         $this->_quote = $quote;
         return $this;
     }
 
+
     /**
      * @param Quote $quote
-     * @return GetOrderResponse
+     * @return string
      * @throws \Exception
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
     {
-        $paymentResponse = $this->createNewSveaPayment($quote, true);
-        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
-        return $paymentResponse;
+        // todo check if country is cvalid
+        //  if(!$this->getOrderAdapter()->orderDataCountryIsValid($data,$country)){
+        //    throw new Exception
+        //}
+
+
+        $paymentResponse = $this->createNewSveaPayment($quote);
+        return $paymentResponse->getPaymentId();
     }
 
     /**
@@ -135,162 +125,189 @@ class Order
         return false;
     }
 
+
     /**
      * @param Quote $quote
      * @param $paymentId
-     * @return void
-     * @throws ClientException
+     * @return Update
+     * @throws \Exception
      */
-    public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
+    public function updateCheckoutPaymentByQuoteAndPaymentId(Quote $quote, $paymentId)
     {
+        // TODO handle this exception?
         $items = $this->items->generateOrderItemsFromQuote($quote);
-        $items = $this->items->fixCartItems($items);
 
-        $payment = new UpdateOrderCart();
+        $payment = new UpdatePaymentCart();
+        $payment->setAmount($this->fixPrice($quote->getGrandTotal()));
         $payment->setItems($items);
-        $payment->setMerchantData($this->generateMerchantData($quote));
 
-        $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
+        // todo check shipping methods
+        $payment->setShippingCostSpecified(true);
 
-        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
+        return $this->paymentApi->UpdatePaymentCart($payment, $paymentId);
     }
 
-    /**
-     * @param Quote $quote
-     * @return string
-     */
-    protected function generateMerchantData(Quote $quote)
-    {
-        return json_encode([
-            "quote_id" => $this->getRefHelper()->getQuoteId(),
-            "client_order_number" => $this->getRefHelper()->getClientOrderNumber(),
-            "total" => $quote->getGrandTotal(),
-        ]);
-    }
 
     /**
      * This function will create a new svea payment.
      * The payment ID which is returned in the response will be added to the SVEA javascript API, to load the payment iframe.
      *
      * @param Quote $quote
-     * @param bool $reloadCredentials
-     * @return GetOrderResponse
      * @throws ClientException
+     * @return CreatePaymentResponse
      */
-    protected function createNewSveaPayment(Quote $quote, $reloadCredentials = false)
+    protected function createNewSveaPayment(Quote $quote)
     {
-        $countryCode = $quote->getBillingAddress()->getCountryId();
-        if (!in_array($countryCode, $this->getLocale()->getAllowedCountries())) {
-            throw new \Exception("The country is not supported.");
+        $sveaAmount = $this->fixPrice($quote->getGrandTotal());
+
+        // TODO handle this exception?
+        $items = $this->items->generateOrderItemsFromQuote($quote);
+
+
+        // todo check settings if b2c or/and b2b are accepted
+        $consumerType = new ConsumerType();
+        $consumerType->setUseB2bAndB2c();
+        $consumerType->setDefault($this->helper->getDefaultConsumerType());
+
+        $defaultConsumerType = $this->helper->getDefaultConsumerType();
+        $consumerTypes = $this->helper->getConsumerTypes();
+
+        // if no settings are added, add B2C
+        if (!$defaultConsumerType || !$consumerTypes) {
+            $consumerType->setUseB2cOnly();
+        } else {
+            $consumerType->setDefault($defaultConsumerType);
+            $consumerType->setSupportedTypes($consumerTypes);
         }
 
-        $sveaHash = $this->getRefHelper()->getSveaHash();
+        $paymentCheckout = new CreatePaymentCheckout();
+        $paymentCheckout->setConsumerType($consumerType);
+        $paymentCheckout->setIntegrationType($paymentCheckout::INTEGRATION_TYPE_EMBEDDED);
+        $paymentCheckout->setUrl($this->helper->getCheckoutUrl());
+        $paymentCheckout->setTermsUrl($this->helper->getTermsUrl());
 
-        $isTestMode = $this->helper->isTestMode();
-        $refId = $this->getRefHelper()->getClientOrderNumber();
+        // Default value = false, if set to true the transaction will be charged automatically after reservation have been accepted without calling the Charge API.
+        // we will call charge in capture online instead! so we set it to false
+        $paymentCheckout->setCharge(false);
 
-        // generate items
-        $items = $this->items->generateOrderItemsFromQuote($quote);
-        $items = $this->items->fixCartItems($items);
+        // we let svea handle customer data! customer will be able to fill in info in their iframe, and choose addresses
+        $paymentCheckout->setMerchantHandlesConsumerData(false);
+        $paymentCheckout->setMerchantHandlesShippingCost(true);
+        //  Default value = false,
+        // if set to true the checkout will not load any user data
+        $paymentCheckout->setPublicDevice(false);
 
-        // set merchant settings, urls
-        $merchantUrls = new MerchantSettings();
-        $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
-        $merchantUrls->setTermsUri($this->helper->getTermsUrl());
-
-        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash);
-        $pushUri = $this->helper->getPushUrl($sveaHash);
-        $validationUri = $this->helper->getValidationUrl($sveaHash);
-
-        // When developing in localhost, use a tunnel to redirect callbacks to your localhost magento server
-        //$baseTunnel = "https://a163997e.ngrok.io/sveacheckout/order";
-        //$pushUri = $baseTunnel . "/push/sid/{checkout.order.uri}/hash/" . $sveaHash;
-        //$validationUri = $baseTunnel . "/validateOrder/sid/{checkout.order.uri}/hash/" . $sveaHash;
-
-
-        // set callback urls and confirmation url
-        $merchantUrls->setConfirmationUri($confirmationUrl);
-        $merchantUrls->setPushUri($pushUri);
-        $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
-
-	// get partner key
-	$partnerKey = $this->helper->getPartnerKey();
 
         // we generate the order here, amount and items
-        $paymentOrder = new CreateOrder();
+        $paymentOrder = new CreatePaymentOrder();
 
-        $paymentOrder->setLocale($this->getLocale()->getLocaleByCountryCode($countryCode));
-        $paymentOrder->setCountryCode($countryCode);
-        $paymentOrder->setCurrency($quote->getStore()->getCurrentCurrencyCode());
-        $paymentOrder->setClientOrderNumber($refId);
-        $paymentOrder->setMerchantData($this->generateMerchantData($quote));
-        $paymentOrder->setMerchantSettings($merchantUrls);
-        $paymentOrder->setCartItems($items);
-	if($partnerKey && !empty($partnerKey)){
-		$paymentOrder->setPartnerKey($partnerKey);
-	}
+        $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
+        $paymentOrder->setReference($this->generateReferenceByQuoteId($quote->getId()));
+        $paymentOrder->setAmount($sveaAmount);
+        $paymentOrder->setItems($items);
 
-        // set preset values if test mode! we could also set values if customer is logged in
-        if ($isTestMode) {
-            $presetValues = [];
-            $testValues = $this->getLocale()->getTestPresetValuesByCountryCode($countryCode);
-            foreach ($testValues as $key => $val) {
-                $presetValue = new PresetValue();
-                $presetValue->setTypeName($key)->setValue($val);
-                $presetValues[] = $presetValue;
-            }
+        // create payment object
+        $createPaymentRequest = new CreatePayment();
+        $createPaymentRequest->setCheckout($paymentCheckout);
+        $createPaymentRequest->setOrder($paymentOrder);
 
-            if (!empty($presetValues)) {
-                $paymentOrder->setPresetValues($presetValues);
+
+        if ($this->helper->useInvoiceFee()) {
+            $invoiceLabel = $this->helper->getInvoiceFeeLabel();
+            $invoiceLabel = $invoiceLabel ? $invoiceLabel : __("Invoice Fee");
+            $invoiceFee = $this->helper->getInvoiceFee();
+
+            if ($invoiceFee > 0) {
+                $feeItem = $this->items->generateInvoiceFeeItem($invoiceLabel,$invoiceFee, false);
+
+                $paymentFee = new PaymentMethod();
+                $paymentFee->setName("invoice");
+                $paymentFee->setFee($feeItem);
+
+                $createPaymentRequest->setPaymentMethods([$paymentFee]);
             }
         }
 
-        if ($reloadCredentials) {
-            $this->checkoutApi->resetCredentials($quote->getStoreId());
-        }
-
-        // now call the api
-        return $this->checkoutApi->createNewOrder($paymentOrder);
+        return $this->paymentApi->createNewPayment($createPaymentRequest);
     }
 
+
     /**
-     * @param GetOrderResponse $payment
-     * @param Address $address
+     * @param \Magento\Sales\Model\Order $order
+     * @param $paymentId
+     * @return void
+     * @throws ClientException
+     */
+    public function updateMagentoPaymentReference(\Magento\Sales\Model\Order $order, $paymentId)
+    {
+        $reference = new UpdatePaymentReference();
+        $reference->setReference($order->getIncrementId());
+        $reference->setCheckoutUrl($this->helper->getCheckoutUrl());
+        $this->paymentApi->UpdatePaymentReference($reference, $paymentId);
+    }
+
+
+    /**
+     * @param GetPaymentResponse $payment
      * @param null $countryIdFallback
      * @return array
      */
-    public function convertSveaAddressToMagentoAddress(GetOrderResponse $payment, Address $address)
+    public function convertSveaShippingToMagentoAddress(GetPaymentResponse $payment, $countryIdFallback = null)
     {
-        if ($address=== null) {
-            return [];
+        if ($payment->getConsumer() === null) {
+            return array();
         }
 
-        $streets = [];
-        if (is_array($address->getAddressLines()) && !empty($address->getAddressLines())) {
-            $streets = $address->getAddressLines();
+
+        $company = null;
+        // if company name is set, then contact details are too
+        if ($payment->getIsCompany()) {
+            $companyObj = $payment->getConsumer()->getCompany();
+            $contact = $companyObj->getContactDetails();
+            $firstname =$contact->getFirstName();
+            $lastName = $contact->getLastName();
+            $company = $companyObj->getName();
+            $phone = $contact->getPhoneNumber()->getPhoneNumber();
+            $email = $contact->getEmail();
         } else {
-            $streets[] = $address->getStreetAddress();
+            $private = $payment->getConsumer()->getPrivatePerson();
+            $firstname =$private->getFirstName();
+            $lastName = $private->getLastName();
+            $phone = $private->getPhoneNumber()->getPhoneNumber();
+            $email = $private->getEmail();
         }
-	if (!empty($address->getCoAddress())) {
-		$streets[] = $address->getCoAddress();
-	}
+
+        $address = $payment->getConsumer()->getShippingAddress();
+        $streets[] = $address->getAddressLine1();
+        if ($address->getAddressLine2()) {
+            $streets[] = $address->getAddressLine2();
+        }
+
         $data = [
-            'firstname' => $address->getFirstName(),
-            'lastname' => $address->getLastName(),
-            'telephone' => $payment->getPhoneNumber(),
-            'email' => $payment->getEmailAddress(),
-            'street' =>$streets,
+            'firstname' => $firstname,
+            'lastname' => $lastName,
+            'company' => $company,
+            'telephone' => $phone,
+            'email' => $email,
+            'street' => $streets,
             'city' => $address->getCity(),
             'postcode' => $address->getPostalCode(),
-            'country_id' => $payment->getCountryCode(),
         ];
 
-        if ($payment->getCustomer()->getIsCompany()) {
-            $data['company'] = $payment->getBillingAddress()->getFullName();
+        try {
+            $countryId = $this->_countryFactory->create()->loadByCode($address->getCountry())->getId();
+        } catch (\Exception $e) {
+            $countryId = $countryIdFallback;
         }
+
+        if ($countryId) {
+            $data['country_id'] = $countryId;
+        }
+
 
         return $data;
     }
+
 
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
@@ -299,109 +316,25 @@ class Order
      */
     public function cancelSveaPayment(\Magento\Payment\Model\InfoInterface $payment)
     {
-        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
-        if ($sveaOrderId) {
+        $paymentId = $payment->getAdditionalInformation('svea_order_id');
+        if ($paymentId) {
 
-            // we reload the credentials using the right store view
-            $this->orderManagementApi->resetCredentials($payment->getOrder()->getStoreId());
+            // we load the payment from svea api instead, then we will get full amount!
+            $payment = $this->loadSveaPaymentById($paymentId);
 
-            $this->tryToCancelSveaOrder($sveaOrderId);
+            $paymentObj = new CancelPayment();
+            $paymentObj->setAmount($payment->getSummary()->getReservedAmount());
+
+            // cancel it now!
+            $this->paymentApi->cancelPayment($paymentObj, $paymentId);
+
         } else {
-            throw new LocalizedException(
+            throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea payment ID to void.')
             );
         }
     }
 
-    /**
-     * @param $sveaOrderId
-     * @throws ClientException
-     * @throws LocalizedException
-     */
-    public function tryToCancelSveaOrder($sveaOrderId)
-    {
-        try {
-            // we need order row ids, so we load the order from svea!
-            $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
-        } catch (\Exception $e) {
-            throw new LocalizedException(__('Could not load svea order'));
-        }
-
-        if ($sveaOrder->canCancel() || $sveaOrder->canCancelAmount()) {
-            // cancel it now!
-            if ($sveaOrder->canCancel()) {
-                $this->cancelSveaPaymentById($sveaOrderId);
-            } else {
-                $this->cancelSveaPaymentByIdAndAmount($sveaOrderId, $sveaOrder->getOrderAmount());
-            }
-        } else {
-
-            // NOT ALL orders are cancelable, direct payments which gets an delivery directly in their system must be refunded instead!
-
-            if ($sveaOrder->canRefund()) {
-                $deliveryToRefund = $sveaOrder->getFirstRefundableDelivery();
-
-                if (!$deliveryToRefund) {
-                    throw new LocalizedException(
-                        __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
-                    );
-                }
-
-                switch ($deliveryToRefund->getRefundType()) {
-                    case "rows":
-                        // if we can refund we do it instead!
-                        $paymentObj = new RefundPayment();
-                        $paymentObj->setOrderRowIds($deliveryToRefund->getCreditableRowsIds());
-
-                        // try to refund it now!
-                        $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-                        break;
-                    case "amount":
-                        $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $deliveryToRefund->getDeliveryAmount(), 0);
-                        break;
-                    default:
-                        throw new LocalizedException(
-                            __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
-                        );
-                }
-
-
-            } else {
-                throw new LocalizedException(
-                    __('Could not cancel order. Not marked as cancelable in Svea!')
-                );
-            }
-        }
-    }
-
-    /**
-     * @param $sveaOrderId
-     * @throws ClientException
-     */
-    public function cancelSveaPaymentById($sveaOrderId)
-    {
-        $this->orderManagementApi->cancelOrder($this->generateCancelOrderObject(), $sveaOrderId);
-    }
-
-    /**
-     * @param $sveaOrderId
-     * @param $amount
-     * @throws ClientException
-     */
-    public function cancelSveaPaymentByIdAndAmount($sveaOrderId, $amount)
-    {
-        $payment = new CancelOrderAmount();
-        $payment->setCancelledAmount($amount);
-        $this->orderManagementApi->cancelOrderAmount($payment, $sveaOrderId);
-
-    }
-
-    protected function generateCancelOrderObject()
-    {
-        $obj = new CancelOrder();
-        $obj->setIsCancelled(true);
-        return $obj;
-    }
 
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
@@ -411,139 +344,48 @@ class Order
      */
     public function captureSveaPayment(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
-        if ($sveaOrderId) {
+        $paymentId = $payment->getAdditionalInformation('svea_order_id');
+        if ($paymentId) {
 
             /** @var Invoice $invoice */
             $invoice = $payment->getCapturedInvoice(); // we get this from Observer\PaymentCapture
-            if (!$invoice) {
+            if(!$invoice) {
                 throw new LocalizedException(__('Cannot capture online, no invoice set'));
             }
 
-            // we reload the credentials using the right store view
-            $this->orderManagementApi->resetCredentials($invoice->getOrder()->getStoreId());
+            // generate items
+            $this->items->addSveaItemsByInvoice($invoice);
 
-            $isFullDelivery = $invoice->getGrandTotal() === (float)$invoice->getOrder()->getGrandTotal();
-            try {
-                // we need order row ids, so we load the order from svea!
-                $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
-            } catch (\Exception $e) {
-                throw new LocalizedException(__('Could not load svea order.'));
+            // at this point we got VAT/Tax Rate from items above.
+            if ($invoice->getSveaInvoiceFee()) {
+                $this->items->addInvoiceFeeItem($this->helper->getInvoiceFeeLabel(), $invoice->getSveaInvoiceFee(), true);
             }
 
-            $canDeliver = $sveaOrder->canDeliver() || $sveaOrder->canDeliverPartially();
-            if (!$canDeliver) {
-                // so we guess its a direct payment, since you cant deliver this order.
-                // we save some info if client wants to refund later!
+            // We validate the items before we send them to Svea. This might throw an exception!
+            $this->items->validateTotals($invoice->getGrandTotal());
 
-                $delivery = $sveaOrder->getFirstDeliveredDelivery();
-                if ($delivery) {
-                    // we set the id here so we can refund it later :)
-                    $payment->setAdditionalInformation('svea_delivery_id', $delivery->getId());
-                    $payment->setTransactionId($delivery->getId());
-                }
+            // now we have our items...
+            $captureItems = $this->items->getCart();
 
-                return;
-            }
+            $paymentObj = new ChargePayment();
+            $paymentObj->setAmount($this->fixPrice($amount));
+            $paymentObj->setItems($captureItems);
 
-            if ($isFullDelivery && !$sveaOrder->canDeliver()) {
-                throw new LocalizedException(__('We can\'t do a full delivery on this particular order. Capture offline and please do it manually in Svea.'));
-            }
+            // capture/charge it now!
+            $response = $this->paymentApi->chargePayment($paymentObj, $paymentId);
 
-
-            $paymentObj = new DeliverOrder();
-            if ($isFullDelivery) {
-                $rowsToDeliver = [];
-            } else {
-                // generate items
-                $this->items->addSveaItemsByInvoice($invoice);
-
-                // lets att the invoice fee if it exists!
-                if ($invoiceFeeRow = $sveaOrder->getInvoiceFeeRow()) {
-                    $this->items->addInvoiceFeeItem($invoiceFeeRow);
-                }
-
-                // We validate the items before we send them to Svea. This might throw an exception!
-                try {
-                    $this->items->validateTotals($invoice->getGrandTotal());
-                } catch (\Exception $e) {
-                    throw new LocalizedException(__("Total amount not matching.", $e));
-                }
-
-                $rowsToDeliver = $this->items->getMatchingRows($sveaOrder->getCartItems(), $this->items->getCart(), false);
-                if (!$this->items->itemsMatching($rowsToDeliver, $this->items->getCart())) {
-                    // we must update/add items not matching!
-                    // since the order may contain shipping method and discount that varies depending on the grand total
-                    // we will need to update ALL items
-                    foreach ($rowsToDeliver as $key => $sveaItem) {
-                        // this should never happen... but if it does for whatever reason, we fix it
-                        if ($sveaItem->getQuantity() == 0) {
-                            unset($rowsToDeliver[$key]);
-                            continue;
-                        }
-
-                        try {
-                            $item = $this->items->getMagentoRowBySveaItem($sveaItem, $this->items->getCart());
-
-                            $updateRow = new OrderRow();
-                            $updateRow->setName($item->getName())
-                                ->setArticleNumber($item->getArticleNumber())
-                                ->setQuantity($item->getQuantity())
-                                ->setUnitPrice($item->getUnitPrice())
-                                ->setVatPercent($item->getVatPercent())
-                                ->setDiscountPercent($item->getDiscountPercent())
-                                ->setUnit($item->getUnit());
-
-                            $this->orderManagementApi->updateOrderRow($updateRow, $sveaOrderId, $sveaItem->getRowNumber());
-                            $item->setRowNumber($sveaItem->getRowNumber());
-                            $rowsToDeliver[$key] = $item;
-                        } catch (LocalizedException $e) {
-                          throw $e;
-                        } catch (\Exception $e) {
-                            throw new LocalizedException(__("Could not to a partial delivery, couldn't update row at Svea. Please do it manually. %1", $e->getMessage()));
-                        }
-                    }
-
-                    // here we loop and add all missing products!
-                    $itemsToAdd = $this->items->getMissingItems($rowsToDeliver, $this->items->getCart());
-                    foreach ($itemsToAdd as $item) {
-
-                        try {
-                            $addRow = new OrderRow();
-                            $addRow->setName($item->getName())
-                                ->setArticleNumber($item->getArticleNumber())
-                                ->setQuantity($item->getQuantity())
-                                ->setUnitPrice($item->getUnitPrice())
-                                ->setVatPercent($item->getVatPercent())
-                                ->setDiscountPercent($item->getDiscountPercent())
-                                ->setUnit($item->getUnit());
-
-                            $rowId = $this->orderManagementApi->addOrderRow($addRow, $sveaOrderId);
-                            $addRow->setRowNumber($rowId);
-
-                            $rowsToDeliver[] = $addRow;
-                        } catch (\Exception $e) {
-                            throw new LocalizedException(__("Could not to a partial delivery, couldn't add missing row at Svea. Please do it manually. Error %1", $e->getMessage()));
-                        }
-
-                    }
-                }
-            }
-
-
-            // capture/deliver it now!
-            $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToDeliver));
-            $response = $this->orderManagementApi->deliverOrder($paymentObj, $sveaOrderId);
-
-            // save queue_id, we need it later! if a refund will be made
-            $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
-            $payment->setTransactionId($response->getQueueId());
+            // save charge id, we need it later! if a refund will be made
+            $payment->setAdditionalInformation('svea_charge_id', $response->getChargeId());
+            $payment->setTransactionId($response->getChargeId());
 
 
         } else {
-            throw new LocalizedException(__('You need an svea payment ID to capture.'));
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __('You need an svea payment ID to capture.')
+            );
         }
     }
+
 
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
@@ -553,279 +395,56 @@ class Order
      */
     public function refundSveaPayment(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-        $deliveryId = $payment->getAdditionalInformation('svea_delivery_id');
-        $queueId = $payment->getAdditionalInformation('svea_queue_id');
-        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
+        $chargeId = $payment->getAdditionalInformation('svea_charge_id');
+        if ($chargeId) {
 
-        if ($sveaOrderId && ($queueId || $deliveryId)) {
-
-            // we reload the credentials using the right store view
-            $this->orderManagementApi->resetCredentials($payment->getCreditMemo()->getStoreId());
-
-            try {
-                // we need order row ids, so we load the order from svea!
-                $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
-            } catch (\Exception $e) {
-                throw new LocalizedException(__('Could not load svea order'));
-            }
-
-            $deliveryToRefund = null;
-            if ($queueId) {
-
-                // not sure if this is good, but we have the  queue_id, and can retrieve the delivery from it!
-                // or we could just loop through $sveaOrder->getDeliveries() and take the first one... that would be one less api call!
-                $responseArray = $this->orderManagementApi->getTask($queueId);
-                if (isset($responseArray['Status']) && $responseArray['Status'] === "InProgress") {
-                    throw new LocalizedException(__("This delivery is still in progress. Try again soon."));
-                }
-
-                if (!isset($responseArray['Deliveries'][0])) {
-                    throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
-                }
-
-                $deliveryArray = $responseArray['Deliveries'][0];
-                $deliveryToRefund = new GetDeliveryResponse($deliveryArray);
-            } else {
-                foreach ($sveaOrder->getDeliveries() as $delivery) {
-                    if ($delivery->getId() == $deliveryId) {
-                        $deliveryToRefund = $delivery;
-                        breaK;
-                    }
-                }
-            }
-
-            // wasn't found :/
-            if (!$deliveryToRefund) {
-                throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
-            }
-
-
-            // the creditmemo from the payment/invoice
-            /** @var Creditmemo $creditMemo */
             $creditMemo = $payment->getCreditMemo();
-
-            $creditMemoTotal = $creditMemo->getGrandTotal();
-            $invoiceFeeRow = $deliveryToRefund->getInvoiceFeeRow();
-
-            // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
-            // we only use this to see if its a full refund or not
-            $creditAbleSveaRows = $deliveryToRefund->getCreditableItems();
-
-            // when the delivery can't refund but can cancel
-            if (empty($creditAbleSveaRows) && (!$deliveryToRefund->canRefund() || $sveaOrder->canCancelAmount()))  {
-                // sometimes we can't know if its a full refund, since when you only can cancel amount, getCreditableItems will be empty!
-                $isFullRefund = $this->isFullRefund($this->items->getCart(), $deliveryToRefund->getCartItems());
-            } else {
-                $isFullRefund = $this->isFullRefund($this->items->getCart(), $creditAbleSveaRows);
-            }
-
-            // we only refund invoice fee if its a full refund!
-            if ($isFullRefund) {
-                // lets add the invoice fee if it exists, since its a full refund!
-                if ($invoiceFeeRow) {
-                    $this->items->addInvoiceFeeItem($invoiceFeeRow);
-                }
-            } else {
-
-                // if not a full refund and there is a invoice fee, it has to be added as an adjustment fee!
-                if ($invoiceFeeRow) {
-                    $invoiceFee = ($invoiceFeeRow->getUnitPrice() / 100);
-
-                    // invoice fee is never removed from svea in partial refunds, because some issues we have in magento
-                    if ($creditMemo->getAdjustmentNegative() < $invoiceFee) {
-                        throw new LocalizedException(__('This is a partial credit memo. You have to add an adjustment fee that is the same amount as the svea invoice fee.'));
-                    }
-                }
+            // remove svea invoice fee from amount
+            if ($creditMemo->getSveaInvoiceFee()) {
+                $this->items->addInvoiceFeeItem($this->helper->getInvoiceFeeLabel(), $creditMemo->getSveaInvoiceFee(), true);
             }
 
             // We validate the items before we send them to Svea. This might throw an exception!
-            $this->items->validateTotals($creditMemoTotal);
-            $rowsToRefund = $this->items->getMatchingRows($deliveryToRefund->getCartItems(), $this->items->getCart());
+            $this->items->validateTotals($creditMemo->getGrandTotal());
 
-            // if its a partial refund, containing discount!
-            if (!$isFullRefund && $this->items->containsDiscount($rowsToRefund))  {
+            $refundItems = $this->items->getCart();
+            $amountToRefund = $this->fixPrice($amount);
 
-                // if we can count how much the maximum amount possible to credit in svea, then this could work, and it has the correct flags
-                $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
-                if ($deliveryToRefund->canDeliveryRefundByAmount() || $sveaOrder->canCancelAmount()) {
 
-                    if ($deliveryToRefund->canDeliveryRefundByAmount()) {
-                        $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
-                    } else {
-                        $this->cancelDeliveryAmount($sveaOrderId, $amountToCredit);
-                    }
+            $paymentObj = new RefundPayment();
+            $paymentObj->setAmount($amountToRefund);
+            $paymentObj->setItems($refundItems);
 
-                    return;
-                } else {
-                    throw new LocalizedException(__("We can't do partial refunds on this invoice. Please refund offline, and do the rest manually in Svea."));
-                }
-            }
-
-            // we try to refund by amount if items are not matching, i.e you want to redfund 1 quantity when you have 2.
-            // or we try to cancel by amount!
+            // refund now!
+            $response = $this->paymentApi->refundPayment($paymentObj, $chargeId);
 
             try {
-                $itemQuantityMatching = $this->items->itemsMatching($rowsToRefund, $this->items->getCart(), true);
-
-
-                // if quantities are not matching, and we can refund amount, we do it!
-                if ($deliveryToRefund->canDeliveryRefundByAmount() && !$itemQuantityMatching) {
-                    // we calculate the amount to send to svea, according to the rows existing in the svea delivery and magento!
-                    $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
-                    $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
-                    return;
-                }
-
-                // if quantities not matching and we can cancel order amount, we do it!
-                if ($sveaOrder->canCancelAmount() && !$itemQuantityMatching) {
-                    $amountToCancel = $this->items->getAmountByItems($rowsToRefund);
-                    $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
-                    return;
-                }
-
-                // if we cant do a refund at all, but we can cancel amount, we do it!
-                if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount())  {
-                    $amountToCancel = $this->items->getAmountByItems($rowsToRefund);
-                    $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
-                    return;
-                }
-
-                if (!$deliveryToRefund->canRefund() && !$sveaOrder->canCancelAmount()) {
-                    throw new \Exception(__("Can't refund this invoice, found o refund or cancel flag. Please refund offline, and do the rest manually in Svea."));
-                }
-
-                if (!$itemQuantityMatching && !$deliveryToRefund->canDeliveryRefundByAmount()) {
-                    throw new \Exception(__("Can't do a partial refund for this invoice."));
-                }
-
+                // save refund id, just for debugging purposes
+                $payment->setAdditionalInformation('svea_refund_id', $response->getRefundId());
+                $payment->setTransactionId($response->getRefundId());
             } catch (\Exception $e) {
-                throw new LocalizedException(__($e->getMessage()));
-            }
-
-
-            if ($deliveryToRefund->canDeliveryRefundByAmount()) {
-                // we should refound amount
-
-                $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
-                $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
-
-            } else if (!$deliveryToRefund->canDeliveryRefundByAmount() && $deliveryToRefund->canRefund()) {
-                // we should refund rows;
-                $paymentObj = new RefundPayment();
-                $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToRefund));
-
-                // try to refund it now!
-                $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-
-            } else {
-                throw new LocalizedException(
-                    __('Could not refund invoice. This delivery is not marked as refundable in Svea.')
-                );
+                // do nothing we dont really  need this
             }
 
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
-                __('Missing Svea ID or delivery id. Please handle this manually.')
+                __('You need an svea charge ID to refund.')
             );
         }
     }
 
-    /**
-     * @param $sveaOrderId
-     * @param GetDeliveryResponse $delivery
-     * @param $amountToCredit
-     * @throws ClientException
-     */
-    protected function tryToRefundByAmount($sveaOrderId, GetDeliveryResponse $delivery, $amountToCredit, $maxVat)
-    {
-        if ($amountToCredit > $delivery->getDeliveryAmount()) {
-            $amountToCredit = $delivery->getDeliveryAmount();
-        }
-
-        if ($delivery->canRefundAmount()) {
-            $paymentObj = new RefundPaymentAmount();
-            $paymentObj->setCreditedAmount($amountToCredit);
-            $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $delivery->getId());
-            return;
-        }
-
-        if ($delivery->canRefundNewRow()) {
-            $paymentObj = new RefundNewCreditRow();
-            $paymentObj->setName(__("Refund"));
-            $paymentObj->setUnitPrice($amountToCredit);
-            $paymentObj->setVatPercent($maxVat * 100);
-
-            $this->orderManagementApi->refundNewCreditRow($paymentObj, $sveaOrderId, $delivery->getId());
-            return;
-        }
-    }
-
-    /**
-     * @param $sveaOrderId
-     * @param $amount
-     * @throws LocalizedException
-     */
-    public function cancelDeliveryAmount($sveaOrderId,$amount)
-    {
-        $paymentObj = new CancelOrderAmount();
-        $paymentObj->setCancelledAmount($amount);
-        try {
-
-            $this->orderManagementApi->cancelOrderAmount($paymentObj, $sveaOrderId);
-        } catch (\Exception $e) {
-            throw new LocalizedException(__("Can't cancel delivery amount. Use the Offline button and do the rest manually in Svea."));
-        }
-    }
-
-
-    /**
-     * @param $creditMemoItems array
-     * @param $deliveryItems array
-     * @return bool
-     */
-    protected function isFullRefund($creditMemoItems, $deliveryItems)
-    {
-        $refs = [];
-        foreach ($creditMemoItems as $creditMemoItem) {
-            $refs[$creditMemoItem->getArticleNumber()] = $creditMemoItem;
-        }
-
-        foreach ($deliveryItems as $item) {
-            /** @var $item OrderRow */
-            if ($item->getName() === "InvoiceFee") {
-                continue;
-            }
-
-            if (!array_key_exists($item->getArticleNumber(), $refs)) {
-                return false;
-            }
-            /** @var $creditMemo OrderRow */
-            $creditMemo = $refs[$item->getArticleNumber()];
-            if ($creditMemo->getQuantity() != $item->getQuantity()) {
-                return false;
-            }
-
-        }
-
-        return true;
-    }
 
     /**
      * @param $paymentId
-     * @return GetOrderResponse
+     * @return GetPaymentResponse
      * @throws ClientException
      */
-    public function loadSveaOrderById($paymentId, $saveIframe = false)
+    public function loadSveaPaymentById($paymentId)
     {
-        $order =  $this->checkoutApi->getOrder($paymentId);
-        if ($saveIframe) {
-            $this->setIframeSnippet($order->getGui()->getSnippet());
-        }
-
-        return $order;
+        return $this->paymentApi->getPayment($paymentId);
     }
 
     /**
@@ -837,31 +456,21 @@ class Order
         return $price * 100;
     }
 
+
     /**
-     * @return Checkout
+     * @return Payment
      */
     public function getPaymentApi()
     {
-        return $this->checkoutApi;
+        return $this->paymentApi;
     }
 
-    public function setIframeSnippet($snippet)
+    /**
+     * @param $quoteId
+     * @return string
+     */
+    public function generateReferenceByQuoteId($quoteId)
     {
-        $this->iframeSnippet = $snippet;
-    }
-
-    public function getIframeSnippet()
-    {
-        return $this->iframeSnippet;
-    }
-
-    public function getLocale()
-    {
-        return $this->_locale;
-    }
-
-    public function getRefHelper()
-    {
-        return $this->sveaCheckoutReferenceHelper;
+       return "quote_id_" . $quoteId;
     }
 }

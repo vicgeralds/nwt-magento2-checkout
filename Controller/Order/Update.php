@@ -13,7 +13,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
 
         //reload the blocks even we have an error
         if(is_null($blocks)) {
-            $blocks = ['shipping_method','cart','coupon','messages', 'svea','newsletter'];
+            $blocks = ['shipping_method','cart','coupon','messages', 'svea','newsletter','grand_total'];
         } elseif($blocks) {
             $blocks = (array)$blocks;
         } else {
@@ -49,7 +49,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
 
                 if($shouldUpdateSvea) {
                     //update svea iframe
-                    $sveaPaymentId = $this->getCheckoutSession()->getSveaOrderId();
+                    $sveaPaymentId = $this->getCheckoutSession()->getSveaPaymentId();
 
 
                     //

@@ -4,7 +4,6 @@ namespace Svea\Checkout\Model\Client;
 
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\RequestOptions;
-use Psr\Http\Message\ResponseInterface;
 use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 
 /**
@@ -13,9 +12,6 @@ use Svea\Checkout\Model\Client\DTO\AbstractRequest;
  */
 abstract class BaseClient
 {
-
-    /** @var $lastResponse ResponseInterface */
-    protected $lastResponse;
 
     /**
      * @var int
@@ -31,8 +27,6 @@ abstract class BaseClient
     /** @var string $merchantId */
     protected $merchantId;
 
-    /** @var bool $testMode */
-    protected $testMode;
 
     /** @var \GuzzleHttp\Client $httpClient */
     protected $httpClient;
@@ -48,10 +42,12 @@ abstract class BaseClient
     ) {
         $this->apiContext = $apiContext;
 
-        // this will set base store view
-        $this->resetCredentials();
+        $this->sharedSecret = $apiContext->getHelper()->getSharedSecret();
+        $this->merchantId = $apiContext->getHelper()->getMerchantId();
+        
+        // init curl!
+        $this->setGuzzleHttpClient($this->getHelper());
     }
-
 
 
     /**
@@ -85,22 +81,7 @@ abstract class BaseClient
 
         try {
             $result = $this->httpClient->get($endpoint, $options);
-
-            $content = $result->getBody()->getContents();
-            if ($this->testMode) {
-                $this->getLogger()->info("Got response from Svea: Get $endpoint");
-
-                $decoded = json_decode($content, true);
-                if (is_array($decoded) && isset($decoded['Gui']['Snippet'])) { // Easier to debug without this
-                    $decoded['Gui']['Snippet'] = "Removed.";
-                    $logContent = json_encode($decoded);
-                } else {
-                    $logContent = $content;
-                }
-                $this->getLogger()->info($logContent);
-            }
-
-            return $content;
+            return $result->getBody()->getContents();
         } catch (BadResponseException $e) {
             $exception = $this->handleException($e);
         } catch (\Exception $e) {
@@ -115,9 +96,44 @@ abstract class BaseClient
             $this->getLogger()->error($exception->getResponseBody());
             throw $exception;
         }
+    }
 
+    /**
+     * @param $endpoint
+     * @param AbstractRequest $request
+     * @param array $options
+     * @return string
+     * @throws ClientException
+     */
+    protected function post($endpoint, AbstractRequest $request, $options = []){
+        if (!is_array($options)) {
+            $options = [];
+        }
 
+        $body = $request->toArray();
+        $options = array_merge($options, $this->getDefaultOptions($body));
+        $options[RequestOptions::JSON] = $body;
+        $exception = null;
 
+        // todo catch exceptions or let them be catched by magento?
+        try {
+            $result = $this->httpClient->post($endpoint, $options);
+            return $result->getBody()->getContents();
+        } catch (BadResponseException $e) {
+            $exception = $this->handleException($e);
+        } catch (\Exception $e) {
+            $exception = $this->handleException($e);
+        }
+
+        if ($exception) {
+            $this->getLogger()->error("Failed sending request to svea integration: POST $endpoint");
+            $this->getLogger()->error(json_encode($this->removeAuthForLogging($options)));
+            $this->getLogger()->error($request->toJSON());
+            $this->getLogger()->error($exception->getMessage());
+            $this->getLogger()->error($exception->getHttpStatusCode());
+            $this->getLogger()->error($exception->getResponseBody());
+            throw $exception;
+        }
 
     }
 
@@ -128,39 +144,7 @@ abstract class BaseClient
      * @return string
      * @throws ClientException
      */
-    protected function post($endpoint, AbstractRequest $request, $options = [])
-    {
-        return $this->doRequest($endpoint, "post", $request, $options);
-    }
-
-    /**
-     * @param $endpoint
-     * @param AbstractRequest $request
-     * @param array $options
-     * @return string
-     * @throws ClientException
-     */
-    protected function patch($endpoint, AbstractRequest $request, $options = [])
-    {
-        return $this->doRequest($endpoint, "patch", $request, $options);
-    }
-
-    /**
-     * @param $endpoint
-     * @param AbstractRequest $request
-     * @param array $options
-     * @return string
-     * @throws ClientException
-     */
-    protected function put($endpoint, AbstractRequest $request, $options = [])
-    {
-        return $this->doRequest($endpoint, "put", $request, $options);
-    }
-
-
-    protected function doRequest($endpoint, $method, AbstractRequest $request, $options = [])
-    {
-        $method = strtolower($method);
+    protected function put($endpoint, AbstractRequest $request, $options = []){
         if (!is_array($options)) {
             $options = [];
         }
@@ -171,40 +155,16 @@ abstract class BaseClient
         $exception = null;
 
         try {
-            /** @var ResponseInterface $result */
-            $result = $this->httpClient->$method($endpoint, $options);
-            $this->lastResponse = $result;
-            $content =  $result->getBody()->getContents();
-
-            if ($this->testMode) {
-                $this->getLogger()->info("Sending request to svea integration: $method $endpoint");
-                $this->getLogger()->info($request->toJSON());
-
-                $this->getLogger()->info("Response Headers from Svea:");
-                $this->getLogger()->info(json_encode($result->getHeaders()));
-                $this->getLogger()->info("Response Body from Svea:");
-
-
-
-                $decoded = json_decode($content, true);
-                if (is_array($decoded) && isset($decoded['Gui']['Snippet'])) { // Easier to debug without this
-                    $decoded['Gui']['Snippet'] = "Removed.";
-                    $logContent = json_encode($decoded);
-                } else {
-                    $logContent = $content;
-                }
-                $this->getLogger()->info($logContent);
-            }
-
-            return $content;
-        } catch (BadResponseException $e) {
+            $result = $this->httpClient->put($endpoint, $options);
+            return $result->getBody()->getContents();
+        }  catch (BadResponseException $e) {
             $exception = $this->handleException($e);
         } catch (\Exception $e) {
             $exception = $this->handleException($e);
         }
 
         if ($exception) {
-            $this->getLogger()->error("Failed sending request to svea integration: $method $endpoint");
+            $this->getLogger()->error("Failed sending request to svea integration: PUT $endpoint");
             $this->getLogger()->error(json_encode($this->removeAuthForLogging($options)));
             $this->getLogger()->error($request->toJSON());
             $this->getLogger()->error($exception->getMessage());
@@ -225,7 +185,7 @@ abstract class BaseClient
             $body = json_encode($bodyArray);
         }
 
-        $timestamp = gmdate('Y-m-d H:i:s');
+        $timestamp = gmdate('Y-m-d H:i');
         $options['headers'] = [
             'Content-Type' => 'application/json',
             'Timestamp' => $timestamp,
@@ -236,8 +196,7 @@ abstract class BaseClient
     }
 
     private function createAuthorizationToken($timestamp, $body) {
-
-        return "Svea " . base64_encode($this->merchantId . ':' . hash('sha512', $body . $this->sharedSecret . $timestamp));
+        return base64_encode($this->merchantId . ':' . hash('sha512', $body . $this->sharedSecret . $timestamp));
     }
 
     private function removeAuthForLogging($options) {
@@ -269,21 +228,6 @@ abstract class BaseClient
     }
 
     /**
-     * @param null $store
-     */
-    public function resetCredentials($store = null)
-    {
-        $this->sharedSecret = $this->apiContext->getHelper()->getSharedSecret($store);
-        $this->merchantId = $this->apiContext->getHelper()->getMerchantId($store);
-        $this->testMode = $this->apiContext->getHelper()->isTestMode($store);
-
-        // the guzzlehttp client, we set base URL here as well.
-        // base url could be test or prod, so we need $store, to get if its Testmode!
-        $this->setGuzzleHttpClient($this->getHelper(), $store);
-    }
-
-
-    /**
      * @return \Svea\Checkout\Logger\Logger
      */
     public function getLogger()
@@ -299,16 +243,11 @@ abstract class BaseClient
         return $this->apiContext->getHelper();
     }
 
-    public function getLastResponse()
-    {
-        return $this->lastResponse;
-    }
 
     /**
      * @param \Svea\Checkout\Helper\Data $helper
-     * @param $storeView null
      */
-    protected abstract function setGuzzleHttpClient(\Svea\Checkout\Helper\Data $helper, $storeView = null);
+    protected abstract function setGuzzleHttpClient(\Svea\Checkout\Helper\Data $helper);
 }
 
 

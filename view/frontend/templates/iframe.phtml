@@ -1,16 +1,15 @@
-<?php
-/**
- * @var $block Svea\Checkout\Block\Checkout
- */
-
-$quote = $block->getQuote();
-
-?>
-<?php if (($quote->getShippingAddress() === null) || !$quote->getShippingAddress()->getShippingMethod()) : ?>
-    <div id="iframe-overlay" class="iframe-overlay"></div>
-<?php endif; ?>
 <div id="svea-checkout_svea">
-    <div id="sveaIframeSnippet">
-        <?php echo $block->getIframeSnippet(); ?>
+    <div id="sveaOrderJS">
+        <script>
+
+            var checkoutOptions = {
+                checkoutKey: "<?php echo $block->getSveaCheckoutKey(); ?>", //[Required] Test or Live GUID with dashes
+                paymentId : "<?php echo $block->getSveaPaymentId(); ?>", //[required] GUID without dashes
+                containerId : "sveaOrderJS",
+                language: "<?php echo $block->getSveaLocale(); ?>",
+            };
+            var _sveaCheckout = new Svea.Checkout(checkoutOptions);
+
+        </script>
     </div>
 </div>

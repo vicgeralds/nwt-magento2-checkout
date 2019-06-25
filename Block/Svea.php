@@ -16,31 +16,35 @@ class Svea extends \Magento\Framework\View\Element\Template
      */
     protected $coreRegistry;
 
-    protected $getCurrentSveaOrderIdService;
-
-    protected $iframeSnippet;
+    protected $getCurrentSveaPaymentIdService;
 
     /**
      * @param \Magento\Framework\View\Element\Template\Context $context
      * @param \Magento\Framework\Registry $coreRegistry,
      * @param \Svea\Checkout\Helper\Data $helper
-     * @param \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
+     * @param \Svea\Checkout\Service\GetCurrentSveaPaymentId $getCurrentSveaPaymentIdService,
      * @param array $data
      */
 
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Svea\Checkout\Helper\Data $helper,
-        \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
+        \Svea\Checkout\Service\GetCurrentSveaPaymentId $getCurrentSveaPaymentIdService,
         array $data = []
     )
     {
 
-        $this->getCurrentSveaOrderIdService = $getCurrentSveaOrderIdService;
+        $this->getCurrentSveaPaymentIdService = $getCurrentSveaPaymentIdService;
         $this->helper = $helper;
         parent::__construct($context, $data);
     }
 
+
+    public function getSveaLocale()
+    {
+        // Todo remove hardcode
+        return "sv-SE";
+    }
 
     public function getSveaCheckoutKey()
     {
@@ -48,19 +52,9 @@ class Svea extends \Magento\Framework\View\Element\Template
     }
 
 
-    public function getSveaOrderId()
+    public function getSveaPaymentId()
     {
-        return $this->getCurrentSveaOrderIdService->getSveaOrderId();
-    }
-
-    public function getIframeSnippet()
-    {
-        return $this->iframeSnippet;
-    }
-
-    public function setIframeSnippet($snippet)
-    {
-        $this->iframeSnippet = $snippet;
+        return $this->getCurrentSveaPaymentIdService->getSveaPaymentId();
     }
 
     public function getHelper(){

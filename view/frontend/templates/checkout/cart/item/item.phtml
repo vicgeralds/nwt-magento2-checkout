@@ -5,7 +5,7 @@
 
 $_item = $block->getItem();
 $product = $_item->getProduct();
-$helper = $this->helper('\Svea\Checkout\Helper\Cart');
+
 ?>
 
 <tr>
@@ -62,9 +62,11 @@ $helper = $this->helper('\Svea\Checkout\Helper\Cart');
     <?php endif; ?>
     <td class="svea-checkout-col qty" data-th="<?php echo $block->escapeHtml(__('Qty')); ?>">
         <?php
-        $FormKey = $helper->getFormKey();
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $FormKey = $objectManager->get('Magento\Framework\Data\Form\FormKey');
         ?>
         <div class="qty" data-th="<?php echo $block->escapeHtml(__('Qty')); ?>">
+            <span class="remove-product"><span>&times;</span></span>
             <span class="qty">
                 <span class="input-number-decrement">-</span>
                 <input id="cart-<?php /* @escapeNotVerified */
@@ -79,7 +81,7 @@ $helper = $this->helper('\Svea\Checkout\Helper\Cart');
                        data-cart-url-submit="<?= /* @escapeNotVerified */
                        $block->getUrl('checkout/sidebar/updateItemQty') ?>"
                        data-cart-url-update="<?= /* @escapeNotVerified */
-                       $block->getUrl('sveacheckout/order/cart') ?>"
+                       $block->getUrl('checkout/order/cart') ?>"
                        data-cart-url-remove="<?= /* @escapeNotVerified */
                        $block->getUrl('checkout/sidebar/removeItem'); ?>"
                        value="<?php /* @escapeNotVerified */
@@ -109,6 +111,5 @@ $helper = $this->helper('\Svea\Checkout\Helper\Cart');
                     <?php echo $block->getRowTotalExclTaxHtml($_item); ?>
                 </span>
         <?php endif; ?>
-        <span class="remove-product"><span><?= __('Remove') ?></span></span>
     </td>
 </tr>

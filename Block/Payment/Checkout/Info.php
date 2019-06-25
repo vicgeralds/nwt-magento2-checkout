@@ -18,22 +18,4 @@ class Info extends \Magento\Payment\Block\Info
         $this->setTemplate('Svea_Checkout::payment/checkout/pdf.phtml');
         return $this->toHtml();
     }
-
-    public function getSveaPaymentMethod()
-    {
-        try {
-            return $this->getInfo()->getAdditionalInformation('svea_payment_method');
-        } catch (\Exception $e) {
-            return "";
-        }
-    }
-
-    public function getSveaCheckoutId()
-    {
-        try {
-            return $this->getInfo()->getAdditionalInformation('svea_order_id');
-        } catch (\Exception $e) {
-            return "";
-        }
-    }
 }

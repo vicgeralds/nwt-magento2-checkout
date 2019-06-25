@@ -7,14 +7,15 @@
 //id  #svea-checkout_shipping_method is mandatory
 
 ?>
-<div id="svea-checkout_shipping_method">
-    <div class="shipping-method-holder" >
+<div id="svea-checkout_shipping_method" style="display: none;">
+    <div class="shipping-method-holder">
 
 
         <?php if ($groups = $block->getShippingRateGroups()): ?>
             <?php $currentRate = $block->getCurrentShippingRate(); ?>
             <?php foreach ($groups as $code => $rates): ?>
-                <?php if (0): ?><strong><?php echo $block->escapeHtml($block->getCarrierName($code)) ?></strong><?php endif; ?>
+                <?php if (0): ?>
+                    <strong><?php echo $block->escapeHtml($block->getCarrierName($code)) ?></strong><?php endif; ?>
                 <?php foreach ($rates as $rate):
                     $value = $block->escapeHtml($block->renderShippingRateValue($rate));
                     $checked = $currentRate === $rate->getCode() ? 'checked' : '';
@@ -41,4 +42,44 @@
             </p>
         <?php endif; ?>
     </div>
+    <script>
+        require([
+            'jquery',
+            'slick'
+        ], function ($) {
+            jQuery(document).ready(function () {
+                jQuery(".shipping-method-holder").slick({
+                    dots: true,
+                    prevArrow: false,
+                    nextArrow: false,
+                    infinite: false,
+                    slidesToShow: 5,
+                    slidesToScroll: 1,
+                    responsive: [
+                        {
+                            breakpoint: 1280,
+                            settings: {
+                                slidesToShow: 2,
+                                slidesToScroll: 1
+                            }
+                        },
+                        {
+                            breakpoint: 900,
+                            settings: {
+                                slidesToShow: 1.5,
+                                slidesToScroll: 1
+                            }
+                        },
+                        {
+                            breakpoint: 768,
+                            settings: {
+                                slidesToShow: 1.5,
+                                slidesToScroll: 1,
+                            }
+                        }
+                    ]
+                })
+            });
+        });
+    </script>
 </div>

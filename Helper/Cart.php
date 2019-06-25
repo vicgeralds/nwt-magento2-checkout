@@ -6,7 +6,6 @@ use Magento\Directory\Model\AllowedCountries;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
-use Magento\Framework\Data\Form\FormKey;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
@@ -26,30 +25,37 @@ class Cart extends AbstractHelper
     protected $storeManager;
 
     /**
-     * @var FormKey
+     * @var \Magento\Directory\Model\AllowedCountries
      */
-    protected $formKey;
+    protected $allowedCountryModel;
+
+    /**
+     * @var CountryFactory
+     */
+    protected $countryFactory;
 
     /**
      * Cart constructor.
      * @param Context $context
      * @param StoreManagerInterface $storeManager
-     * @param FormKey $formKey
+     * @param AllowedCountries $allowedCountryModel
+     * @param CountryFactory $countryFactory
      */
     public function __construct(
         Context $context,
         StoreManagerInterface $storeManager,
-        FormKey $formKey
+        AllowedCountries $allowedCountryModel,
+        CountryFactory $countryFactory
     )
     {
         $this->storeManager = $storeManager;
-        $this->formKey = $formKey;
+        $this->allowedCountryModel = $allowedCountryModel;
+        $this->countryFactory = $countryFactory;
         parent::__construct($context);
     }
 
     /**
-     * Current Currency code
-     * @return string
+     * @return Current Currency code
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function getCurrencyCode()
@@ -84,10 +90,32 @@ class Cart extends AbstractHelper
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function getFormKey()
+    public function getAllowedCountriesNames()
     {
-        return $this->formKey;
+        $allowedCountriesNames = [];
+        $allowedCountries = $this->allowedCountryModel->getAllowedCountries();
+        foreach ($allowedCountries as $allowedCountryCode) {
+            $allowedCountriesNames[$allowedCountryCode] = $this->countryFactory->create()->loadByCode($allowedCountryCode)->getName();
+        }
+        return $allowedCountriesNames;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAllowedCountriesList()
+    {
+        return $this->allowedCountryModel->getAllowedCountries();
+    }
+
+    /**
+     * @param $countryId
+     * @return Country Name
+     */
+    public function getCountryNameByCode($countryId)
+    {
+        return $this->countryFactory->create()->loadByCode($countryId)->getName();
     }
 }

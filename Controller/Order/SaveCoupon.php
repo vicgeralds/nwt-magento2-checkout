@@ -62,7 +62,7 @@ class SaveCoupon extends \Svea\Checkout\Controller\Order\Update
                 __('We can\'t apply your coupon.')
             );
         }
-        $this->_sendResponse(['cart','coupon','messages','shipping','svea']);
+        $this->_sendResponse(['cart','coupon','messages','shipping','svea','grand_total','svea_shipping_total']);
 
     }
 

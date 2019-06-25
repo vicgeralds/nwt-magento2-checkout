@@ -13,6 +13,9 @@ abstract class AbstractMethod extends \Magento\Payment\Model\Method\AbstractMeth
      */
     protected $_helper;
 
+    /** @var \Svea\Checkout\Model\Client\Api\Payment $paymentApi */
+    protected $paymentApi;
+
     /** @var \Svea\Checkout\Model\Svea\Items $itemsHandler */
     protected $itemsHandler;
 
@@ -36,6 +39,7 @@ abstract class AbstractMethod extends \Magento\Payment\Model\Method\AbstractMeth
      * @param \Magento\Payment\Model\Method\Logger $logger
      * @param \Magento\Directory\Model\CurrencyFactory $currencyFactory
      * @param \Svea\Checkout\Helper\Data $helper
+     * @param \Svea\Checkout\Model\Client\Api\Payment $paymentApi
      * @param \Svea\Checkout\Model\Svea\Items $itemsHandler
      * @param \Svea\Checkout\Model\Svea\Order $sveaHandler
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource $resource
@@ -52,6 +56,7 @@ abstract class AbstractMethod extends \Magento\Payment\Model\Method\AbstractMeth
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Payment\Model\Method\Logger $logger,
         \Svea\Checkout\Helper\Data $helper,
+        \Svea\Checkout\Model\Client\Api\Payment $paymentApi,
         \Svea\Checkout\Model\Svea\Items $itemsHandler,
         \Svea\Checkout\Model\Svea\Order $sveaHandler,
         \Magento\Directory\Model\CurrencyFactory $currencyFactory,
@@ -64,6 +69,7 @@ abstract class AbstractMethod extends \Magento\Payment\Model\Method\AbstractMeth
         $this->_currencyFactory = $currencyFactory;
 
         $this->itemsHandler = $itemsHandler;
+        $this->paymentApi = $paymentApi;
         $this->sveaHandler = $sveaHandler;
 
 

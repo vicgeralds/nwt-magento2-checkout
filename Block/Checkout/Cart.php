@@ -31,33 +31,4 @@ class Cart extends \Magento\Checkout\Block\Cart\Totals
     {
         return $this->getQuote()->getTotals();
     }
-
-
-
-    /**
-     * @var \Svea\Checkout\Helper\Data
-     */
-    protected $helper;
-
-
-    public function __construct(
-        \Magento\Framework\View\Element\Template\Context $context,
-        \Magento\Customer\Model\Session $customerSession,
-        \Magento\Checkout\Model\Session $checkoutSession,
-        \Magento\Sales\Model\Config $salesConfig,
-        \Svea\Checkout\Helper\Data $helper,
-        array $layoutProcessors = [],
-        array $data = []
-    ) {
-        $this->helper = $helper;
-        parent::__construct($context, $customerSession, $checkoutSession,$salesConfig, $layoutProcessors,$data);
-    }
-
-    public function showCouponCode()
-    {
-
-        return $this->helper->showCouponLayout();
-    }
 }
-
-

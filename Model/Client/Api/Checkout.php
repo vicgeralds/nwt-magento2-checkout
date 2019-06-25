@@ -4,65 +4,84 @@
 namespace Svea\Checkout\Model\Client\Api;
 
 use Svea\Checkout\Model\Client\ApiClient;
+use Svea\Checkout\Model\Client\Client;
 use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\CreateOrder;
-use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
-use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
+use Svea\Checkout\Model\Client\DTO\CreatePayment;
+use Svea\Checkout\Model\Client\DTO\GetPaymentResponse;
+use Svea\Checkout\Model\Client\DTO\UpdatePaymentCart;
+use Svea\Checkout\Model\Client\DTO\CreatePaymentResponse;
+use Svea\Checkout\Model\Client\DTO\UpdatePaymentReference;
 
 class Checkout extends ApiClient
 {
 
     /**
-     * @param CreateOrder $createOrder
-     * @return GetOrderResponse
+     * @param CreatePayment $createPayment
+     * @return CreatePaymentResponse
      * @throws ClientException
      */
-    public function createNewOrder(CreateOrder $createOrder)
+    public function createNewPayment(CreatePayment $createPayment)
     {
         try {
-            $response = $this->post("/api/orders", $createOrder);
+            $response = $this->post("/v1/payments", $createPayment);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
-        return new GetOrderResponse($response);
+        return new CreatePaymentResponse($response);
     }
 
 
     /**
-     * @param UpdateOrderCart $cart
-     * @param $orderId
-     * @return GetOrderResponse
-     * @throws ClientException
+     * @param UpdatePaymentCart $cart
+     * @param $paymentId
+     * @return void
+     * @throws \Exception
      */
-    public function updateOrder(UpdateOrderCart $cart, $orderId)
+    public function UpdatePaymentCart(UpdatePaymentCart $cart, $paymentId)
     {
         try {
-            $response = $this->put("/api/orders/". $orderId, $cart);
+            $this->put("/v1/payments/".$paymentId."/orderitems", $cart);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
-        return new GetOrderResponse($response);
     }
-    
+
     /**
-     * @param string $orderId
-     * @return GetOrderResponse
+     * @param UpdatePaymentReference $reference
+     * @param $paymentId
+     * @return void
      * @throws ClientException
      */
-    public function getOrder($orderId)
+    public function UpdatePaymentReference(UpdatePaymentReference $reference, $paymentId)
     {
         try {
-            $response = $this->get("/api/orders/" . $orderId);
+            $this->put("/v1/payments/".$paymentId."/referenceinformation", $reference);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
-        return new GetOrderResponse($response);
+    }
+
+    /**
+     * @param string $paymentId
+     * @return GetPaymentResponse
+     * @throws ClientException
+     */
+    public function getPayment($paymentId)
+    {
+        try {
+            $response = $this->get("/v1/payments/" . $paymentId);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+
+        return new GetPaymentResponse($response);
     }
 
 }
