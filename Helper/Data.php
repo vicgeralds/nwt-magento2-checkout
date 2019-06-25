@@ -2,7 +2,7 @@
 namespace Svea\Checkout\Helper;
 
 use Magento\Quote\Model\Quote;
-
+use Magento\Quote\Model\Quote\Payment;
 /**
  * Class Data
  * @package Svea\Checkout\Helper
@@ -279,13 +279,13 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
-     * @param Quote $quote
+     * @param Payment $payment
      * @return bool
      */
-    public function subscribeNewsletter(Quote $quote)
+    public function subscribeNewsletter(Payment $payment)
     {
-        if ($quote->getPayment()) {
-            $status = (int)$quote->getPayment()->getAdditionalInformation("svea_checkout_newsletter");
+        if ($payment) {
+            $status = (int)$payment->getAdditionalInformation("svea_checkout_newsletter");
         } else {
             $status = null;
         }
@@ -294,7 +294,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             return $status>0;
         } else {
             //get default value from settings
-            return $this->getStoreConfigFlag(self::XML_PATH_SETTINGS . 'newsletter_subscribe', $quote->getStore()->getId());
+            return $this->getStoreConfigFlag(self::XML_PATH_SETTINGS . 'newsletter_subscribe', $payment->getQuote()->getStore()->getId());
         }
     }
 

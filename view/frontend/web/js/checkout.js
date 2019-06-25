@@ -193,6 +193,13 @@ define([
                 jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').live('change', jQuery.proxy(this._changeShippingMethod, this));
             }
             if (!block || block == 'newsletter') {
+                jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change',function(){
+                    if(jQuery(this).is(":checked")) {
+                        jQuery(this).val("1");
+                    } else {
+                        jQuery(this).val("0");
+                    }
+                });
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change', jQuery.proxy(this._changeSubscriptionStatus, this));
             }
             if (!block || block == 'cart') {
@@ -269,6 +276,10 @@ define([
         },
 
         _changeShippingMethod: function () {
+            this._ajaxFormSubmit(jQuery(this.options.shippingMethodFormSelector));
+        },
+
+        _changeCountry: function () {
             this._ajaxFormSubmit(jQuery(this.options.shippingMethodFormSelector));
         },
 

@@ -174,6 +174,16 @@ class Order
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
     }
 
+    public function updateCountry($countryCode, $paymentId)
+    {
+        $payment = new UpdateOrderCart();
+        $payment->setMerchantData($this->generateMerchantData($quote));
+
+        $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
+
+        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
+    }
+
     /**
      * @param Quote $quote
      * @return string
@@ -233,8 +243,8 @@ class Order
         $merchantUrls->setPushUri($pushUri);
         $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
 
-	// get partner key
-	$partnerKey = $this->helper->getPartnerKey();
+        // get partner key
+        $partnerKey = $this->helper->getPartnerKey();
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
@@ -246,9 +256,10 @@ class Order
         $paymentOrder->setMerchantData($this->generateMerchantData($quote));
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
-	if($partnerKey && !empty($partnerKey)){
-		$paymentOrder->setPartnerKey($partnerKey);
-	}
+
+        if($partnerKey && !empty($partnerKey)){
+            $paymentOrder->setPartnerKey($partnerKey);
+        }
 
         $presetValuesProvider = $this->presetValuesProviderFactory->getProvider($isTestMode);
         $paymentOrder->setPresetValues($presetValuesProvider->getData());

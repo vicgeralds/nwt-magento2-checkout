@@ -2,6 +2,13 @@
 
 namespace Svea\Checkout\Model;
 
+use Magento\Customer\Api\Data\AddressInterfaceFactory;
+
+/**
+ * Class CheckoutContext
+ *
+ * @package Svea\Checkout\Model
+ */
 class CheckoutContext
 {
     /**
@@ -32,18 +39,29 @@ class CheckoutContext
     /** @var \Magento\Sales\Api\OrderRepositoryInterface $orderRepository */
     protected $orderRepository;
 
+    /**
+     * @var \Magento\Customer\Api\AddressRepositoryInterface
+     */
+    private $addressRepository;
 
     /**
-      * Constructor
-      *
-      * @param \Svea\Checkout\Helper\Data $helper
-      * @param \Svea\Checkout\Model\Svea\Order $sveaOrderHandler
-      * @param \Svea\Checkout\Logger\Logger $logger
-      * @param \Svea\Checkout\Model\Svea\Locale $sveaLocale,
-      * @param \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement
-      * @param \Magento\Newsletter\Model\Subscriber $subscriber
-      *
-      */
+     * @var AddressInterfaceFactory
+     */
+    private $addressInterfaceFactory;
+
+    /**
+     * Constructor
+     *
+     * @param \Svea\Checkout\Helper\Data $helper
+     * @param \Svea\Checkout\Model\Svea\Order $sveaOrderHandler
+     * @param CheckoutOrderNumberReference $sveaCheckoutReferenceHelper
+     * @param \Svea\Checkout\Logger\Logger $logger
+     * @param \Svea\Checkout\Model\Svea\Locale $sveaLocale ,
+     * @param \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement
+     * @param \Magento\Sales\Api\OrderRepositoryInterface $orderRepository
+     * @param \Magento\Newsletter\Model\Subscriber $subscriber
+     * @param \Magento\Customer\Api\AddressRepositoryInterface $addressRepository
+     */
     public function __construct(
         \Svea\Checkout\Helper\Data $helper,
         \Svea\Checkout\Model\Svea\Order $sveaOrderHandler,
@@ -52,7 +70,9 @@ class CheckoutContext
         \Svea\Checkout\Model\Svea\Locale $sveaLocale,
         \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement,
         \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
-        \Magento\Newsletter\Model\Subscriber $subscriber
+        \Magento\Newsletter\Model\Subscriber $subscriber,
+        \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
+        AddressInterfaceFactory $addressInterfaceFactory
     ) {
         $this->helper        = $helper;
         $this->logger = $logger;
@@ -62,6 +82,8 @@ class CheckoutContext
         $this->orderCustomerManagement = $orderCustomerManagement;
         $this->subscriber = $subscriber;
         $this->orderRepository = $orderRepository;
+        $this->addressRepository = $addressRepository;
+        $this->addressInterfaceFactory = $addressInterfaceFactory;
     }
 
     /**
@@ -126,5 +148,20 @@ class CheckoutContext
         return $this->orderRepository;
     }
 
+    /**
+     * @return \Magento\Customer\Api\AddressRepositoryInterface
+     */
+    public function getAddressRepository(): \Magento\Customer\Api\AddressRepositoryInterface
+    {
+        return $this->addressRepository;
+    }
+
+    /**
+     * @return AddressInterfaceFactory
+     */
+    public function getAddressInterfaceFactory(): AddressInterfaceFactory
+    {
+        return $this->addressInterfaceFactory;
+    }
 
 }
