@@ -1,0 +1,49 @@
+<?php
+// @codingStandardsIgnoreFile
+
+$cartHelper = $this->helper('Svea\Checkout\Helper\Cart');
+$allowedCountries = $cartHelper->getAllowedCountriesNames();
+$quote = $block->getQuote();
+$shippingAddress = $quote->getShippingAddress();
+?>
+<div class="svea-checkout-shipping svea-checkout-section mobile-show"
+     id="svea-checkout-shipping">
+    <div class="svea-checkout-title" data-role="title">
+        <h4 id="svea-checkout-review-heading" role="heading" aria-level="2">
+            <?php echo $block->escapeHtml(__('Shipping Method')) ?>
+        </h4>
+        <?php echo $block->getChildHtml('svea_shipping_total'); ?>
+    </div>
+    <div class="svea-checkout-section-shipping">
+        <form method="post" id="shipping-method-loader" class="form"
+              action="<?= $block->escapeUrl($block->getShippingMethodUrl()) ?>">
+            <select name="country_id" class="country" id="country-box">
+                <option><?= __('Country') ?></option>
+                <?php foreach ($allowedCountries as $key => $country): ?>
+                    <option data-title="<?= $country ?>" value="<?= $key ?>"
+                        <?= ($shippingAddress !== null && $shippingAddress->getCountryId() == $key) ? 'selected="selected"' : __('') ?>
+                    ><?= $country ?></option>
+                <?php endforeach; ?>
+            </select>
+            <input class="postcode" type="text" id="postcode-box" name="postal"
+                   placeholder="<?php echo __('Postal code') ?>"
+                   value="<?= ($shippingAddress === null || !$shippingAddress->getPostcode()) ? __('') : $shippingAddress->getPostcode() ?>" autofocus />
+            <button type="submit" id="shipping-method-button"
+                    class="action svea-primary" title="<?php echo __('Choose Delivery'); ?>">
+                <span><?php echo __('Choose Delivery'); ?></span>
+            </button>
+        </form>
+    </div>
+    <div class="svea-checkout-section-content" data-role="content"
+         aria-labelledby="svea-checkout-review-heading">
+        <form method="post" id="shipping-method-form"
+              action="<?php echo $block->escapeUrl($block->getShippingMethodSubmitUrl()); ?>"
+              class="form">
+            <?php echo $block->getChildHtml('shipping_method'); ?>
+        </form>
+        <?php if ($addrUrl = $block->getShippingAddressSubmitUrl()): ?>
+            <?php echo $block->getChildHtml('shipping_address'); ?>
+        <?php endif; ?>
+    </div>
+</div>
+

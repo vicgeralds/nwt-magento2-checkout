@@ -1,0 +1,64 @@
+<?php
+// @codingStandardsIgnoreFile
+
+
+/** @var $block Svea\Checkout\Block\Checkout */
+$counter = $this->helper('\Magento\Checkout\Helper\Cart');
+?>
+<div class="svea-checkout-review" id="svea-checkout-review">
+    <div class="svea-checkout-cart svea-checkout-section" id="svea-checkout-cart">
+        <div class="svea-checkout-title" data-role="title">
+            <h1 id="svea-checkout-cart-heading" role="heading" aria-level="2">
+                <span class="svea-payment-methods__img">
+                    <img src="<?= $block->getViewFileUrl('Svea_Checkout::images/payment-methods.svg') ?>"/>
+                </span>
+                <span><?= __('Basket') ?></span>
+                <span class="counter">
+                   <?php if ($counter->getItemsCount() > 1): ?>
+                       <?= /* @escapeNotVerified */
+                       __('%1 Items ', $counter->getItemsCount()) ?>
+                   <?php elseif ($counter->getItemsCount() == 1): ?>
+                       <?= /* @escapeNotVerified */
+                       __('%1 Item', $counter->getItemsCount()) ?>
+                   <?php endif; ?>
+                </span>
+            </h1>
+        </div>
+        <div class="svea-checkout-section-content" data-role="content"
+             aria-labelledby="svea-checkout-cart-heading">
+            <?php echo $block->getChildHtml('cart'); ?>
+        </div>
+    </div>
+    <?php echo $block->getChildHtml('shipping'); ?>
+    <div class="svea-checkout-extra">
+        <div class="svea-checkout-extra__right">
+            <?php echo $block->getChildHtml('coupon'); ?>
+            <?php echo $block->getChildHtml('newsletter'); ?>
+        </div>
+        <div class="svea-checkout-extra__left">
+            <?php echo $block->getChildHtml('grand_total'); ?>
+            <?php echo $block->getChildHtml('to_payment'); ?>
+        </div>
+    </div>
+</div>
+
+<span class="please-wait load indicator" id="review-please-wait" style="display: none;"
+      data-text="<?php echo $block->escapeHtml(__('Submitting order information...')); ?>">
+    <span><?php echo $block->escapeHtml(__('Submitting order information...')); ?></span>
+</span>
+<script type="text/x-magento-init">
+    {
+        "#svea-checkout-review": {
+            "sveaCheckout": {
+                "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
+                "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
+                "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
+            }
+        }
+    }
+
+
+
+
+
+</script>

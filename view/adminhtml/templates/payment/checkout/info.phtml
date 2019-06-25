@@ -1,0 +1,12 @@
+<?php
+/**
+ * @var $block \Svea\Checkout\Block\Payment\Checkout\Info
+ */
+?>
+<div class="order-payment-method-name"><?php echo $block->escapeHtml($block->getMethod()->getTitle()); ?></div>
+<table class="data-table admin__table-secondary">
+    <tr>
+        <th><?php echo $block->escapeHtml(__('Svea Checkout Order ID')); ?>:</th>
+        <td><?php echo $block->escapeHtml($block->getInfo()->getAdditionalInformation('svea_order_id')); ?></td>
+    </tr>
+</table>
