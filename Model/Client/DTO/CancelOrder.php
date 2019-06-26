@@ -2,9 +2,9 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
-class UpdatePaymentCart extends AbstractRequest
+class CancelOrder extends AbstractRequest
 {
 
     /**
@@ -15,12 +15,9 @@ class UpdatePaymentCart extends AbstractRequest
 
     /**
      * Required
-     * @var $items OrderItem[]
+     * @var $items OrderRow[]
      */
     protected $items;
-
-    protected $shippingCostSpecified;
-
     /**
      * @return float
      */
@@ -31,7 +28,7 @@ class UpdatePaymentCart extends AbstractRequest
 
     /**
      * @param float $amount
-     * @return UpdatePaymentCart
+     * @return CancelOrder
      */
     public function setAmount($amount)
     {
@@ -41,7 +38,7 @@ class UpdatePaymentCart extends AbstractRequest
 
 
     /**
-     * @return OrderItem[]
+     * @return OrderRow[]
      */
     public function getItems()
     {
@@ -49,35 +46,14 @@ class UpdatePaymentCart extends AbstractRequest
     }
 
     /**
-     * @param OrderItem[] $items
-     * @return UpdatePaymentCart
+     * @param OrderRow[] $items
+     * @return CancelOrder
      */
     public function setItems($items)
     {
         $this->items = $items;
         return $this;
     }
-
-    /**
-     * @return mixed
-     */
-    public function getShippingCostSpecified()
-    {
-        return $this->shippingCostSpecified;
-    }
-
-    /**
-     * @param mixed $shippingCostSpecified
-     * @return UpdatePaymentCart
-     */
-    public function setShippingCostSpecified($shippingCostSpecified)
-    {
-        $this->shippingCostSpecified = $shippingCostSpecified;
-        return $this;
-    }
-
-
-
 
     public function toJSON()
     {
@@ -93,11 +69,12 @@ class UpdatePaymentCart extends AbstractRequest
             }
         }
 
-        return [
-            'amount' => $this->getAmount(),
-            'items' => $items,
-            'shipping' => ['costSpecified' => $this->getShippingCostSpecified()]
-        ];
+        $data = ['amount' => $this->getAmount()];
+        if ($items) {
+            $data['orderItems'] = $items;
+        }
+
+        return $data;
     }
 
 

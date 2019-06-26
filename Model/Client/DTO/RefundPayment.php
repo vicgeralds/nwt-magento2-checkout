@@ -2,43 +2,20 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
 class RefundPayment extends AbstractRequest
 {
 
     /**
      * Required
-     * @var float $amount
-     */
-    protected $amount;
-
-    /**
-     * Required
-     * @var $items OrderItem[]
+     * @var $items OrderRow[]
      */
     protected $items;
-    /**
-     * @return float
-     */
-    public function getAmount()
-    {
-        return $this->amount;
-    }
-
-    /**
-     * @param float $amount
-     * @return RefundPayment
-     */
-    public function setAmount($amount)
-    {
-        $this->amount = $amount;
-        return $this;
-    }
 
 
     /**
-     * @return OrderItem[]
+     * @return OrderRow[]
      */
     public function getItems()
     {
@@ -46,7 +23,7 @@ class RefundPayment extends AbstractRequest
     }
 
     /**
-     * @param OrderItem[] $items
+     * @param OrderRow[] $items
      * @return RefundPayment
      */
     public function setItems($items)
@@ -54,8 +31,6 @@ class RefundPayment extends AbstractRequest
         $this->items = $items;
         return $this;
     }
-
-
 
 
     public function toJSON()
@@ -73,7 +48,6 @@ class RefundPayment extends AbstractRequest
         }
 
         return [
-            'amount' => $this->getAmount(),
             'orderItems' => $items,
         ];
     }

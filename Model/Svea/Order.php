@@ -4,21 +4,15 @@
 namespace Svea\Checkout\Model\Svea;
 
 
-use Svea\Checkout\Model\Client\Api\Payment;
+use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\CancelPayment;
+use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\ChargePayment;
-use Svea\Checkout\Model\Client\DTO\CreatePayment;
-use Svea\Checkout\Model\Client\DTO\CreatePaymentResponse;
-use Svea\Checkout\Model\Client\DTO\GetPaymentResponse;
-use Svea\Checkout\Model\Client\DTO\Order\ConsumerType;
-use Svea\Checkout\Model\Client\DTO\Order\CreatePaymentCheckout;
-use Svea\Checkout\Model\Client\DTO\Order\CreatePaymentOrder;
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
-use Svea\Checkout\Model\Client\DTO\PaymentMethod;
+use Svea\Checkout\Model\Client\DTO\CreateOrder;
+use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
+use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
-use Svea\Checkout\Model\Client\DTO\UpdatePaymentCart;
-use Svea\Checkout\Model\Client\DTO\UpdatePaymentReference;
+use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order\Invoice;
@@ -32,9 +26,9 @@ class Order
     protected $items;
 
     /**
-     * @var \Svea\Checkout\Model\Client\Api\Payment $paymentApi
+     * @var \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi
      */
-    protected $paymentApi;
+    protected $checkoutApi;
 
     /**
      * @var \Svea\Checkout\Helper\Data $helper
@@ -48,14 +42,14 @@ class Order
 
 
     public function __construct(
-        \Svea\Checkout\Model\Client\Api\Payment $paymentApi,
+        \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
         Items $itemsHandler
     ) {
         $this->helper = $helper;
         $this->items = $itemsHandler;
-        $this->paymentApi = $paymentApi;
+        $this->checkoutApi = $checkoutApi;
         $this->_countryFactory  = $countryFactory;
 
     }
@@ -132,19 +126,16 @@ class Order
      * @return Update
      * @throws \Exception
      */
-    public function updateCheckoutPaymentByQuoteAndPaymentId(Quote $quote, $paymentId)
+    public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
     {
         // TODO handle this exception?
         $items = $this->items->generateOrderItemsFromQuote($quote);
 
-        $payment = new UpdatePaymentCart();
-        $payment->setAmount($this->fixPrice($quote->getGrandTotal()));
+        $payment = new UpdateOrderCart();
         $payment->setItems($items);
+        $payment->setMerchantData($this->generateReferenceByQuoteId($quote->getId()));
 
-        // todo check shipping methods
-        $payment->setShippingCostSpecified(true);
-
-        return $this->paymentApi->UpdatePaymentCart($payment, $paymentId);
+        return $this->checkoutApi->UpdateOrder($payment, $paymentId);
     }
 
 
@@ -154,81 +145,39 @@ class Order
      *
      * @param Quote $quote
      * @throws ClientException
-     * @return CreatePaymentResponse
+     * @return GetOrderResponse
      */
     protected function createNewSveaPayment(Quote $quote)
     {
-        $sveaAmount = $this->fixPrice($quote->getGrandTotal());
 
         // TODO handle this exception?
         $items = $this->items->generateOrderItemsFromQuote($quote);
 
 
-        // todo check settings if b2c or/and b2b are accepted
-        $consumerType = new ConsumerType();
-        $consumerType->setUseB2bAndB2c();
-        $consumerType->setDefault($this->helper->getDefaultConsumerType());
 
-        $defaultConsumerType = $this->helper->getDefaultConsumerType();
-        $consumerTypes = $this->helper->getConsumerTypes();
+        $merchantUrls = new MerchantSettings();
+        //$merchantUrls->setConfirmationUri("")
+        $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
+        $merchantUrls->setTermsUri($this->helper->getTermsUrl());
 
-        // if no settings are added, add B2C
-        if (!$defaultConsumerType || !$consumerTypes) {
-            $consumerType->setUseB2cOnly();
-        } else {
-            $consumerType->setDefault($defaultConsumerType);
-            $consumerType->setSupportedTypes($consumerTypes);
-        }
 
-        $paymentCheckout = new CreatePaymentCheckout();
-        $paymentCheckout->setConsumerType($consumerType);
-        $paymentCheckout->setIntegrationType($paymentCheckout::INTEGRATION_TYPE_EMBEDDED);
-        $paymentCheckout->setUrl($this->helper->getCheckoutUrl());
-        $paymentCheckout->setTermsUrl($this->helper->getTermsUrl());
-
-        // Default value = false, if set to true the transaction will be charged automatically after reservation have been accepted without calling the Charge API.
-        // we will call charge in capture online instead! so we set it to false
-        $paymentCheckout->setCharge(false);
-
-        // we let svea handle customer data! customer will be able to fill in info in their iframe, and choose addresses
-        $paymentCheckout->setMerchantHandlesConsumerData(false);
-        $paymentCheckout->setMerchantHandlesShippingCost(true);
-        //  Default value = false,
-        // if set to true the checkout will not load any user data
-        $paymentCheckout->setPublicDevice(false);
 
 
         // we generate the order here, amount and items
-        $paymentOrder = new CreatePaymentOrder();
+        $paymentOrder = new CreateOrder();
 
+        $refId = $this->generateReferenceByQuoteId($quote->getId());
+
+        $paymentOrder->setLocale("sv-SE"); // TODO
+        $paymentOrder->setCountryCode($quote->getCountry()->getId());
         $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
-        $paymentOrder->setReference($this->generateReferenceByQuoteId($quote->getId()));
-        $paymentOrder->setAmount($sveaAmount);
-        $paymentOrder->setItems($items);
-
-        // create payment object
-        $createPaymentRequest = new CreatePayment();
-        $createPaymentRequest->setCheckout($paymentCheckout);
-        $createPaymentRequest->setOrder($paymentOrder);
+        $paymentOrder->setClientOrderNumber($refId);
+        $paymentOrder->setMerchantData($refId); // could be more data
+        $paymentOrder->setMerchantSettings($merchantUrls);
+        $paymentOrder->setCartItems($items);
 
 
-        if ($this->helper->useInvoiceFee()) {
-            $invoiceLabel = $this->helper->getInvoiceFeeLabel();
-            $invoiceLabel = $invoiceLabel ? $invoiceLabel : __("Invoice Fee");
-            $invoiceFee = $this->helper->getInvoiceFee();
-
-            if ($invoiceFee > 0) {
-                $feeItem = $this->items->generateInvoiceFeeItem($invoiceLabel,$invoiceFee, false);
-
-                $paymentFee = new PaymentMethod();
-                $paymentFee->setName("invoice");
-                $paymentFee->setFee($feeItem);
-
-                $createPaymentRequest->setPaymentMethods([$paymentFee]);
-            }
-        }
-
-        return $this->paymentApi->createNewPayment($createPaymentRequest);
+        return $this->checkoutApi->createNewOrder($paymentOrder);
     }
 
 
@@ -237,31 +186,32 @@ class Order
      * @param $paymentId
      * @return void
      * @throws ClientException
-     */
+     *
     public function updateMagentoPaymentReference(\Magento\Sales\Model\Order $order, $paymentId)
     {
         $reference = new UpdatePaymentReference();
         $reference->setReference($order->getIncrementId());
         $reference->setCheckoutUrl($this->helper->getCheckoutUrl());
-        $this->paymentApi->UpdatePaymentReference($reference, $paymentId);
+        $this->checkoutApi->UpdatePaymentReference($reference, $paymentId);
     }
+     * */
 
 
     /**
-     * @param GetPaymentResponse $payment
+     * @param GetOrderResponse $payment
      * @param null $countryIdFallback
      * @return array
      */
-    public function convertSveaShippingToMagentoAddress(GetPaymentResponse $payment, $countryIdFallback = null)
+    public function convertSveaShippingToMagentoAddress(GetOrderResponse $payment, $countryIdFallback = null)
     {
-        if ($payment->getConsumer() === null) {
+        if ($payment->getShippingAddress() === null) {
             return array();
         }
 
 
         $company = null;
         // if company name is set, then contact details are too
-        if ($payment->getIsCompany()) {
+        if ($payment->getCustomer()->) {
             $companyObj = $payment->getConsumer()->getCompany();
             $contact = $companyObj->getContactDetails();
             $firstname =$contact->getFirstName();
@@ -326,7 +276,7 @@ class Order
             $paymentObj->setAmount($payment->getSummary()->getReservedAmount());
 
             // cancel it now!
-            $this->paymentApi->cancelPayment($paymentObj, $paymentId);
+            $this->checkoutApi->cancelPayment($paymentObj, $paymentId);
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
@@ -372,7 +322,7 @@ class Order
             $paymentObj->setItems($captureItems);
 
             // capture/charge it now!
-            $response = $this->paymentApi->chargePayment($paymentObj, $paymentId);
+            $response = $this->checkoutApi->chargePayment($paymentObj, $paymentId);
 
             // save charge id, we need it later! if a refund will be made
             $payment->setAdditionalInformation('svea_charge_id', $response->getChargeId());
@@ -418,7 +368,7 @@ class Order
             $paymentObj->setItems($refundItems);
 
             // refund now!
-            $response = $this->paymentApi->refundPayment($paymentObj, $chargeId);
+            $response = $this->checkoutApi->refundPayment($paymentObj, $chargeId);
 
             try {
                 // save refund id, just for debugging purposes
@@ -439,12 +389,12 @@ class Order
 
     /**
      * @param $paymentId
-     * @return GetPaymentResponse
+     * @return GetOrderResponse
      * @throws ClientException
      */
     public function loadSveaPaymentById($paymentId)
     {
-        return $this->paymentApi->getPayment($paymentId);
+        return $this->checkoutApi->getPayment($paymentId);
     }
 
     /**
@@ -462,7 +412,7 @@ class Order
      */
     public function getPaymentApi()
     {
-        return $this->paymentApi;
+        return $this->checkoutApi;
     }
 
     /**

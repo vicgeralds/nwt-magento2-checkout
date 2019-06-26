@@ -4,7 +4,7 @@
 namespace Svea\Checkout\Model\Svea;
 
 use Svea\Checkout\Model\CheckoutException;
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 
@@ -232,21 +232,20 @@ class Items
                     $sku = $sku.'-'.$item->getId();
                 }
 
-                $unitPrice = $addPrices ? $this->addZeroes($item->getPriceInclTax()) : 0;
+                $unitPriceInclTaxes = $addPrices ? $this->addZeroes($item->getPriceInclTax()) : 0;
                 $unitPriceExclTax = $addPrices ? $this->addZeroes($item->getPrice()) : 0;
 
                 //
-                $orderItem = new OrderItem();
+                $orderItem = new OrderRow();
                 $orderItem
-                    ->setReference($sku)
+                    ->setArticleNumber($sku)
                     ->setName($item->getName()." ".($comment?"({$comment})":""))
                     ->setUnit("st") // TODO! We need to map these somehow!
                     ->setQuantity(round($qty,0))
-                    ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-                    ->setTaxAmount($this->getTotalTaxAmount($unitPrice * $qty, $vat, false)) // total tax amount
-                    ->setUnitPrice($unitPriceExclTax) // excl. tax price per item
-                    ->setNetTotalAmount($unitPriceExclTax * $qty) // excl. tax
-                    ->setGrossTotalAmount($unitPrice * $qty); // incl. tax
+                    ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+                    ->setUnitPrice($unitPriceInclTaxes); // incl. tax price per item
+              //      ->setNetTotalAmount($unitPriceExclTax * $qty) // excl. tax
+              //      ->setGrossTotalAmount($unitPrice * $qty); // incl. tax
 
                 // add to array
                 $this->_cart[$sku] = $orderItem;
@@ -318,17 +317,16 @@ class Items
 
 
         //
-        $orderItem = new OrderItem();
+        $orderItem = new OrderRow();
         $orderItem
-            ->setReference('shipping_fee')
+            ->setArticleNumber('shipping_fee')
             ->setName((string)__('Shipping Fee (%1)',$address->getShippingDescription()))
             ->setUnit("st") // TODO! We need to map these somehow!
             ->setQuantity(1)
-            ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-            ->setTaxAmount($this->addZeroes($taxAmount)) // total tax amount
-            ->setUnitPrice($this->addZeroes($exclTax)) // excl. tax price per item
-            ->setNetTotalAmount($this->addZeroes($exclTax)) // excl. tax
-            ->setGrossTotalAmount($this->addZeroes($inclTax)); // incl. tax
+            ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+            ->setUnitPrice($this->addZeroes($inclTax)); // incl. tax price per item
+           // ->setNetTotalAmount($this->addZeroes($exclTax)) // excl. tax
+           // ->setGrossTotalAmount($this->addZeroes($inclTax)); // incl. tax
 
 
         // add to array!
@@ -372,30 +370,28 @@ class Items
     public function addInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
     {
         $item = $this->generateInvoiceFeeItem($invoiceLabel,$invoiceFee, $vatIncluded);
-        $this->_cart[$item->getReference()] = $item;
+        $this->_cart[$item->getArticleNumber()] = $item;
     }
 
     /**
      * @param $invoiceLabel
      * @param $invoiceFee
      * @param $vatIncluded
-     * @return OrderItem
+     * @return OrderRow
      */
     public function generateInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
     {
-        $feeItem = new OrderItem();
+        $feeItem = new OrderRow();
         $taxRate = $this->getMaxVat();
 
         // basic values if taxes is 0
         $invoiceFeeExclTax = $invoiceFee;
         $invoiceFeeInclTax = $invoiceFee;
-        $taxAmount = 0;
 
         // here we calculate if there are taxes!
         if ($taxRate > 0) {
 
             if (!$vatIncluded) {
-                $invoiceFeeExclTax = $invoiceFee;
                 // i.e: 20 * ((100 + 25) / 100) =
                 // 20 * 125/100 =
                 // 20 * 1.25 = 25
@@ -404,27 +400,16 @@ class Items
             } else {
                 // with taxes!
                 $invoiceFeeInclTax = $invoiceFee;
-
-                // i.e: 25 * ((100 + 25) / 100) =
-                // 25 * 125/100 =
-                // 25 / 1.25 = 20
-                $invoiceFeeExclTax = $invoiceFeeInclTax / ((100 + $taxRate) / 100);
             }
-
-            // count the tax amount
-            $taxAmount = $invoiceFeeInclTax - $invoiceFeeExclTax;
         }
 
         $feeItem
             ->setName($invoiceLabel)
-            ->setReference(strtolower(str_replace(" ", "_", $invoiceLabel)))
-            ->setTaxRate($this->addZeroes($taxRate))
-            ->setGrossTotalAmount($this->addZeroes($invoiceFeeInclTax)) // incl tax
-            ->setNetTotalAmount($this->addZeroes($invoiceFeeExclTax)) // // excl. tax
+            ->setArticleNumber(strtolower(str_replace(" ", "_", $invoiceLabel)))
+            ->setVatPercent($this->addZeroes($taxRate))
             ->setUnit("st")
             ->setQuantity(1)
-            ->setUnitPrice($this->addZeroes($invoiceFeeExclTax)) // // excl. tax
-            ->setTaxAmount($this->addZeroes($taxAmount)); // tax amount
+            ->setUnitPrice($this->addZeroes($invoiceFeeInclTax)); // // incl. tax
 
         return $feeItem;
     }
@@ -443,25 +428,24 @@ class Items
                 $reference = 'discount-toinvoice';
             }
 
-           // var_dump($vat);
-            //var_dump($amount);
-            //die;
+
+            // TODO!
+
 
             $taxAmount = $this->getTotalTaxAmount($amountInclTax, $vat);
             $amountInclTax = $this->addZeroes($amountInclTax);
             $amountExclTax = $amountInclTax - $taxAmount;
 
-            $orderItem = new OrderItem();
+            $orderItem = new OrderRow();
             $orderItem
-                ->setReference($reference)
+                ->setArticleNumber($reference)
                 ->setName($couponCode?(string)__('Discount (%1)',$couponCode):(string)__('Discount'))
                 ->setUnit("st")
                 ->setQuantity(1)
-                ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-                ->setTaxAmount($taxAmount) // total tax amount
-                ->setUnitPrice(0) // excl. tax price per item
-                ->setNetTotalAmount(-$amountExclTax) // excl. tax
-                ->setGrossTotalAmount(-$amountInclTax); // incl. tax
+                ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+                ->setUnitPrice(0); // incl. tax price per item
+               // ->setNetTotalAmount(-$amountExclTax) // excl. tax
+               // ->setGrossTotalAmount(-$amountInclTax); // incl. tax
 
 
             $this->_cart[$reference] = $orderItem;

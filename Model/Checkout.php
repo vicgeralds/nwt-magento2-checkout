@@ -298,7 +298,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 // here we should check if we need to update the svea payment!
                 if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getCheckoutSession()->getSveaQuoteSignature())) {
                     // try to update svea payment data
-                    $sveaHandler->updateCheckoutPaymentByQuoteAndPaymentId($quote, $paymentId);
+                    $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $paymentId);
 
                     // Update new svea quote signature!
                     $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
@@ -351,7 +351,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values
         $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
 
-        $sveaHandler->updateCheckoutPaymentByQuoteAndPaymentId($quote, $paymentId);
+        $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $paymentId);
 
         // Update new svea quote signature!
         $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);

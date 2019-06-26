@@ -2,7 +2,7 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
 class ChargePayment extends AbstractRequest
 {
@@ -15,7 +15,7 @@ class ChargePayment extends AbstractRequest
 
     /**
      * Required
-     * @var $items OrderItem[]
+     * @var $items OrderRow[]
      */
     protected $items;
     /**
@@ -38,7 +38,7 @@ class ChargePayment extends AbstractRequest
 
 
     /**
-     * @return OrderItem[]
+     * @return OrderRow[]
      */
     public function getItems()
     {
@@ -46,7 +46,7 @@ class ChargePayment extends AbstractRequest
     }
 
     /**
-     * @param OrderItem[] $items
+     * @param OrderRow[] $items
      * @return ChargePayment
      */
     public function setItems($items)

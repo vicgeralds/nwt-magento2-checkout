@@ -2,43 +2,41 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
-class CancelPayment extends AbstractRequest
+class UpdateOrderCart extends AbstractRequest
 {
 
     /**
      * Required
-     * @var float $amount
-     */
-    protected $amount;
-
-    /**
-     * Required
-     * @var $items OrderItem[]
+     * @var $items OrderRow[]
      */
     protected $items;
+
+    /** @var $merchantData string */
+    protected $merchantData;
+
     /**
-     * @return float
+     * @return string
      */
-    public function getAmount()
+    public function getMerchantData()
     {
-        return $this->amount;
+        return $this->merchantData;
     }
 
     /**
-     * @param float $amount
-     * @return CancelPayment
+     * @param string $merchantData
+     * @return UpdateOrderCart
      */
-    public function setAmount($amount)
+    public function setMerchantData($merchantData)
     {
-        $this->amount = $amount;
+        $this->merchantData = $merchantData;
         return $this;
     }
-
+    
 
     /**
-     * @return OrderItem[]
+     * @return OrderRow[]
      */
     public function getItems()
     {
@@ -46,14 +44,15 @@ class CancelPayment extends AbstractRequest
     }
 
     /**
-     * @param OrderItem[] $items
-     * @return CancelPayment
+     * @param OrderRow[] $items
+     * @return UpdateOrderCart
      */
     public function setItems($items)
     {
         $this->items = $items;
         return $this;
     }
+
 
     public function toJSON()
     {
@@ -69,12 +68,10 @@ class CancelPayment extends AbstractRequest
             }
         }
 
-        $data = ['amount' => $this->getAmount()];
-        if ($items) {
-            $data['orderItems'] = $items;
-        }
-
-        return $data;
+        return [
+            'cart' => ['Items' => $items],
+            'merchantData' => $this->getMerchantData()
+        ];
     }
 
 
