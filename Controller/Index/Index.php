@@ -19,7 +19,6 @@ class Index extends Checkout
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
 
 
-        // if not... :)
         try {
             $checkout->initCheckout(false); // magento business logic
             $checkout->initSveaCheckout(); // handles magento and SVEA business logic
@@ -43,6 +42,10 @@ class Index extends Checkout
 
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->set(__('Svea Checkout'));
+
+        $resultPage->getLayout()->getBlock('svea_checkout.svea')->setIframeSnippet($checkout->getSveaPaymentHandler()->getIframeSnippet());
+
+
         return $resultPage;
     }
 

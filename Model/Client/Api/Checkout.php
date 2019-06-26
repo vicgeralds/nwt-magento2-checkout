@@ -33,18 +33,19 @@ class Checkout extends ApiClient
     /**
      * @param UpdateOrderCart $cart
      * @param $orderId
-     * @return void
+     * @return GetOrderResponse
      * @throws ClientException
      */
     public function updateOrder(UpdateOrderCart $cart, $orderId)
     {
         try {
-            $this->put("/api/orders/". $orderId, $cart);
+            $response = $this->put("/api/orders/". $orderId, $cart);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
+        return new GetOrderResponse($response);
     }
     
     /**

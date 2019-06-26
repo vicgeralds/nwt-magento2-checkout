@@ -301,6 +301,10 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
                     // Update new svea quote signature!
                     $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
+                } else {
+
+                    // if we should update the order, ew still need to load the iframe!
+                    $sveaHandler->loadSveaOrderById($sveaOrderId, true);
                 }
 
             } catch(\Exception $e) {

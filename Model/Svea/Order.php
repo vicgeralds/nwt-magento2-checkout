@@ -6,6 +6,7 @@ namespace Svea\Checkout\Model\Svea;
 
 use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
+use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\ChargePayment;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
@@ -29,6 +30,13 @@ class Order
      */
     protected $checkoutApi;
 
+
+    /**
+     * @var \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi
+     */
+    protected $orderManagementApi;
+
+
     /**
      * @var \Svea\Checkout\Helper\Data $helper
      */
@@ -39,8 +47,11 @@ class Order
      */
     protected $_countryFactory;
 
+    protected $iframeSnippet = null;
+
 
     public function __construct(
+        \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi,
         \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
@@ -49,6 +60,7 @@ class Order
         $this->helper = $helper;
         $this->items = $itemsHandler;
         $this->checkoutApi = $checkoutApi;
+        $this->orderManagementApi = $orderManagementApi;
         $this->_countryFactory  = $countryFactory;
 
     }
@@ -81,7 +93,7 @@ class Order
 
     /**
      * @param Quote $quote
-     * @return string
+     * @return GetOrderResponse
      * @throws \Exception
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
@@ -93,7 +105,8 @@ class Order
 
 
         $paymentResponse = $this->createNewSveaPayment($quote);
-        return $paymentResponse->getOrderId();
+        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
+        return $paymentResponse;
     }
 
     /**
@@ -134,7 +147,9 @@ class Order
         $payment->setItems($items);
         $payment->setMerchantData($this->generateReferenceByQuoteId($quote->getId()));
 
-        $this->checkoutApi->updateOrder($payment, $paymentId);
+        $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
+
+        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
     }
 
 
@@ -244,11 +259,11 @@ class Order
             // we load the payment from svea api instead, then we will get full amount!
             $payment = $this->loadSveaOrderById($paymentId);
 
-            $paymentObj = new CancelPayment();
+            $paymentObj = new CancelOrder();
             $paymentObj->setAmount($payment->getSummary()->getReservedAmount());
 
             // cancel it now!
-            $this->checkoutApi->cancelPayment($paymentObj, $paymentId);
+            $this->orderManagementApi->cancelPayment($paymentObj, $paymentId);
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
@@ -294,7 +309,7 @@ class Order
             $paymentObj->setItems($captureItems);
 
             // capture/charge it now!
-            $response = $this->checkoutApi->chargePayment($paymentObj, $paymentId);
+            $response = $this->orderManagementApi->chargePayment($paymentObj, $paymentId);
 
             // save charge id, we need it later! if a refund will be made
             $payment->setAdditionalInformation('svea_charge_id', $response->getChargeId());
@@ -340,7 +355,7 @@ class Order
             $paymentObj->setItems($refundItems);
 
             // refund now!
-            $response = $this->checkoutApi->refundPayment($paymentObj, $chargeId);
+            $response = $this->orderManagementApi->refundPayment($paymentObj, $chargeId);
 
             try {
                 // save refund id, just for debugging purposes
@@ -364,9 +379,14 @@ class Order
      * @return GetOrderResponse
      * @throws ClientException
      */
-    public function loadSveaOrderById($paymentId)
+    public function loadSveaOrderById($paymentId, $saveIframe = false)
     {
-        return $this->checkoutApi->getOrder($paymentId);
+        $order =  $this->checkoutApi->getOrder($paymentId);
+        if ($saveIframe) {
+            $this->setIframeSnippet($order->getGui()->getSnippet());
+        }
+
+        return $order;
     }
 
     /**
@@ -394,5 +414,15 @@ class Order
     public function generateReferenceByQuoteId($quoteId)
     {
        return "quote_id_" . $quoteId;
+    }
+
+    public function setIframeSnippet($snippet)
+    {
+        $this->iframeSnippet = $snippet;
+    }
+
+    public function getIframeSnippet()
+    {
+        return $this->iframeSnippet;
     }
 }

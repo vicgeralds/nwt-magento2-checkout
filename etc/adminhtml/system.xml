@@ -24,12 +24,12 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="merchant_id" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
-                    <label>Checkout Key</label>
-                    <comment>Merchant Identifier, found in Easy-Portal</comment>
+                    <label>Merchant ID</label>
+                    <comment>Merchant ID, you will get this from Svea.</comment>
                 </field>
                 <field id="shared_secret" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
-                    <label>Secret Key</label>
-                    <comment>The secret key found in the SVEA portal. Use only UUID, that is without the Live-Secret-Key- or Test-Secret-Key-</comment>
+                    <label>Shared Secret</label>
+                    <comment>The shared secret, you will get this from Svea.</comment>
                 </field>
             </group>
 
@@ -46,25 +46,6 @@
                     <label>Allowed Payment Countries</label>
                     <source_model>Svea\Checkout\Model\System\Config\Source\Country</source_model>
                     <comment><![CDATA[Assure that selected countries are in <strong>Allow Countries</strong> list (<em>System &raquo; Configuration &raquo; General &raquo; General</em>)]]></comment>
-                </field>
-
-                <!--
-                <field id="allowed_shipping_countries" translate="label comment" type="multiselect" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Allowed Shipping Countries</label>
-                    <source_model>Svea\Checkout\Model\System\Config\Source\ShippingCountry</source_model>
-                    <can_be_empty>1</can_be_empty>
-                </field>
-                -->
-                <field id="customer_types" translate="label comment" type="multiselect" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Checkout Allowed Customer Types</label>
-                    <source_model>Svea\Checkout\Model\System\Config\Source\ConsumerType</source_model>
-                    <comment>Choose at least one customer type that is allowed in the checkout.</comment>
-                </field>
-
-                <field id="default_customer_type" translate="label comment" type="select" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Checkout Default Customer Type</label>
-                    <source_model>Svea\Checkout\Model\System\Config\Source\ConsumerType</source_model>
-                    <comment>Choose default customer type</comment>
                 </field>
 
 

@@ -18,6 +18,8 @@ class Svea extends \Magento\Framework\View\Element\Template
 
     protected $getCurrentSveaOrderIdService;
 
+    protected $iframeSnippet;
+
     /**
      * @param \Magento\Framework\View\Element\Template\Context $context
      * @param \Magento\Framework\Registry $coreRegistry,
@@ -49,6 +51,16 @@ class Svea extends \Magento\Framework\View\Element\Template
     public function getSveaOrderId()
     {
         return $this->getCurrentSveaOrderIdService->getSveaOrderId();
+    }
+
+    public function getIframeSnippet()
+    {
+        return $this->iframeSnippet;
+    }
+
+    public function setIframeSnippet($snippet)
+    {
+        $this->iframeSnippet = $snippet;
     }
 
     public function getHelper(){

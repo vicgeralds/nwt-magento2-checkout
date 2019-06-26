@@ -63,6 +63,8 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
     protected $getCurrentSveaOrderIdService;
 
+    protected $iframeSnippet;
+
     /**
      * @param \Magento\Framework\View\Element\Template\Context $context
      * @param \Magento\Tax\Helper\Data $taxHelper
@@ -254,8 +256,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
     }
 
 
-
-
     /**
      * Set controller path
      *
@@ -295,6 +295,16 @@ class Checkout extends \Magento\Framework\View\Element\Template
         );
     }
 
+
+    public function getIframeSnippet()
+    {
+        return $this->iframeSnippet;
+    }
+
+    public function setIframeSnippet($snippet)
+    {
+        $this->iframeSnippet = $snippet;
+    }
 
 
 
