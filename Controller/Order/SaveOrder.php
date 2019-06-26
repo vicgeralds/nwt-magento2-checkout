@@ -21,10 +21,10 @@ class SaveOrder extends Checkout
 
         // todo? csrf...
         //$ctrlkey    = (string)$this->getRequest()->getParam('ctrlkey');
-        $paymentId  = $this->getRequest()->getParam('pid');
+        $orderId  = $this->getRequest()->getParam('sid');
 
         try {
-            $orderPlaced = $checkout->tryToSaveSveaPayment($paymentId);
+            $orderPlaced = $checkout->tryToSaveSveaPayment($orderId);
         } catch (CheckoutException $e) {
             return $this->respondWithError($e->getMessage());
         } catch (\Exception $e) {

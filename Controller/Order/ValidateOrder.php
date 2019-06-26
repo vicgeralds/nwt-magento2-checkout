@@ -15,12 +15,12 @@ class ValidateOrder extends Update
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
 
-        $checkoutPaymentId = $this->getCheckoutSession()->getSveaPaymentId();
+        $checkoutOrderId = $this->getCheckoutSession()->getSveaOrderId();
         $quote = $this->getSveaCheckout()->getQuote();
 
-        if (!$checkoutPaymentId) {
-            $checkout->getLogger()->error("Validate Order: Found no svea payment ID.");
-            return $this->respondWithError("Your session has expired, found no svea payment id.");
+        if (!$checkoutOrderId) {
+            $checkout->getLogger()->error("Validate Order: Found no svea order ID.");
+            return $this->respondWithError("Your session has expired, found no svea order id.");
         }
 
 
@@ -31,13 +31,13 @@ class ValidateOrder extends Update
 
 
         try {
-            $payment = $checkout->getSveaPaymentHandler()->loadSveaPaymentById($checkoutPaymentId);
+            $payment = $checkout->getSveaPaymentHandler()->loadSveaOrderById($checkoutOrderId);
         } catch (ClientException $e) {
             if ($e->getHttpStatusCode() == 404) {
-                $checkout->getLogger()->error("Validate Order: The svea payment with ID: " . $checkoutPaymentId . " was not found in svea.");
+                $checkout->getLogger()->error("Validate Order: The svea order with ID: " . $checkoutOrderId . " was not found in svea.");
                 return $this->respondWithError("Found no Svea Order for this session. Please refresh the site or clear your cookies.");
             } else {
-                $checkout->getLogger()->error("Validate Order: Something went wrong when we tried to fetch the payment ID from Svea. Http Status code: " . $e->getHttpStatusCode());
+                $checkout->getLogger()->error("Validate Order: Something went wrong when we tried to fetch the order ID from Svea. Http Status code: " . $e->getHttpStatusCode());
                 $checkout->getLogger()->error("Validate Order: Error message:" . $e->getMessage());
                 $checkout->getLogger()->debug($e->getResponseBody());
 
@@ -51,18 +51,17 @@ class ValidateOrder extends Update
                 __('Something went wrong.')
             );
 
-            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: ". $checkoutPaymentId. "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: ". $checkoutOrderId. "... Error message:" . $e->getMessage());
             return $this->respondWithError("Something went wrong... Contact site admin.");
         }
 
-        if ($payment->getConsumer()->getShippingAddress() === null) {
+        if ($payment->getShippingAddress() === null) {
             $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
             return $this->respondWithError("Please add shipping information.");
         }
 
-        $currentPostalCode = $payment->getConsumer()->getShippingAddress()->getPostalCode();
-        $currentCountryIso = $payment->getConsumer()->getShippingAddress()->getCountry(); // SWE, iso3
-        $currentCountryId = $this->sveaCheckoutContext->getSveaLocale()->getCountryIdByIso3Code($currentCountryIso);
+        $currentPostalCode = $payment->getShippingAddress()->getPostalCode();
+        $currentCountryId = $payment->getCountryCode();
         // check other quote stuff
 
         try {
@@ -91,10 +90,9 @@ class ValidateOrder extends Update
                 __('Something went wrong.')
             );
 
-            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: ". $checkoutPaymentId. "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: ". $checkoutOrderId. "... Error message:" . $e->getMessage());
             return $this->respondWithError("Something went wrong... Contact site admin.");
         }
-
 
 
         $this->getResponse()->setBody(json_encode(array('chooseShippingMethod' => false, 'error' => false)));

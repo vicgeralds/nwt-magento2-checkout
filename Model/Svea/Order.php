@@ -6,7 +6,6 @@ namespace Svea\Checkout\Model\Svea;
 
 use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\ChargePayment;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
@@ -94,7 +93,7 @@ class Order
 
 
         $paymentResponse = $this->createNewSveaPayment($quote);
-        return $paymentResponse->getPaymentId();
+        return $paymentResponse->getOrderId();
     }
 
     /**
@@ -123,7 +122,7 @@ class Order
     /**
      * @param Quote $quote
      * @param $paymentId
-     * @return Update
+     * @return void
      * @throws \Exception
      */
     public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
@@ -135,7 +134,7 @@ class Order
         $payment->setItems($items);
         $payment->setMerchantData($this->generateReferenceByQuoteId($quote->getId()));
 
-        return $this->checkoutApi->UpdateOrder($payment, $paymentId);
+        $this->checkoutApi->updateOrder($payment, $paymentId);
     }
 
 
@@ -144,15 +143,12 @@ class Order
      * The payment ID which is returned in the response will be added to the SVEA javascript API, to load the payment iframe.
      *
      * @param Quote $quote
-     * @throws ClientException
+     * @throws ClientException|\Exception
      * @return GetOrderResponse
      */
     protected function createNewSveaPayment(Quote $quote)
     {
-
-        // TODO handle this exception?
         $items = $this->items->generateOrderItemsFromQuote($quote);
-
 
 
         $merchantUrls = new MerchantSettings();
@@ -161,15 +157,14 @@ class Order
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
 
 
-
-
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
 
         $refId = $this->generateReferenceByQuoteId($quote->getId());
 
         $paymentOrder->setLocale("sv-SE"); // TODO
-        $paymentOrder->setCountryCode($quote->getCountry()->getId());
+        $paymentOrder->setCountryCode("SE"); // TODO
+        //$paymentOrder->setCountryCode($quote->getCountry()->getId());
         $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
         $paymentOrder->setMerchantData($refId); // could be more data
@@ -202,57 +197,34 @@ class Order
      * @param null $countryIdFallback
      * @return array
      */
-    public function convertSveaShippingToMagentoAddress(GetOrderResponse $payment, $countryIdFallback = null)
+    public function convertSveaShippingToMagentoAddress(GetOrderResponse $payment)
     {
         if ($payment->getShippingAddress() === null) {
             return array();
         }
 
+        $address = $payment->getShippingAddress();
 
-        $company = null;
-        // if company name is set, then contact details are too
-        if ($payment->getCustomer()->) {
-            $companyObj = $payment->getConsumer()->getCompany();
-            $contact = $companyObj->getContactDetails();
-            $firstname =$contact->getFirstName();
-            $lastName = $contact->getLastName();
-            $company = $companyObj->getName();
-            $phone = $contact->getPhoneNumber()->getPhoneNumber();
-            $email = $contact->getEmail();
+         // TODO
+        $streets = [];
+        if (is_array($address->getAddressLines())) {
+            $streets = $address->getAddressLines();
         } else {
-            $private = $payment->getConsumer()->getPrivatePerson();
-            $firstname =$private->getFirstName();
-            $lastName = $private->getLastName();
-            $phone = $private->getPhoneNumber()->getPhoneNumber();
-            $email = $private->getEmail();
+            $streets[] = $address->getStreetAddress();
         }
 
-        $address = $payment->getConsumer()->getShippingAddress();
-        $streets[] = $address->getAddressLine1();
-        if ($address->getAddressLine2()) {
-            $streets[] = $address->getAddressLine2();
-        }
+        // TODO COMPANY $data['company'] = ....
 
         $data = [
-            'firstname' => $firstname,
-            'lastname' => $lastName,
-            'company' => $company,
-            'telephone' => $phone,
-            'email' => $email,
-            'street' => $streets,
+            'firstname' => $address->getFirstName(),
+            'lastname' => $address->getLastName(),
+            'telephone' => $payment->getPhoneNumber(),
+            'email' => $payment->getEmailAddress(),
+            'street' =>$streets,
             'city' => $address->getCity(),
             'postcode' => $address->getPostalCode(),
+            'country_id' => $payment->getCountryCode(),
         ];
-
-        try {
-            $countryId = $this->_countryFactory->create()->loadByCode($address->getCountry())->getId();
-        } catch (\Exception $e) {
-            $countryId = $countryIdFallback;
-        }
-
-        if ($countryId) {
-            $data['country_id'] = $countryId;
-        }
 
 
         return $data;
@@ -270,7 +242,7 @@ class Order
         if ($paymentId) {
 
             // we load the payment from svea api instead, then we will get full amount!
-            $payment = $this->loadSveaPaymentById($paymentId);
+            $payment = $this->loadSveaOrderById($paymentId);
 
             $paymentObj = new CancelPayment();
             $paymentObj->setAmount($payment->getSummary()->getReservedAmount());
@@ -392,9 +364,9 @@ class Order
      * @return GetOrderResponse
      * @throws ClientException
      */
-    public function loadSveaPaymentById($paymentId)
+    public function loadSveaOrderById($paymentId)
     {
-        return $this->checkoutApi->getPayment($paymentId);
+        return $this->checkoutApi->getOrder($paymentId);
     }
 
     /**
@@ -408,7 +380,7 @@ class Order
 
 
     /**
-     * @return Payment
+     * @return Checkout
      */
     public function getPaymentApi()
     {

@@ -13,9 +13,11 @@ class Success extends \Svea\Checkout\Controller\Checkout
         }
 
         $lastOrderId = $session->getLastOrderId();
+
+        // TODO load $order and show iframe (use: $session->getSveaOrderId())
         
         $session->clearQuote(); //destroy quote, unset QuoteId && LastSuccessQuoteId
-        $session->unsSveaPaymentId(); // destroy session
+        $session->unsSveaOrderId(); // destroy session
 
         // need to be BEFORE event dispach (GA need to have layout loaded, to set the orderIds on the block)
         $resultPage = $this->resultPageFactory->create();

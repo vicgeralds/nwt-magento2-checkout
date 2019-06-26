@@ -49,7 +49,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
 
                 if($shouldUpdateSvea) {
                     //update svea iframe
-                    $sveaPaymentId = $this->getCheckoutSession()->getSveaPaymentId();
+                    $sveaPaymentId = $this->getCheckoutSession()->getSveaOrderId();
 
 
                     //

@@ -76,7 +76,7 @@ class Checkout extends AbstractMethod
     {
 
         $this->getInfoInstance()
-            ->setAdditionalInformation('svea_order_id',$data->getSveaPaymentId())
+            ->setAdditionalInformation('svea_order_id',$data->getSveaOrderId())
             ->setAdditionalInformation('country_id',$data->getCountryId());
 
         return $this;
@@ -197,7 +197,7 @@ class Checkout extends AbstractMethod
         $order   = $payment->getOrder();
 
         //import quote data
-        $order->setSveaPaymentId($payment->getAdditionalInformation('svea_order_id'));
+        $order->setSveaOrderId($payment->getAdditionalInformation('svea_order_id'));
 
 
         $orderState = \Magento\Sales\Model\Order::STATE_NEW;
