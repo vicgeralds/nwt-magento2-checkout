@@ -196,7 +196,7 @@ abstract class BaseClient
     }
 
     private function createAuthorizationToken($timestamp, $body) {
-        return base64_encode($this->merchantId . ':' . hash('sha512', $body . $this->sharedSecret . $timestamp));
+        return "Svea " . base64_encode($this->merchantId . ':' . hash('sha512', $body . $this->sharedSecret . $timestamp));
     }
 
     private function removeAuthForLogging($options) {

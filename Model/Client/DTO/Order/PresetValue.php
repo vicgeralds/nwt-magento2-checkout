@@ -6,6 +6,14 @@ use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 class PresetValue extends AbstractRequest
 {
 
+    protected $validTypeNames = [
+        'NationalId',
+        'EmailAddress',
+        'PhoneNumber',
+        'PostalCode',
+        'IsCompany',
+    ];
+
     /** @var $TypeName string */
     protected $TypeName;
 
@@ -58,6 +66,42 @@ class PresetValue extends AbstractRequest
     {
         return $this->IsReadOnly;
     }
+
+    public function setNationalId($nationalId)
+    {
+        $this->setTypeName('NationalId');
+        $this->setValue($nationalId);
+        return $this;
+    }
+
+    public function setEmailAddress($emailAddress)
+    {
+        $this->setTypeName('EmailAddress');
+        $this->setValue($emailAddress);
+        return $this;
+    }
+
+    public function setPhoneNumber($phoneNumber)
+    {
+        $this->setTypeName('PhoneNumber');
+        $this->setValue($phoneNumber);
+        return $this;
+    }
+
+    public function setPostalCode($postalCode)
+    {
+        $this->setTypeName('PostalCode');
+        $this->setValue($postalCode);
+        return $this;
+    }
+
+    public function setIsCompany($isCompany)
+    {
+        $this->setTypeName('IsCompany');
+        $this->setValue($isCompany);
+        return $this;
+    }
+
 
     /**
      * @param bool $IsReadOnly

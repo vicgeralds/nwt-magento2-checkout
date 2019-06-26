@@ -6,7 +6,6 @@ use Svea\Checkout\Model\Client\DTO\Order\IdentityFlags;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
-use Svea\Checkout\Model\Svea\Order;
 
 class CreateOrder extends AbstractRequest
 {
