@@ -2,7 +2,7 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Payment\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
 
 class UpdatePaymentCart extends AbstractRequest
 {

@@ -2,17 +2,17 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Payment\ConsumerPhoneNumber;
-use Svea\Checkout\Model\Client\DTO\Payment\GetConsumerCompany;
-use Svea\Checkout\Model\Client\DTO\Payment\GetConsumerCompanyContactDetails;
-use Svea\Checkout\Model\Client\DTO\Payment\GetConsumerPrivatePerson;
-use Svea\Checkout\Model\Client\DTO\Payment\GetConsumerShippingAddress;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentCardDetails;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentConsumer;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentDetails;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentInvoiceDetails;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentOrder;
-use Svea\Checkout\Model\Client\DTO\Payment\GetPaymentSummary;
+use Svea\Checkout\Model\Client\DTO\Order\ConsumerPhoneNumber;
+use Svea\Checkout\Model\Client\DTO\Order\GetConsumerCompany;
+use Svea\Checkout\Model\Client\DTO\Order\GetConsumerCompanyContactDetails;
+use Svea\Checkout\Model\Client\DTO\Order\GetConsumerPrivatePerson;
+use Svea\Checkout\Model\Client\DTO\Order\GetConsumerShippingAddress;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentCardDetails;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentConsumer;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentDetails;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentInvoiceDetails;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentOrder;
+use Svea\Checkout\Model\Client\DTO\Order\GetPaymentSummary;
 
 class GetPaymentResponse
 {

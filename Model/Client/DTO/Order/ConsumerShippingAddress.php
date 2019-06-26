@@ -1,5 +1,5 @@
 <?php
-namespace Svea\Checkout\Model\Client\DTO\Payment;
+namespace Svea\Checkout\Model\Client\DTO\Order;
 
 use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 

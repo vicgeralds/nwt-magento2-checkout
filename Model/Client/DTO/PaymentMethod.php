@@ -2,10 +2,10 @@
 namespace Svea\Checkout\Model\Client\DTO;
 
 
-use Svea\Checkout\Model\Client\DTO\Payment\CreatePaymentWebhook;
-use Svea\Checkout\Model\Client\DTO\Payment\CreatePaymentOrder;
-use Svea\Checkout\Model\Client\DTO\Payment\CreatePaymentCheckout;
-use Svea\Checkout\Model\Client\DTO\Payment\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\CreatePaymentWebhook;
+use Svea\Checkout\Model\Client\DTO\Order\CreatePaymentOrder;
+use Svea\Checkout\Model\Client\DTO\Order\CreatePaymentCheckout;
+use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
 
 class PaymentMethod extends AbstractRequest
 {

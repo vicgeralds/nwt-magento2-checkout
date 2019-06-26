@@ -4,7 +4,7 @@
 namespace Svea\Checkout\Model\Svea;
 
 use Svea\Checkout\Model\CheckoutException;
-use Svea\Checkout\Model\Client\DTO\Payment\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderItem;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 
