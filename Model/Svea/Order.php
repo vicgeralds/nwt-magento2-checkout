@@ -163,6 +163,7 @@ class Order
      */
     protected function createNewSveaPayment(Quote $quote)
     {
+        $mode = $this->helper->isTestMode();
         $items = $this->items->generateOrderItemsFromQuote($quote);
 
 
@@ -170,6 +171,8 @@ class Order
         //$merchantUrls->setConfirmationUri("")
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
+        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($mode));
+        $merchantUrls->setPushUri($this->helper->getPushUrl($mode));
 
 
         // we generate the order here, amount and items

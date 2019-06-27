@@ -235,7 +235,7 @@ class CreateOrder extends AbstractRequest
             'currency' => $this->getCurrency(),
             'locale' => $this->getLocale(),
             'clientOrderNumber' => $this->getClientOrderNumber(),
-            'merchantSettings' => $this->getMerchantSettings(),
+            'merchantSettings' => $this->getMerchantSettings()->toArray(),
             'merchantData' => $this->getMerchantData()
         ];
 

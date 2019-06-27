@@ -204,7 +204,6 @@ class MerchantSettings extends AbstractRequest
 
     /**
      * @return array
-     * @throws \Exception
      */
     public function toArray()
     {

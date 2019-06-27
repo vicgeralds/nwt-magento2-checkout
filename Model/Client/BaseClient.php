@@ -185,7 +185,7 @@ abstract class BaseClient
             $body = json_encode($bodyArray);
         }
 
-        $timestamp = gmdate('Y-m-d H:i');
+        $timestamp = gmdate('Y-m-d H:i:s');
         $options['headers'] = [
             'Content-Type' => 'application/json',
             'Timestamp' => $timestamp,
@@ -196,6 +196,7 @@ abstract class BaseClient
     }
 
     private function createAuthorizationToken($timestamp, $body) {
+
         return "Svea " . base64_encode($this->merchantId . ':' . hash('sha512', $body . $this->sharedSecret . $timestamp));
     }
 

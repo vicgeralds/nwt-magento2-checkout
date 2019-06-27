@@ -457,27 +457,12 @@ class Items
 
     public function validateTotals($grandTotal)
     {
-        //calculate Svea total
-        //WARNING:   The tax must to be applied AFTER discount and to the custom price (not original)
-        //           else... the svea tax total will differ
 
         $calculatedTotal = 0;
-        $calculatedTax   = 0;
         foreach($this->_cart as $item) {
-            /** @var $item OrderItem */
+            /** @var $item OrderRow */
 
-            //the algorithm used by Svea seems to be (need to confirm with Svea)
-            //total_price_including_tax = unit_price*quantity; //no round because svea doesn't have decimals; all numbers are * 100
-            //total_price_excluding_tax = total_price_including_tax / (1+taxrate/100000) //is 10000 because taxrate is already multiplied by 100
-            //total_tax_amount = total_price_including_tax - total_price_excluding_tax
-            $total_price_including_tax = $item->getGrossTotalAmount();
-            if($item->getTaxRate() != 0) {
-                $total_price_excluding_tax = $item->getNetTotalAmount();
-            } else {
-                $total_price_excluding_tax = $total_price_including_tax;
-            }
-            $total_tax_amount = round($total_price_including_tax - $total_price_excluding_tax,0); //round is not required, alreay int
-            $calculatedTax   += $total_tax_amount;
+            $total_price_including_tax = $item->getUnitPrice() * $item->getQuantity();
             $calculatedTotal += $total_price_including_tax;
         }
 

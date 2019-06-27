@@ -242,7 +242,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getSuccessPageUrl()
     {
-        return $this->_getUrl( 'sveacheckout/order/success');
+        return $this->getCheckoutUrl( 'success');
+    }
+
+
+    public function getConfirmationUrl($testMode)
+    {
+        $mode = $testMode ? 1 : 0;
+        return $this->getCheckoutUrl('confirmation', array('sid'=>'{checkout.order.id}','test'=> $mode, '_escape_params' => false));
+    }
+
+
+    public function getPushUrl($testMode)
+    {
+        $mode = $testMode ? 1 : 0;
+        return $this->getCheckoutUrl('push', array('sid'=>'{checkout.order.id}','test'=> $mode, '_escape_params' => false));
     }
 
 
