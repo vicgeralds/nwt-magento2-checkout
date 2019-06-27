@@ -27,6 +27,21 @@ class InstallSchema implements InstallSchemaInterface
         $installer->startSetup();
         $connection = $installer->getConnection();
 
+        $pushTable = $installer->getTable('svea_push');
+        $installer->run("
+            CREATE TABLE IF NOT EXISTS `{$pushTable}` (
+              `entity_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+              `sid` varchar(255) NOT NULL,
+              `origin` varchar(255) NOT NULL DEFAULT '' COMMENT 'confirmation or push',
+              `error`  tinyint(3) NOT NULL,
+              `error_msg` TEXT,
+              `created_at` timestamp NULL DEFAULT NULL,
+              PRIMARY KEY (`entity_id`),
+              UNIQUE KEY `UNQ_ORDER_ID` (`sid`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+        ");
+
+
 
         $quoteData = array(
             'svea_order_id' => ['type' => Table::TYPE_TEXT, 'length' => '255', 'comment' => 'svea_order_id', 'nullable' => true, 'default' => ''],
