@@ -252,7 +252,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->getCheckoutUrl('confirmation', array('sid'=>'{checkout.order.id}','test'=> $mode, '_escape_params' => false));
     }
 
-
+    /**
+     * @param $testMode
+     * @return string
+     */
     public function getPushUrl($testMode)
     {
         $mode = $testMode ? 1 : 0;

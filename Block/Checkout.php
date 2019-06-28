@@ -31,7 +31,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
      *
      * @var string
      */
-    protected $_controllerPath = 'checkout/order';
+    protected $_controllerPath = 'sveacheckout/order';
 
     /**
      * @var \Magento\Tax\Helper\Data

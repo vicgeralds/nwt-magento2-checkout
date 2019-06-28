@@ -239,18 +239,18 @@ define([
         },
 
         _showSveaCheckout: function() {
-            if (window._sveaCheckout) {
+            if (window.scoApi) {
                 try {
-                    window._sveaCheckout.thawCheckout();
+                    window.scoApi.setCheckoutEnabled(true);
                 } catch (err) {
                 }
             }
         },
 
         _hideSveaCheckout: function() {
-            if (window._sveaCheckout) {
+            if (window.scoApi) {
                 try {
-                    window._sveaCheckout.freezeCheckout();
+                    window.scoApi.setCheckoutEnabled(false);
                 } catch (err) {
                 }
             }
@@ -386,119 +386,16 @@ define([
         },
 
         sveaApiChanges: function () {
-            if (!window._sveaCheckout) {
+            if (!window.scoApi) {
                 return
             }
 
             var self = this;
-            window._sveaCheckout.on('payment-completed', function (response) {
-
-                jQuery.ajax({
-                    url: BASE_URL + "checkout/order/SaveOrder/pid/" + response.paymentId,
-                    type: "POST",
-                    context: this,
-                    data: "",
-                    dataType: 'json',
-                    beforeSend: function () {
-                        self._hideSveaCheckout();
-                    },
-                    complete: function () {
-                        self._showSveaCheckout();
-                    },
-                    success: function (response) {
-
-                        if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
-
-                            if (response.chooseShippingMethod) {
-                                self.checkShippingMethod();
-                                self._hideSveaCheckout();
-                            }
-
-                            if (response.messages) {
-                                alert({
-                                    content: jQuery.mage.__(response.messages)
-                                });
-                            }
-
-                            if (response.redirectTo) {
-                                window.location.href = response.redirectTo;
-                            }
-
-                        } else {
-                            alert({
-                                content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                            });
-                        }
-                    },
-                    error: function(data) {
-                        alert({
-                            content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                        });
-
-                    }
-
-                });
-
+            window.scoApi.observeEvent("identity.postalCode", function (data) {
+                console.log("postalCode changed to %s.", data.value);
             });
 
-            window._sveaCheckout.on('pay-initialized', function (response) {
 
-                jQuery.ajax({
-                    url: BASE_URL + "checkout/order/ValidateOrder",
-                    type: "POST",
-                    context: this,
-                    data: "",
-                    dataType: 'json',
-                    beforeSend: function () {
-                        self._hideSveaCheckout();
-                    },
-                    complete: function () {
-                        self._showSveaCheckout();
-                    },
-                    success: function (response) {
-
-                        if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
-
-                            if (response.error) {
-                                window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-                            } else {
-                                window._sveaCheckout.sendPaymentOrderFinalizedEvent(true);
-                            }
-
-                            if (response.chooseShippingMethod) {
-                                self.checkShippingMethod();
-                                self._hideSveaCheckout();
-                            }
-
-                            if (response.messages) {
-                                alert({
-                                    content: jQuery.mage.__(response.messages)
-                                });
-                            }
-                        } else {
-
-                            // tell svea not to finish order!
-                            window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-
-                            alert({
-                                content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                            });
-                        }
-                    },
-                    error: function(data) {
-                        // tell svea not to finish order!
-                        window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-
-                        alert({
-                            content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                        });
-
-                    }
-
-                });
-
-
-            });
         },
 
         /**

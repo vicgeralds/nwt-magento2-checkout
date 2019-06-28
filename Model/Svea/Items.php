@@ -241,11 +241,9 @@ class Items
                     ->setArticleNumber($sku)
                     ->setName($item->getName()." ".($comment?"({$comment})":""))
                     ->setUnit("st") // TODO! We need to map these somehow!
-                    ->setQuantity(round($qty,0))
+                    ->setQuantity($this->addZeroes(round($qty,0)))
                     ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
                     ->setUnitPrice($unitPriceInclTaxes); // incl. tax price per item
-              //      ->setNetTotalAmount($unitPriceExclTax * $qty) // excl. tax
-              //      ->setGrossTotalAmount($unitPrice * $qty); // incl. tax
 
                 // add to array
                 $this->_cart[$sku] = $orderItem;
@@ -322,11 +320,9 @@ class Items
             ->setArticleNumber('shipping_fee')
             ->setName((string)__('Shipping Fee (%1)',$address->getShippingDescription()))
             ->setUnit("st") // TODO! We need to map these somehow!
-            ->setQuantity(1)
+            ->setQuantity($this->addZeroes(1))
             ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
             ->setUnitPrice($this->addZeroes($inclTax)); // incl. tax price per item
-           // ->setNetTotalAmount($this->addZeroes($exclTax)) // excl. tax
-           // ->setGrossTotalAmount($this->addZeroes($inclTax)); // incl. tax
 
 
         // add to array!
@@ -408,7 +404,7 @@ class Items
             ->setArticleNumber(strtolower(str_replace(" ", "_", $invoiceLabel)))
             ->setVatPercent($this->addZeroes($taxRate))
             ->setUnit("st")
-            ->setQuantity(1)
+            ->setQuantity($this->addZeroes(1))
             ->setUnitPrice($this->addZeroes($invoiceFeeInclTax)); // // incl. tax
 
         return $feeItem;
@@ -441,11 +437,9 @@ class Items
                 ->setArticleNumber($reference)
                 ->setName($couponCode?(string)__('Discount (%1)',$couponCode):(string)__('Discount'))
                 ->setUnit("st")
-                ->setQuantity(1)
+                ->setQuantity($this->addZeroes(1))
                 ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
                 ->setUnitPrice(0); // incl. tax price per item
-               // ->setNetTotalAmount(-$amountExclTax) // excl. tax
-               // ->setGrossTotalAmount(-$amountInclTax); // incl. tax
 
 
             $this->_cart[$reference] = $orderItem;
@@ -462,7 +456,7 @@ class Items
         foreach($this->_cart as $item) {
             /** @var $item OrderRow */
 
-            $total_price_including_tax = $item->getUnitPrice() * $item->getQuantity();
+            $total_price_including_tax = $item->getUnitPrice() * ($item->getQuantity() / 100);
             $calculatedTotal += $total_price_including_tax;
         }
 

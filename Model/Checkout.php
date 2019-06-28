@@ -303,8 +303,25 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
                 } else {
 
-                    // if we should update the order, ew still need to load the iframe!
-                    $sveaHandler->loadSveaOrderById($sveaOrderId, true);
+                    // if we should update the order, we also set the svea iframe here
+                    $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
+
+                    // do some validations!
+                    // if something went wrong and the order was placed by customer, but not saved in magento!
+                    // if the svea order status is final, and the client order number matches with the current quote
+                    // we should cancel this svea order and throw an exception,
+                    if ($sveaOrder->getStatus() === 'Final' && $sveaOrder->getClientOrderNumber() == $this->getSveaPaymentHandler()->generateReferenceByQuoteId($quote->getId())) {
+
+                        // TODO cancel svea Order
+                        /*
+                        try {
+                            $this->sveaOrderManagement->cancelOrder($sveaOrder->getOrderId());
+                        } catch (\Exception $e) {
+                            // do nothing!
+                        }
+                        */
+                        throw new \Exception("This order is already placed in Svea. We cancel it and create an new.");
+                    }
                 }
 
             } catch(\Exception $e) {
@@ -315,6 +332,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 $this->getCheckoutSession()->unsSveaOrderId(); //remove payment id from session
                 $this->getCheckoutSession()->unsSveaQuoteSignature(); //remove signature from session
 
+
+
+                // TODO this doesnt seems to create an new order!!!
 
                 // this will create an api call to svea and initiaze an new payment
                 $newPaymentId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);

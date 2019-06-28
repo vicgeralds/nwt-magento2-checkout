@@ -93,7 +93,7 @@ class Order
 
     /**
      * @param Quote $quote
-     * @return GetOrderResponse
+     * @return int
      * @throws \Exception
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
@@ -106,7 +106,7 @@ class Order
 
         $paymentResponse = $this->createNewSveaPayment($quote);
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
-        return $paymentResponse;
+        return $paymentResponse->getOrderId();
     }
 
     /**
@@ -188,7 +188,6 @@ class Order
         $paymentOrder->setMerchantData($refId); // could be more data
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
-
 
         return $this->checkoutApi->createNewOrder($paymentOrder);
     }
