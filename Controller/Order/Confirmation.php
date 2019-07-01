@@ -2,49 +2,37 @@
 
 namespace Svea\Checkout\Controller\Order;
 
-use Svea\Checkout\Controller\Checkout;
 use Svea\Checkout\Model\CheckoutException;
 
-class Confirmation extends Checkout
+class Confirmation extends Update
 {
     public function execute()
     {
-        $orderId  = $this->getRequest()->getParam('sid');
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
+        $cancelOrder = false;
+        $errorMessage = "";
 
         try {
-            $orderPlaced = $checkout->tryToSaveSveaPayment($orderId);
+            $checkout->tryToSaveSveaPayment(null, true);
         } catch (CheckoutException $e) {
-
-            if ($e->isReload()) {
-                $this->messageManager->addNoticeMessage($e->getMessage());
-            } else {
-                $this->messageManager->addErrorMessage($e->getMessage());
-            }
-
-            $this->_redirect("sveacheckout");
-            return false;
-
+            $cancelOrder = true;
+            $errorMessage = $e->getMessage();
         } catch (\Exception $e) {
-            $checkout->getLogger()->error($e->getMessage());
-            return $this->respondWithError("Something went wrong.");
+            $cancelOrder = true;
+            $errorMessage = __("Something went wrong. Try again.");
         }
 
-        if ($orderPlaced) {
+        // success
+        if (!$cancelOrder) {
             return $this->_redirect('*/*/success');
-        } else {
-            return $this->respondWithError("Unknown error.");
-
         }
-    }
 
+        // an error occured todo cancel order
+        $this->messageManager->addErrorMessage($errorMessage);
+        return $this->_redirect('*');
 
-    protected function respondWithError($message)
-    {
-        $this->messageManager->addErrorMessage($message);
-        return $this->_redirect('sveacheckout');
     }
 
 }

@@ -43,6 +43,7 @@ class GetShippingMethod extends Update
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
+        \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext,
         ValidatorInterface $validatorInterface,
@@ -57,6 +58,7 @@ class GetShippingMethod extends Update
             $checkoutSession,
             $storeManager,
             $resultPageFactory,
+            $jsonResultFactory,
             $sveaCheckout,
             $sveaCheckoutContext
         );

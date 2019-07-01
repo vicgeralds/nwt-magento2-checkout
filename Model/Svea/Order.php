@@ -168,11 +168,11 @@ class Order
 
 
         $merchantUrls = new MerchantSettings();
-        //$merchantUrls->setConfirmationUri("")
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
         $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($mode));
         $merchantUrls->setPushUri($this->helper->getPushUrl($mode));
+        //$merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($mode));
 
 
         // we generate the order here, amount and items

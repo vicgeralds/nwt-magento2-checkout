@@ -14,6 +14,8 @@ class Success extends \Magento\Checkout\Block\Onepage\Success
      */
     protected $orderRepository;
 
+    /** @var $iframeSnippet string */
+    protected $iframeSnippet;
 
     /**
      * Success constructor.
@@ -74,6 +76,17 @@ class Success extends \Magento\Checkout\Block\Onepage\Success
     {
         return $this->getOrderById($orderId)->getAllVisibleItems();
     }
+
+    public function getIframeSnippet()
+    {
+        return $this->iframeSnippet;
+    }
+
+    public function setIframeSnippet($snippet)
+    {
+        $this->iframeSnippet = $snippet;
+    }
+
 
 }
 

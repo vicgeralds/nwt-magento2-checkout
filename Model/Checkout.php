@@ -459,10 +459,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
     /**
      * @param $sveaOrderId
+     * @param $useSession
      * @return true|void
      * @throws CheckoutException
      */
-    public function tryToSaveSveaPayment($sveaOrderId)
+    public function tryToSaveSveaPayment($sveaOrderId, $useSession = false)
     {
         $session = $this->getCheckoutSession();
 
@@ -473,6 +474,10 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             return $this->throwRedirectToCartException(__("Your session has expired. Quote missing."));
         }
 
+        if ($useSession) {
+            $sveaOrderId = $checkoutPaymentId;
+        }
+
         if (!$sveaOrderId || !$checkoutPaymentId || ($sveaOrderId != $checkoutPaymentId)) {
             $this->getLogger()->error("Invalid request");
             if (!$checkoutPaymentId) {
@@ -481,11 +486,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             }
 
             if ($sveaOrderId != $checkoutPaymentId) {
-                return $this->getLogger()->error("Save Order: The session has expired or is wrong.");
+                return $this->getLogger()->error(__("Save Order: The session has expired or is wrong. ID in session: %1, ID from Svea: %2", $checkoutPaymentId, $sveaOrderId));
             }
 
             return $this->getLogger()->error("Save Order: Invalid data.");
         }
+
+
 
 
         try {
@@ -517,8 +524,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             return $this->throwReloadException(__("Could not create an order. Invalid data. Contact admin."));
         }
 
-        if ($payment->getStatus() !== "Created") { // TODO  maybe Final
-            $this->getLogger()->error("Save Order: Order doesnt have correct status for the order id: " . $payment->getOrderId() . "... This must mean that they customer hasn't checked out yet!");
+        if ($payment->getStatus() !== "Final") {
+            $this->getLogger()->error("Save Order: Order doesnt have correct status (". $payment->getStatus() .") for the order id: " . $payment->getOrderId() . "... This must mean that they customer hasn't checked out yet!");
             return $this->throwReloadException(__("We could not create your order... The order hasn't reached Svea. Order id: %1", $payment->getOrderId()));
         }
 
@@ -555,7 +562,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         // we set new sessions
         $session
-            ->setLastQuoteId($order->getQuoteId())
+            ->setSveaOrderId($sveaOrderId) // we need this in the success page
+            ->setLastQuoteId($order->getQuoteId()) // we need this in the success page
             ->setLastSuccessQuoteId($order->getQuoteId())
             ->setLastOrderId($order->getId())
             ->setLastRealOrderId($order->getIncrementId())
@@ -575,15 +583,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         //prevent observer to mark quote dirty, we will check here if quote was changed and, if yes, will redirect to checkout
         $this->setDoNotMarkCartDirty(true);
-
-        /* // TODO
-        try {
-            $this->validateSveaPayment($sveaOrder,$quote);
-        } catch (\Exception $e) {
-            throw $e;
-        }
-        */
-
 
         //this will be saved in order
         $quote->setSveaOrderId($sveaOrder->getOrderId());

@@ -249,7 +249,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getConfirmationUrl($testMode)
     {
         $mode = $testMode ? 1 : 0;
-        return $this->getCheckoutUrl('confirmation', array('sid'=>'{checkout.order.id}','test'=> $mode, '_escape_params' => false));
+        return $this->getCheckoutUrl('confirmation');
+    }
+
+
+    public function getValidationUrl($testMode)
+    {
+        $mode = $testMode ? 1 : 0;
+        return $this->getCheckoutUrl('validateOrder', array('sid'=>'{checkout.order.uri}','test'=> $mode, '_escape_params' => false));
     }
 
     /**
@@ -259,7 +266,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getPushUrl($testMode)
     {
         $mode = $testMode ? 1 : 0;
-        return $this->getCheckoutUrl('push', array('sid'=>'{checkout.order.id}','test'=> $mode, '_escape_params' => false));
+        return $this->getCheckoutUrl('push', array('sid'=>'{checkout.order.uri}','test'=> $mode, '_escape_params' => false));
     }
 
 

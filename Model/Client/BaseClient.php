@@ -27,6 +27,8 @@ abstract class BaseClient
     /** @var string $merchantId */
     protected $merchantId;
 
+    /** @var bool $testMode */
+    protected $testMode;
 
     /** @var \GuzzleHttp\Client $httpClient */
     protected $httpClient;
@@ -44,7 +46,8 @@ abstract class BaseClient
 
         $this->sharedSecret = $apiContext->getHelper()->getSharedSecret();
         $this->merchantId = $apiContext->getHelper()->getMerchantId();
-        
+        $this->testMode = $apiContext->getHelper()->isTestMode();
+
         // init curl!
         $this->setGuzzleHttpClient($this->getHelper());
     }
@@ -81,7 +84,14 @@ abstract class BaseClient
 
         try {
             $result = $this->httpClient->get($endpoint, $options);
-            return $result->getBody()->getContents();
+
+            $content = $result->getBody()->getContents();
+            if ($this->testMode) {
+                $this->getLogger()->info("Got response from Svea: Get $endpoint");
+                $this->getLogger()->info($content);
+            }
+
+            return $content;
         } catch (BadResponseException $e) {
             $exception = $this->handleException($e);
         } catch (\Exception $e) {
@@ -96,6 +106,10 @@ abstract class BaseClient
             $this->getLogger()->error($exception->getResponseBody());
             throw $exception;
         }
+
+
+
+
     }
 
     /**
@@ -105,7 +119,8 @@ abstract class BaseClient
      * @return string
      * @throws ClientException
      */
-    protected function post($endpoint, AbstractRequest $request, $options = []){
+    protected function post($endpoint, AbstractRequest $request, $options = [])
+    {
         if (!is_array($options)) {
             $options = [];
         }
@@ -115,7 +130,6 @@ abstract class BaseClient
         $options[RequestOptions::JSON] = $body;
         $exception = null;
 
-        // todo catch exceptions or let them be catched by magento?
         try {
             $result = $this->httpClient->post($endpoint, $options);
             return $result->getBody()->getContents();
@@ -124,6 +138,12 @@ abstract class BaseClient
         } catch (\Exception $e) {
             $exception = $this->handleException($e);
         }
+
+        if ($this->testMode && !$exception) {
+            $this->getLogger()->info("Sending request to svea integration: POST $endpoint");
+            $this->getLogger()->info($request->toJSON());
+        }
+
 
         if ($exception) {
             $this->getLogger()->error("Failed sending request to svea integration: POST $endpoint");
@@ -144,7 +164,8 @@ abstract class BaseClient
      * @return string
      * @throws ClientException
      */
-    protected function put($endpoint, AbstractRequest $request, $options = []){
+    protected function put($endpoint, AbstractRequest $request, $options = [])
+    {
         if (!is_array($options)) {
             $options = [];
         }
@@ -161,6 +182,11 @@ abstract class BaseClient
             $exception = $this->handleException($e);
         } catch (\Exception $e) {
             $exception = $this->handleException($e);
+        }
+
+        if ($this->testMode && !$exception) {
+            $this->getLogger()->info("Sending request to svea integration: Put $endpoint");
+            $this->getLogger()->info($request->toJSON());
         }
 
         if ($exception) {

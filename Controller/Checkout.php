@@ -13,6 +13,12 @@ use Magento\Checkout\Controller\Action;
 
 abstract class Checkout extends Action
 {
+
+    /**
+     * @var \Magento\Framework\Controller\Result\JsonFactory
+     */
+    protected $jsonResultFactory;
+
     /**
      * @var \Magento\Framework\View\Result\PageFactory
      */
@@ -44,11 +50,13 @@ abstract class Checkout extends Action
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
+        \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext
 
     ) {
         $this->sveaCheckout = $sveaCheckout;
+        $this->jsonResultFactory = $jsonResultFactory;
         $this->resultPageFactory = $resultPageFactory;
         $this->checkoutSession = $checkoutSession;
         $this->storeManager= $storeManager;
