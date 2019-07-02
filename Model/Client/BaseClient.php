@@ -4,6 +4,7 @@ namespace Svea\Checkout\Model\Client;
 
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\ResponseInterface;
 use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 
 /**
@@ -121,40 +122,19 @@ abstract class BaseClient
      */
     protected function post($endpoint, AbstractRequest $request, $options = [])
     {
-        if (!is_array($options)) {
-            $options = [];
-        }
+        return $this->doRequest($endpoint, "post", $request, $options);
+    }
 
-        $body = $request->toArray();
-        $options = array_merge($options, $this->getDefaultOptions($body));
-        $options[RequestOptions::JSON] = $body;
-        $exception = null;
-
-        try {
-            $result = $this->httpClient->post($endpoint, $options);
-            return $result->getBody()->getContents();
-        } catch (BadResponseException $e) {
-            $exception = $this->handleException($e);
-        } catch (\Exception $e) {
-            $exception = $this->handleException($e);
-        }
-
-        if ($this->testMode && !$exception) {
-            $this->getLogger()->info("Sending request to svea integration: POST $endpoint");
-            $this->getLogger()->info($request->toJSON());
-        }
-
-
-        if ($exception) {
-            $this->getLogger()->error("Failed sending request to svea integration: POST $endpoint");
-            $this->getLogger()->error(json_encode($this->removeAuthForLogging($options)));
-            $this->getLogger()->error($request->toJSON());
-            $this->getLogger()->error($exception->getMessage());
-            $this->getLogger()->error($exception->getHttpStatusCode());
-            $this->getLogger()->error($exception->getResponseBody());
-            throw $exception;
-        }
-
+    /**
+     * @param $endpoint
+     * @param AbstractRequest $request
+     * @param array $options
+     * @return string
+     * @throws ClientException
+     */
+    protected function patch($endpoint, AbstractRequest $request, $options = [])
+    {
+        return $this->doRequest($endpoint, "patch", $request, $options);
     }
 
     /**
@@ -166,6 +146,13 @@ abstract class BaseClient
      */
     protected function put($endpoint, AbstractRequest $request, $options = [])
     {
+        return $this->doRequest($endpoint, "put", $request, $options);
+    }
+
+
+    protected function doRequest($endpoint, $method, AbstractRequest $request, $options = [])
+    {
+        $method = strtolower($method);
         if (!is_array($options)) {
             $options = [];
         }
@@ -176,21 +163,29 @@ abstract class BaseClient
         $exception = null;
 
         try {
-            $result = $this->httpClient->put($endpoint, $options);
-            return $result->getBody()->getContents();
-        }  catch (BadResponseException $e) {
+            /** @var ResponseInterface $result */
+            $result = $this->httpClient->$method($endpoint, $options);
+            $content =  $result->getBody()->getContents();
+
+            if ($this->testMode) {
+                $this->getLogger()->info("Sending request to svea integration: $method $endpoint");
+                $this->getLogger()->info($request->toJSON());
+
+                $this->getLogger()->info("Response Headers from Svea:");
+                $this->getLogger()->info(json_encode($result->getHeaders()));
+                $this->getLogger()->info("Response Body from Svea:");
+                $this->getLogger()->info($content);
+            }
+
+            return $content;
+        } catch (BadResponseException $e) {
             $exception = $this->handleException($e);
         } catch (\Exception $e) {
             $exception = $this->handleException($e);
         }
 
-        if ($this->testMode && !$exception) {
-            $this->getLogger()->info("Sending request to svea integration: Put $endpoint");
-            $this->getLogger()->info($request->toJSON());
-        }
-
         if ($exception) {
-            $this->getLogger()->error("Failed sending request to svea integration: PUT $endpoint");
+            $this->getLogger()->error("Failed sending request to svea integration: $method $endpoint");
             $this->getLogger()->error(json_encode($this->removeAuthForLogging($options)));
             $this->getLogger()->error($request->toJSON());
             $this->getLogger()->error($exception->getMessage());

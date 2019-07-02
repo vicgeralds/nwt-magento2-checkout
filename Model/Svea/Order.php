@@ -9,6 +9,7 @@ use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\ChargePayment;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
+use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
@@ -257,21 +258,21 @@ class Order
     {
         $paymentId = $payment->getAdditionalInformation('svea_order_id');
         if ($paymentId) {
-
-            // we load the payment from svea api instead, then we will get full amount!
-            $payment = $this->loadSveaOrderById($paymentId);
-
-            $paymentObj = new CancelOrder();
-            $paymentObj->setAmount($payment->getSummary()->getReservedAmount());
-
             // cancel it now!
-            $this->orderManagementApi->cancelPayment($paymentObj, $paymentId);
+            $this->orderManagementApi->cancelOrder($this->generateCancelOrderObject(), $paymentId);
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea payment ID to void.')
             );
         }
+    }
+
+    protected function generateCancelOrderObject()
+    {
+        $obj = new CancelOrder();
+        $obj->setIsCancelled(true);
+        return $obj;
     }
 
 
@@ -306,7 +307,7 @@ class Order
             // now we have our items...
             $captureItems = $this->items->getCart();
 
-            $paymentObj = new ChargePayment();
+            $paymentObj = new DeliverOrder();
             $paymentObj->setAmount($this->fixPrice($amount));
             $paymentObj->setItems($captureItems);
 

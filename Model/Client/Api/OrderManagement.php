@@ -3,10 +3,9 @@
 
 namespace Svea\Checkout\Model\Client\Api;
 
-use Svea\Checkout\Model\Client\Client;
 use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\CancelPayment;
-use Svea\Checkout\Model\Client\DTO\ChargePayment;
+use Svea\Checkout\Model\Client\DTO\CancelOrder;
+use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\CreatePaymentChargeResponse;
 use Svea\Checkout\Model\Client\DTO\CreateRefundResponse;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
@@ -17,15 +16,15 @@ class OrderManagement extends OrderManagementClient
 
 
     /**
-     * @param CancelPayment $payment
+     * @param CancelOrder $payment
      * @param string $paymentId
      * @throws ClientException
      * @return void
      */
-    public function cancelPayment(CancelPayment $payment, $paymentId)
+    public function cancelOrder(CancelOrder $payment, $paymentId)
     {
         try {
-            $this->post("/v1/payments/" . $paymentId . "/cancels", $payment);
+            $this->patch("/api/v1/orders/" . $paymentId, $payment);
         } catch (ClientException $e) {
             // handle?
             throw $e;
@@ -33,15 +32,15 @@ class OrderManagement extends OrderManagementClient
     }
 
     /**
-     * @param ChargePayment $payment
-     * @param string $paymentId
+     * @param DeliverOrder $payment
+     * @param string $orderId
      * @throws ClientException
      * @return CreatePaymentChargeResponse
      */
-    public function chargePayment(ChargePayment $payment, $paymentId)
+    public function deliveryOrder(DeliverOrder $payment, $orderId)
     {
         try {
-            $response = $this->post("/v1/payments/" . $paymentId . "/charges", $payment);
+            $response = $this->post("/api/v1/orders/" . $orderId . "/deliveries", $payment);
         } catch (ClientException $e) {
             // handle?
             throw $e;
@@ -52,15 +51,16 @@ class OrderManagement extends OrderManagementClient
 
 
     /**
-     * @param RefundPayment $paymentCharge
-     * @param string $chargeId
+     * @param RefundPayment $creditRow
+     * @param string $orderId
+     * @param string $deliveryId
      * @throws ClientException
      * @return CreateRefundResponse
      */
-    public function refundPayment(RefundPayment $paymentCharge, $chargeId)
+    public function refundPayment(RefundPayment $creditRow, $orderId, $deliveryId)
     {
         try {
-           $response = $this->post("/v1/charges/" . $chargeId . "/refunds", $paymentCharge);
+           $response = $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
         } catch (ClientException $e) {
             // handle?
             throw $e;

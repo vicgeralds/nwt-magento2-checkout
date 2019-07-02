@@ -4,38 +4,14 @@ namespace Svea\Checkout\Model\Client\DTO;
 
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
-class ChargePayment extends AbstractRequest
+class DeliverOrder extends AbstractRequest
 {
-
-    /**
-     * Required
-     * @var float $amount
-     */
-    protected $amount;
 
     /**
      * Required
      * @var $items OrderRow[]
      */
     protected $items;
-    /**
-     * @return float
-     */
-    public function getAmount()
-    {
-        return $this->amount;
-    }
-
-    /**
-     * @param float $amount
-     * @return ChargePayment
-     */
-    public function setAmount($amount)
-    {
-        $this->amount = $amount;
-        return $this;
-    }
-
 
     /**
      * @return OrderRow[]
@@ -47,7 +23,7 @@ class ChargePayment extends AbstractRequest
 
     /**
      * @param OrderRow[] $items
-     * @return ChargePayment
+     * @return DeliverOrder
      */
     public function setItems($items)
     {
@@ -73,7 +49,6 @@ class ChargePayment extends AbstractRequest
         }
 
         return [
-            'amount' => $this->getAmount(),
             'orderItems' => $items,
         ];
     }
