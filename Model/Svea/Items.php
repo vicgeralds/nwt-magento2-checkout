@@ -641,6 +641,34 @@ class Items
         $this->addDiscounts($order->getCouponCode()); //coupon code is not copied to invoice
     }
 
+    /**
+     * @param $sveaOrderItems []OrderRow
+     * @param $magentoOrderItems []OrderRow
+     * @throws \Exception
+     * @return int[]
+     */
+    public function getOrderRowNumbers($sveaOrderItems, $magentoOrderItems)
+    {
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem->getRowNumber();
+        }
+
+        $rowNumbers = [];
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                throw new \Exception(sprintf("could not find svea order row number for article number: %s", $magentoOrderItem->getArticleNumber()));
+            }
+
+            $rowNumbers[] = $rowRef[$magentoOrderItem->getArticleNumber()];
+        }
+
+        return $rowNumbers;
+    }
+
     public function getMaxVat()
     {
         return $this->_maxvat;

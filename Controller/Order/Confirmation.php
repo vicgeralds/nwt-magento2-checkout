@@ -27,11 +27,13 @@ class Confirmation extends Update
         // success
         if (!$cancelOrder) {
             return $this->_redirect('*/*/success');
+        } else {
+
+            // an error occured todo cancel order
+            $this->messageManager->addErrorMessage($errorMessage);
+            return $this->_redirect('*');
         }
 
-        // an error occured todo cancel order
-        $this->messageManager->addErrorMessage($errorMessage);
-        return $this->_redirect('*');
 
     }
 

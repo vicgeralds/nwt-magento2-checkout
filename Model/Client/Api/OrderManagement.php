@@ -37,16 +37,22 @@ class OrderManagement extends OrderManagementClient
      * @throws ClientException
      * @return CreatePaymentChargeResponse
      */
-    public function deliveryOrder(DeliverOrder $payment, $orderId)
+    public function deliverOrder(DeliverOrder $payment, $orderId)
     {
         try {
-            $response = $this->post("/api/v1/orders/" . $orderId . "/deliveries", $payment);
+           $this->post("/api/v1/orders/" . $orderId . "/deliveries", $payment);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
-        return new CreatePaymentChargeResponse($response);
+        try {
+            $location = $this->getLastResponse()->getHeader("Location")[0];
+        } catch (\Exception $exception) {
+            $location = "";
+        }
+
+        return new CreatePaymentChargeResponse($location);
     }
 
 
@@ -55,18 +61,32 @@ class OrderManagement extends OrderManagementClient
      * @param string $orderId
      * @param string $deliveryId
      * @throws ClientException
-     * @return CreateRefundResponse
+     * @return void
      */
     public function refundPayment(RefundPayment $creditRow, $orderId, $deliveryId)
     {
         try {
-           $response = $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
+           $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+    }
+
+    /**
+     * @param $taskId
+     * @return array
+     * @throws ClientException
+     */
+    public function getTask($taskId)
+    {
+        try {
+            $response = $this->get("/api/v1/queue/" . $taskId);
         } catch (ClientException $e) {
             // handle?
             throw $e;
         }
 
-        return new CreateRefundResponse($response);
+        return json_decode($response, true);
     }
-
 }

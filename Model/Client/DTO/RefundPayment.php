@@ -1,34 +1,36 @@
 <?php
 namespace Svea\Checkout\Model\Client\DTO;
 
-
-use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
-
 class RefundPayment extends AbstractRequest
 {
-
     /**
      * Required
-     * @var $items OrderRow[]
+     * @var $OrderRowIds int[]
      */
-    protected $items;
-
+    protected $OrderRowIds;
 
     /**
-     * @return OrderRow[]
+     * Optional
+     * One of: 0=Default,2=Post,3=Email,4=EInvoiceB2B
+     * @var $InvoiceDistributionType string
      */
-    public function getItems()
+    protected $InvoiceDistributionType;
+
+    /**
+     * @return int[]
+     */
+    public function getOrderRowIds()
     {
-        return $this->items;
+        return $this->OrderRowIds;
     }
 
     /**
-     * @param OrderRow[] $items
+     * @param int[] $OrderRowIds
      * @return RefundPayment
      */
-    public function setItems($items)
+    public function setOrderRowIds($OrderRowIds)
     {
-        $this->items = $items;
+        $this->OrderRowIds = $OrderRowIds;
         return $this;
     }
 
@@ -40,17 +42,13 @@ class RefundPayment extends AbstractRequest
 
     public function toArray()
     {
-        $items = [];
-        if (!empty($this->getItems())) {
-            foreach ($this->getItems() as $item) {
-                $items[] = $item->toArray();
-            }
-        }
+        $data = [];
+        $rows = $this->getOrderRowIds() ? $this->getOrderRowIds() : [];
+        $data['OrderRowIds'] = $rows;
 
-        return [
-            'orderItems' => $items,
-        ];
+        return $data;
     }
+
 
 
 }

@@ -10,8 +10,10 @@ use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\ChargePayment;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
+use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 use Magento\Framework\Exception\LocalizedException;
@@ -293,6 +295,13 @@ class Order
                 throw new LocalizedException(__('Cannot capture online, no invoice set'));
             }
 
+            try {
+                // we need order row ids, so we load the order from svea!
+                $sveaOrder = $this->loadSveaOrderById($paymentId);
+            } catch (\Exception $e) {
+                throw new LocalizedException(__('Could not load svea order'));
+            }
+
             // generate items
             $this->items->addSveaItemsByInvoice($invoice);
 
@@ -304,19 +313,23 @@ class Order
             // We validate the items before we send them to Svea. This might throw an exception!
             $this->items->validateTotals($invoice->getGrandTotal());
 
-            // now we have our items...
-            $captureItems = $this->items->getCart();
+            try {
+                // we need order row ids
+                $rowIds = $this->items->getOrderRowNumbers($sveaOrder->getCartItems(), $this->items->getCart());
+            } catch (\Exception $e) {
+                throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
+            }
+
 
             $paymentObj = new DeliverOrder();
-            $paymentObj->setAmount($this->fixPrice($amount));
-            $paymentObj->setItems($captureItems);
+            $paymentObj->setOrderRowIds($rowIds);
 
-            // capture/charge it now!
-            $response = $this->orderManagementApi->chargePayment($paymentObj, $paymentId);
+            // capture/deliver it now!
+            $response = $this->orderManagementApi->deliverOrder($paymentObj, $paymentId);
 
-            // save charge id, we need it later! if a refund will be made
-            $payment->setAdditionalInformation('svea_charge_id', $response->getChargeId());
-            $payment->setTransactionId($response->getChargeId());
+            // save queue_id, we need it later! if a refund will be made
+            $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
+            $payment->setTransactionId($response->getQueueId());
 
 
         } else {
@@ -335,10 +348,26 @@ class Order
      */
     public function refundSveaPayment(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-        $chargeId = $payment->getAdditionalInformation('svea_charge_id');
-        if ($chargeId) {
+        $queueId = $payment->getAdditionalInformation('svea_queue_id');
+        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
 
+        if ($queueId && $sveaOrderId) {
+
+            $responseArray = $this->orderManagementApi->getTask($queueId);
+            if (!isset($responseArray['Deliveries'][0])) {
+                throw new LocalizedException("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea.");
+            }
+            $deliveryArray = $responseArray['Deliveries'][0];
+            $delivery = new GetDeliveryResponse($deliveryArray);
+
+            if (!$delivery->getCanCreditOrderRows()) {
+                throw new LocalizedException("Can't refund this invoice. Please refund offline, and do the rest manually in Svea.");
+            }
+
+            // the creditmemo from magento
             $creditMemo = $payment->getCreditMemo();
+
+            // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
             // remove svea invoice fee from amount
@@ -349,29 +378,24 @@ class Order
             // We validate the items before we send them to Svea. This might throw an exception!
             $this->items->validateTotals($creditMemo->getGrandTotal());
 
-            $refundItems = $this->items->getCart();
-            $amountToRefund = $this->fixPrice($amount);
-
-
-            $paymentObj = new RefundPayment();
-            $paymentObj->setAmount($amountToRefund);
-            $paymentObj->setItems($refundItems);
-
-            // refund now!
-            $response = $this->orderManagementApi->refundPayment($paymentObj, $chargeId);
-
             try {
-                // save refund id, just for debugging purposes
-                $payment->setAdditionalInformation('svea_refund_id', $response->getRefundId());
-                $payment->setTransactionId($response->getRefundId());
+                // we need order row ids
+                $rowIds = $this->items->getOrderRowNumbers($delivery->getCartItems(), $this->items->getCart());
             } catch (\Exception $e) {
-                // do nothing we dont really  need this
+                throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
             }
+
+            // refund request
+            $paymentObj = new RefundPayment();
+            $paymentObj->setOrderRowIds($rowIds);
+
+            // try to refund it now!
+            $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $delivery->getId());
 
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
-                __('You need an svea charge ID to refund.')
+                __('You need an svea ID and Svea Delivery ID to refund.')
             );
         }
     }

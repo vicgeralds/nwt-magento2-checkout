@@ -14,6 +14,9 @@ use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 abstract class BaseClient
 {
 
+    /** @var $lastResponse ResponseInterface */
+    protected $lastResponse;
+
     /**
      * @var int
      */
@@ -165,6 +168,7 @@ abstract class BaseClient
         try {
             /** @var ResponseInterface $result */
             $result = $this->httpClient->$method($endpoint, $options);
+            $this->lastResponse = $result;
             $content =  $result->getBody()->getContents();
 
             if ($this->testMode) {
@@ -265,6 +269,10 @@ abstract class BaseClient
         return $this->apiContext->getHelper();
     }
 
+    public function getLastResponse()
+    {
+        return $this->lastResponse;
+    }
 
     /**
      * @param \Svea\Checkout\Helper\Data $helper
