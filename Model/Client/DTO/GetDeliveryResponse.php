@@ -87,7 +87,7 @@ class GetDeliveryResponse
      */
     public function getCartItems()
     {
-        return $this->cartItems;
+        return is_array($this->cartItems) ? $this->cartItems : [];
     }
 
     /**
@@ -136,6 +136,23 @@ class GetDeliveryResponse
         return $this;
     }
 
+
+    // Helpers!
+
+
+    /**
+     * @return null|OrderRow
+     */
+    public function getInvoiceFeeRow()
+    {
+        foreach ($this->getCartItems() as $item) {
+            if ($item->getName() === "InvoiceFee") {
+                return $item;
+            }
+        }
+
+        return null;
+    }
 
     private function get($key)
     {

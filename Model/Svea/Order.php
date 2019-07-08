@@ -305,9 +305,9 @@ class Order
             // generate items
             $this->items->addSveaItemsByInvoice($invoice);
 
-            // at this point we got VAT/Tax Rate from items above.
-            if ($invoice->getSveaInvoiceFee()) {
-                $this->items->addInvoiceFeeItem($this->helper->getInvoiceFeeLabel(), $invoice->getSveaInvoiceFee(), true);
+            // lets att the invoice fee if it exists!
+            if ($invoiceFeeRow = $sveaOrder->getInvoiceFeeRow()) {
+                $this->items->addInvoiceFeeItem($invoiceFeeRow);
             }
 
             // We validate the items before we send them to Svea. This might throw an exception!
@@ -370,9 +370,9 @@ class Order
             // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
-            // remove svea invoice fee from amount
-            if ($creditMemo->getSveaInvoiceFee()) {
-                $this->items->addInvoiceFeeItem($this->helper->getInvoiceFeeLabel(), $creditMemo->getSveaInvoiceFee(), true);
+            // lets att the invoice fee if it exists!
+            if ($invoiceFeeRow = $delivery->getInvoiceFeeRow()) {
+                $this->items->addInvoiceFeeItem($invoiceFeeRow);
             }
 
             // We validate the items before we send them to Svea. This might throw an exception!

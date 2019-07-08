@@ -359,55 +359,13 @@ class Items
     }
 
     /**
-     * @param $invoiceLabel
+     * @param $invoiceFeeRow OrderROw
      * @param $invoiceFee
      * @param $vatIncluded
      */
-    public function addInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
+    public function addInvoiceFeeItem($invoiceFeeRow)
     {
-        $item = $this->generateInvoiceFeeItem($invoiceLabel,$invoiceFee, $vatIncluded);
-        $this->_cart[$item->getArticleNumber()] = $item;
-    }
-
-    /**
-     * @param $invoiceLabel
-     * @param $invoiceFee
-     * @param $vatIncluded
-     * @return OrderRow
-     */
-    public function generateInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
-    {
-        $feeItem = new OrderRow();
-        $taxRate = $this->getMaxVat();
-
-        // basic values if taxes is 0
-        $invoiceFeeExclTax = $invoiceFee;
-        $invoiceFeeInclTax = $invoiceFee;
-
-        // here we calculate if there are taxes!
-        if ($taxRate > 0) {
-
-            if (!$vatIncluded) {
-                // i.e: 20 * ((100 + 25) / 100) =
-                // 20 * 125/100 =
-                // 20 * 1.25 = 25
-                $invoiceFeeInclTax = $invoiceFee * ((100 + $taxRate) / 100);
-
-            } else {
-                // with taxes!
-                $invoiceFeeInclTax = $invoiceFee;
-            }
-        }
-
-        $feeItem
-            ->setName($invoiceLabel)
-            ->setArticleNumber(strtolower(str_replace(" ", "_", $invoiceLabel)))
-            ->setVatPercent($this->addZeroes($taxRate))
-            ->setUnit("st")
-            ->setQuantity($this->addZeroes(1))
-            ->setUnitPrice($this->addZeroes($invoiceFeeInclTax)); // // incl. tax
-
-        return $feeItem;
+        $this->_cart[$invoiceFeeRow->getArticleNumber()] = $invoiceFeeRow;
     }
 
     // TODO!!

@@ -9,6 +9,7 @@ use Magento\Customer\Api\Data\GroupInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
 class Checkout extends \Magento\Checkout\Model\Type\Onepage
 {
@@ -656,23 +657,16 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $quote->setSveaOrderId($sveaOrder->getOrderId()); //this is used by pushAction
 
 
-        /*
         // we need to add invoice fee here to order if its enabled
-        if ($this->getHelper()->useInvoiceFee()
-            && $sveaOrder->getPaymentDetails()->getPaymentType() === "INVOICE"
-            && $sveaOrder->getPaymentDetails()->getPaymentMethod() === "EasyInvoice"
-        ) {
+        if ($sveaInvoiceFeeRow = $this->getInvoiceFeeRow($sveaOrder->getCartItems())) {
 
-            $invoiceFee = $this->getHelper()->getInvoiceFee() * 1.25; // TODO remove hardcode!
-
-            $quote->setSveaInvoiceFee($invoiceFee);
-            $quote->setGrandTotal($quote->getGrandTotal() + $invoiceFee);
-            $quote->setBaseGrandTotal($quote->getGrandTotal() + $invoiceFee);
+            $fee  = $sveaInvoiceFeeRow->getUnitPrice() / 100;
+            $quote->setSveaInvoiceFee($fee);
+            $quote->setGrandTotal($quote->getGrandTotal() + $fee);
+            $quote->setBaseGrandTotal($quote->getGrandTotal() + $fee);
 
             $quote->collectTotals();
         }
-        */
-
 
         //- do not recollect totals
         $quote->setTotalsCollectedFlag(true);
@@ -735,6 +729,23 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
         return $order;
+    }
+
+    /**
+     * @param $orderItems array
+     * @return OrderRow|null
+     */
+    public function getInvoiceFeeRow($orderItems)
+    {
+        foreach ($orderItems as $item)
+        {
+            /** @var $item OrderRow */
+            if ($item->getName() === "InvoiceFee") {
+                return $item;
+            }
+        }
+
+        return null;
     }
 
     /**
