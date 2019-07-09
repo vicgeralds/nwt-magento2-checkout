@@ -384,8 +384,6 @@ class Order
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
 
-            // TODO! we need to create another field from credit memo refund_invoice_fee,
-            // if not the magento refund amount will be higher than in svea, svea will be correct though
             // we only refund invoice fee if its a full refund!
             if ($this->isFullRefund($this->items->getCart(), $delivery->getCartItems())) {
 
@@ -396,9 +394,14 @@ class Order
 
             } else {
 
-                // if not a full refund and there is a invoice fee, we remove it from the credit memo total, so it passes our validation!
+                // if not a full refund and there is a invoice fee, it has to be added as an adjustment fee!
                 if ($invoiceFeeRow) {
-                    $creditMemoTotal -= ($invoiceFeeRow->getUnitPrice() / 100);
+                    $invoiceFee = ($invoiceFeeRow->getUnitPrice() / 100);
+
+                    // invoice fee is never removed from svea, because some issues we have in magento
+                    if ($creditMemo->getAdjustmentNegative() < $invoiceFee) {
+                        throw new LocalizedException(__('This is a partial credit memo. You have to add an adjustment fee that is the same amount as the svea invoice fee.'));
+                    }
                 }
             }
 
