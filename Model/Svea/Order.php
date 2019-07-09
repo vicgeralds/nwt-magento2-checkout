@@ -4,10 +4,10 @@
 namespace Svea\Checkout\Model\Svea;
 
 
+use Magento\Sales\Model\Order\Creditmemo;
 use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
-use Svea\Checkout\Model\Client\DTO\ChargePayment;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
@@ -235,6 +235,7 @@ class Order
 
         // TODO COMPANY $data['company'] = ....
 
+
         $data = [
             'firstname' => $address->getFirstName(),
             'lastname' => $address->getLastName(),
@@ -246,6 +247,9 @@ class Order
             'country_id' => $payment->getCountryCode(),
         ];
 
+        if ($payment->getCustomer()->getIsCompany()) {
+            $data['company'] = $payment->getBillingAddress()->getFullName();
+        }
 
         return $data;
     }
@@ -354,29 +358,53 @@ class Order
         if ($queueId && $sveaOrderId) {
 
             $responseArray = $this->orderManagementApi->getTask($queueId);
-            if (!isset($responseArray['Deliveries'][0])) {
-                throw new LocalizedException("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea.");
+            if (isset($responseArray['Status']) && $responseArray['Status'] === "InProgress") {
+                throw new LocalizedException(__("This delivery is still in progress. Try again soon."));
             }
+
+            if (!isset($responseArray['Deliveries'][0])) {
+                throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
+            }
+
             $deliveryArray = $responseArray['Deliveries'][0];
             $delivery = new GetDeliveryResponse($deliveryArray);
 
             if (!$delivery->getCanCreditOrderRows()) {
-                throw new LocalizedException("Can't refund this invoice. Please refund offline, and do the rest manually in Svea.");
+                throw new LocalizedException(__("Can't refund this invoice. Please refund offline, and do the rest manually in Svea."));
             }
 
-            // the creditmemo from magento
+            // the creditmemo from the payment/invoice
+            /** @var Creditmemo $creditMemo */
             $creditMemo = $payment->getCreditMemo();
+
+            $creditMemoTotal = $creditMemo->getGrandTotal();
+            $invoiceFeeRow = $delivery->getInvoiceFeeRow();
 
             // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
-            // lets att the invoice fee if it exists!
-            if ($invoiceFeeRow = $delivery->getInvoiceFeeRow()) {
-                $this->items->addInvoiceFeeItem($invoiceFeeRow);
+
+            // TODO! we need to create another field from credit memo refund_invoice_fee,
+            // if not the magento refund amount will be higher than in svea, svea will be correct though
+            // we only refund invoice fee if its a full refund!
+            if ($this->isFullRefund($this->items->getCart(), $delivery->getCartItems())) {
+
+                // lets add the invoice fee if it exists, since its a full refund!
+                if ($invoiceFeeRow) {
+                    $this->items->addInvoiceFeeItem($invoiceFeeRow);
+                }
+
+            } else {
+
+                // if not a full refund and there is a invoice fee, we remove it from the credit memo total, so it passes our validation!
+                if ($invoiceFeeRow) {
+                    $creditMemoTotal -= ($invoiceFeeRow->getUnitPrice() / 100);
+                }
             }
 
+
             // We validate the items before we send them to Svea. This might throw an exception!
-            $this->items->validateTotals($creditMemo->getGrandTotal());
+            $this->items->validateTotals($creditMemoTotal);
 
             try {
                 // we need order row ids
@@ -400,6 +428,52 @@ class Order
         }
     }
 
+
+    /**
+     * @param $creditMemoItems array
+     * @param $deliveryItems array
+     * @return bool
+     */
+    protected function isFullRefund($creditMemoItems, $deliveryItems)
+    {
+        $countMemoItems = count($creditMemoItems);
+        $countDeliveryItems = 0;
+        foreach ($deliveryItems as $item) {
+            /** @var $item OrderRow */
+            if ($item->getName() === "InvoiceFee") {
+                continue;
+            }
+
+            $countDeliveryItems++;
+        }
+
+        return $countMemoItems >= $countDeliveryItems;
+    }
+
+
+    /**
+    protected function isFullRefund($creditMemoItems, $deliveryItems)
+    {
+        $countMemoItems = 0;
+        foreach ($creditMemoItems as $creditMemoItem) {
+            /** @var $creditMemoItem OrderRow *
+            $countMemoItems +=  $creditMemoItem->getQuantity();
+        }
+
+
+        $countDeliveryItems = 0;
+        foreach ($deliveryItems as $item) {
+            /** @var $item OrderRow *
+            if ($item->getName() === "InvoiceFee") {
+                continue;
+            }
+
+            $countDeliveryItems += $item->getQuantity();
+        }
+
+        return $countMemoItems >= $countDeliveryItems;
+    }
+    */
 
     /**
      * @param $paymentId
