@@ -12,26 +12,51 @@ class Locale
      * @var array $allowedCurrencies
      */
     protected $allowedCurrencies = [
-      "SEK","NOK","DKK"
+      "SEK","NOK","DKK","EUR"
     ];
 
 
     protected $allowedCountries = [
-        "SE","NO","DK",
+        "SE","NO","DK","FI"
     ];
 
-    public function getCountryIdByIso3Code($iso3)
-    {
-        foreach ($this->allowedShippingCountries as $key => $countryId)
-        {
-            if ($key === $iso3) {
-                return $countryId;
-            }
-        }
-
-        // we return it back if we cant find anything... We should throw an exception in the future!
-        return $iso3;
-    }
+    protected $locales = [
+        "SE" => [
+            "locale" => "sv-SE",
+            "currency" => "SEK",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PhoneNumber" => "0811111111",
+                "PostalCode" => "99999",
+            ]
+        ],
+        "NO" >= [
+            "locale" => "nn-NO",
+            "currency" => "NOK",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PhoneNumber" => "21222222",
+                "PostalCode" => "0359",
+            ]
+        ],
+        "DK" >= [
+            "locale" => "da-DK",
+            "currency" => "DKK",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PhoneNumber" => "22222222",
+                "PostalCode" => "2100",
+            ]
+        ],
+        "FI" >= [
+            "locale" => "fi-FI",
+            "currency" => "EUR",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PostalCode" => "370",
+            ]
+        ],
+    ];
 
 
     /**
@@ -45,23 +70,52 @@ class Locale
     /**
      * @return array
      */
-    public function getAllowedShippingCountries($code = null)
-    {
-        if ($code === "iso2") {
-            return array_values($this->allowedShippingCountries);
-        } else if ($code === "iso3") {
-            return array_keys($this->allowedShippingCountries);
-        }
-
-        return $this->allowedShippingCountries;
-    }
-
-    /**
-     * @return array
-     */
     public function getAllowedCountries()
     {
         return $this->allowedCountries;
     }
 
+    /**
+     * @param $countryCode string
+     * @return string
+     */
+    public function getLocaleByCountryCode($countryCode)
+    {
+        if (array_key_exists($countryCode, $this->locales)) {
+            return $this->locales[$countryCode]['locale'];
+        }
+
+        return "en-UK";
+    }
+
+    /**
+     * @param $countryCode string
+     * @return array
+     */
+    public function getTestPresetValuesByCountryCode($countryCode)
+    {
+        if (isset($this->locales[$countryCode]['test'])) {
+            return $this->locales[$countryCode]['test'];
+        }
+
+        return [];
+    }
+
+    public function isValidCurrency($countryCode, $currency)
+    {
+        if (!array_key_exists($countryCode, $this->locales)) {
+            return false;
+        }
+
+        return $this->locales[$countryCode]['currency'] === strtoupper($currency);
+    }
+
+    public function getCurrencyByCountryCode($countryCode)
+    {
+        if (!array_key_exists($countryCode, $this->locales)) {
+            return null;
+        }
+
+        return $this->locales[$countryCode]['currency'];
+    }
 }

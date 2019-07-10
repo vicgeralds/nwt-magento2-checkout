@@ -317,18 +317,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->splitStringToArray($values);
     }
 
-    /*
-    public function getShippingCountries($store = null)
-    {
-        $values = $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'allowed_shipping_countries',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-
-        return $this->splitStringToArray($values);
-    }
-    */
 
     public function getDefaultCountry($store = null)
     {

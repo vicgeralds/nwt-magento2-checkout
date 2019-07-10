@@ -14,6 +14,7 @@ use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 use Magento\Framework\Exception\LocalizedException;
@@ -27,6 +28,11 @@ class Order
      * @var Items $items
      */
     protected $items;
+
+    /**
+     * @ar Locale $_locale;
+     */
+    protected $_locale;
 
     /**
      * @var \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi
@@ -58,14 +64,15 @@ class Order
         \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
-        Items $itemsHandler
+        Items $itemsHandler,
+        Locale $locale
     ) {
         $this->helper = $helper;
         $this->items = $itemsHandler;
         $this->checkoutApi = $checkoutApi;
         $this->orderManagementApi = $orderManagementApi;
         $this->_countryFactory  = $countryFactory;
-
+        $this->_locale = $locale;
     }
 
     /** @var $_quote Quote */
@@ -166,31 +173,46 @@ class Order
      */
     protected function createNewSveaPayment(Quote $quote)
     {
-        $mode = $this->helper->isTestMode();
+        $isTestMode = $this->helper->isTestMode();
+        $countryCode = $quote->getShippingAddress()->getCountryId();
         $items = $this->items->generateOrderItemsFromQuote($quote);
+        $refId = $this->generateReferenceByQuoteId($quote->getId());
 
 
         $merchantUrls = new MerchantSettings();
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
-        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($mode));
-        $merchantUrls->setPushUri($this->helper->getPushUrl($mode));
+        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($isTestMode));
+        $merchantUrls->setPushUri($this->helper->getPushUrl($isTestMode));
         //$merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($mode));
+
 
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
 
-        $refId = $this->generateReferenceByQuoteId($quote->getId());
-
-        $paymentOrder->setLocale("sv-SE"); // TODO
-        $paymentOrder->setCountryCode("SE"); // TODO
-        //$paymentOrder->setCountryCode($quote->getCountry()->getId());
+        $paymentOrder->setLocale($this->getLocale()->getLocaleByCountryCode($countryCode));
+        $paymentOrder->setCountryCode($countryCode);
         $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
         $paymentOrder->setMerchantData($refId); // could be more data
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
+
+        if ($isTestMode) {
+            $presetValues = [];
+            $testValues = $this->getLocale()->getTestPresetValuesByCountryCode($countryCode);
+            foreach ($testValues as $key => $val) {
+                $presetValue = new PresetValue();
+                $presetValue->setTypeName($key)->setValue($val);
+                $presetValues[] = $presetValue;
+            }
+
+            if (!empty($presetValues)) {
+                $paymentOrder->setPresetValues($presetValues);
+            }
+        }
+
 
         return $this->checkoutApi->createNewOrder($paymentOrder);
     }
@@ -398,7 +420,7 @@ class Order
                 if ($invoiceFeeRow) {
                     $invoiceFee = ($invoiceFeeRow->getUnitPrice() / 100);
 
-                    // invoice fee is never removed from svea, because some issues we have in magento
+                    // invoice fee is never removed from svea in partial refunds, because some issues we have in magento
                     if ($creditMemo->getAdjustmentNegative() < $invoiceFee) {
                         throw new LocalizedException(__('This is a partial credit memo. You have to add an adjustment fee that is the same amount as the svea invoice fee.'));
                     }
@@ -528,5 +550,10 @@ class Order
     public function getIframeSnippet()
     {
         return $this->iframeSnippet;
+    }
+
+    public function getLocale()
+    {
+        return $this->_locale;
     }
 }

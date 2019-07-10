@@ -59,7 +59,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function initCheckout($reloadIfCurrencyChanged = true)
     {
         if (!($this->context instanceof CheckoutContext)) {
-            throw new \Exception("Context must set first!");
+            throw new \Exception("Svea Context must be set first!");
         }
 
 
@@ -69,12 +69,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //init checkout
         $customer = $this->getCustomerSession();
         if($customer->getId()) {
-            //$this->_logger->info(__("Set customer %1",$customer->getId()));
             $quote->assignCustomer($customer->getCustomerDataObject()); //this will set also primary billing/shipping address as billing address
-            //$quote->setCustomer($customer->getCustomerDataObject());
+            $quote->setCustomer($customer->getCustomerDataObject());
         }
 
-        $allowCountries = $this->getAllowedCountries(); //this is not null (it is checked into $this->checkCart())
+        $allowCountries = $this->getAllowedCountries(); //this is not null (it is checked in $this->checkCart())
+        $defaultCountry = $this->getHelper()->getDefaultCountry();
+
         $billingAddress  = $quote->getBillingAddress();
         if($quote->isVirtual()) {
             $shippingAddress = $billingAddress;
@@ -83,12 +84,12 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
         if (!$shippingAddress->getCountryId()) {
-            $this->_logger->info(__("No country set, change to %1",$allowCountries[0]));
-            $this->changeCountry($allowCountries[0],$save = false);
+            $this->_logger->info(__("No country set, change to %1",$defaultCountry));
+            $this->changeCountry($defaultCountry,$save = false);
         } elseif(!in_array($shippingAddress->getCountryId(),$allowCountries)) {
-            $this->_logger->info(__("Wrong country set %1, change to %2",$shippingAddress->getCountryId(),$allowCountries[0]));
-            $this->messageManager->addNoticeMessage(__("Svea checkout is not available for %1, country was changed to %2.",$shippingAddress->getCountryId(),$allowCountries[0]));
-            $this->changeCountry($allowCountries[0],$save = false);
+            $this->_logger->info(__("Wrong country set %1, change to %2",$shippingAddress->getCountryId(),$defaultCountry));
+            $this->messageManager->addNoticeMessage(__("Svea checkout is not available for %1, country was changed to %2.",$shippingAddress->getCountryId(),$defaultCountry));
+            $this->changeCountry($defaultCountry,$save = false);
         }
 
         if(!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
@@ -115,11 +116,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
 
-        //TODO: ADD MINIMUM AOUNT TEST here
-
-        // do not set shipping method
-     //   $method = $this->checkAndChangeShippingMethod();
-
         try {
             $quote->setTotalsCollectedFlag(false)->collectTotals()->save(); //REQUIRED (maybe shipping amount was changed)
         } catch (\Exception $e) {
@@ -140,12 +136,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             //not needed
             $this->throwReloadException(__('Checkout was reloaded.'));
         }
-
-        /*
-        if($method === false) {
-            throw new LocalizedException(__('No shipping method'));
-        }
-        */
 
         return $this;
     }
@@ -206,19 +196,42 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function checkAndChangeCurrency()
     {
         $quote  = $this->getQuote();
+        $store  = $quote->getStore();
         $country    = $quote->getBillingAddress()->getCountryId();
+        $currentCurrency = $quote->getQuoteCurrencyCode();
+        $requiredCurrency = $this->getSveaPaymentHandler()->getlocale()->getCurrencyByCountryCode($country);
 
-        if (!$country) {
-            throw new LocalizedException(__('Country is not set.')); // this shouldn't happen anyways
+        if (!$country || !$requiredCurrency) {
+            throw new LocalizedException(__('Country is not set.')); // this shouldn't happen
+        }
+
+        if($requiredCurrency == $currentCurrency) {
+            //currency not changed
+            return false;
+        }
+
+
+        // this will try to change currency only if currency is available
+        $store->setCurrentCurrencyCode($requiredCurrency);
+
+        // check if it was possible to set the currency code!
+        if($store->getCurrentCurrency()->getCode() != $requiredCurrency) {
+            $this->throwRedirectToCartException(__('This currency is not available, please use an alternative checkout.'));
         }
 
         $quote->setTotalsCollectedFlag(false);
-        if (!$quote->isVirtual() && $quote->getShippingAddress()) {
+        if(!$quote->isVirtual() && $quote->getShippingAddress()) {
             $quote->getShippingAddress()->setCollectShippingRates(true);
         }
 
-        return false;
+        // we add a message
+        $this->messageManager->addNoticeMessage(__('Currency was changed to %1.',$requiredCurrency));
+
+        //currency was changed
+        return true;
     }
+
+
 
 
     /**
@@ -271,7 +284,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     public function getAllowedCountries() {
         if(is_null($this->_allowedCountries)) {
-            $this->_allowedCountries = ["SE", "DK", "NO"]; // todo get from settings
+            $this->_allowedCountries = $this->getHelper()->getCountries();
         }
 
         return $this->_allowedCountries;
