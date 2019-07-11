@@ -397,7 +397,7 @@ class Items
                 ->setUnit("st")
                 ->setQuantity($this->addZeroes(1))
                 ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-                ->setUnitPrice(0); // incl. tax price per item
+                ->setUnitPrice(-$amountInclTax); // incl. tax price per item
 
 
             $this->_cart[$reference] = $orderItem;
