@@ -160,6 +160,18 @@ class Order
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
     }
 
+    /**
+     * @param Quote $quote
+     * @return string
+     */
+    protected function generateMerchantData()
+    {
+        return json_encode([
+            "quote_id" => $this->getRefHelper()->getQuoteId(),
+            "client_order_number" => $this->getRefHelper()->generateClientOrderNumber(),
+        ]);
+    }
+
 
     /**
      * This function will create a new svea payment.

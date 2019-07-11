@@ -515,22 +515,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             return $this->throwReloadException(__("We could not create your order. Please contact the site admin with this error and order id: %1",$payment->getOrderId()));
         }
 
-
-        // TODO!
-        /*
-        try {
-            $this->updateMagentoPaymentReference($order, $sveaOrderId);
-        } catch (\Exception $e) {
-            $this->getLogger()->error("
-                Order created with ID: " . $order->getIncrementId(). ". 
-                But we could not update reference ID at svea. Please handle it manually, it has id: quote_id_: ".$quote->getId()."...  Svea Order ID: " . $payment->getOrderId()
-            );
-
-            // lets ignore this and save it in logs! let customer see his/her order confirmation!
-            $this->getLogger()->error("Error message:" . $e->getMessage());
-        }
-        */
-
         // clear old sessions
         $session = $this->getCheckoutSession();
         $session->clearHelperData();
@@ -726,16 +710,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         return null;
     }
 
-    /**
-     * @param \Magento\Sales\Model\Order $order
-     * @param $sveaOrderId
-     * @return void
-     * @throws ClientException
-     */
-    public function updateMagentoPaymentReference(\Magento\Sales\Model\Order $order, $sveaOrderId)
-    {
-        $this->getSveaPaymentHandler()->updateMagentoPaymentReference($order, $sveaOrderId);
-    }
 
     /**
      * @param \Magento\Sales\Model\Order $order

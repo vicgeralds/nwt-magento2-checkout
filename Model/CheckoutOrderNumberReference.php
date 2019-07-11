@@ -69,6 +69,10 @@ class CheckoutOrderNumberReference
         return $this->getCheckoutSession()->getSveaQuoteSignature();
     }
 
+    public function getQuoteId()
+    {
+        return $this->getQuote()->getId();
+    }
 
     /**
      * @return string
@@ -76,7 +80,7 @@ class CheckoutOrderNumberReference
     public function generateClientOrderNumber()
     {
         $sequence = $this->getSequence();
-        $cn = self::CLIENT_ID_PREFIX . $this->getQuote()->getId();
+        $cn = self::CLIENT_ID_PREFIX . $this->getQuoteId();
         if ($sequence > 1) {
             $cn = $cn . "_" . $sequence;
         }
@@ -90,7 +94,7 @@ class CheckoutOrderNumberReference
      */
     public function clientIdIsMatching($clientId)
     {
-        $cn = self::CLIENT_ID_PREFIX . $this->getQuote()->getId();
+        $cn = self::CLIENT_ID_PREFIX . $this->getQuoteId();
         return strpos($clientId, $cn) !== false;
     }
 
