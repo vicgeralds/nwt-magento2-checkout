@@ -435,6 +435,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
 
     /**
+     * Todo rethink this. Order should already been placed in the Validation
+     *
+     * @deprecated
      * @param $sveaOrderId
      * @param $useSession
      * @return true|void
@@ -467,8 +470,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             return $this->getLogger()->error("Save Order: Invalid data.");
         }
-
-
 
 
         try {

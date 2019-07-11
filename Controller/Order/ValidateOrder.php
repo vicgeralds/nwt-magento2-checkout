@@ -168,12 +168,13 @@ class ValidateOrder extends Update
     /**
      * @param GetOrderResponse $sveaOrder
      * @param Quote $quote
-     * @return mixed
+     * @return Order
      * @throws \Exception
      */
     public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
         try {
+            /** @var $order Order */
             $order = $this->getSveaCheckout()->placeOrder($sveaOrder, $quote);
 
         } catch (\Exception $e) {
