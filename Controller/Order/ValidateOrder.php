@@ -2,8 +2,11 @@
 
 namespace Svea\Checkout\Controller\Order;
 
+use Magento\Quote\Model\Quote;
+use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
 use Svea\Checkout\Model\Client\ClientException;
+use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 
 class ValidateOrder extends Update
 {
@@ -17,59 +20,72 @@ class ValidateOrder extends Update
 
         $result = $this->jsonResultFactory->create();
 
+        // one step at the time, all exceptions will be caught
         try {
-            $this->validateOrder($orderId, true);
+
+            // check if svea order id is correct
+            $this->validateSveaOrderId($orderId);
+
+            // load svea order if it exists
+            $sveaOrder = $this->loadSveaOrder($orderId);
+
+            // load quote if it exists
+            $quote = $this->loadQuote($sveaOrder->getMerchantData()->getQuoteId());
+
+            // check if everything is valid
+            $this->validateOrder($sveaOrder,$quote);
+
+            // we try to create the order now ;)
+            $order = $this->placeOrder($sveaOrder,$quote);
+
         } catch (CheckoutException $e) {
 
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
             return $result;
+        } catch (\Exception $e) {
+
+            $result->setHttpResponseCode(400);
+            $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
+            return $result;
         }
 
-        return $result->setData(['Valid' => true]);
+        return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
     }
 
 
     /**
-     * @param null $sveaOrderId
-     * @param bool $compareSveaIdWithSession
-     * @return bool|void
+     * @param $sveaOrderId
      * @throws CheckoutException
      */
-    public function validateOrder($sveaOrderId = null, $compareSveaIdWithSession = false)
+    protected function validateSveaOrderId($sveaOrderId)
     {
-
         $checkout = $this->getSveaCheckout();
-
-        if ($sveaOrderId === null) {
-            $checkoutOrderId = $this->getCheckoutSession()->getSveaOrderId();
-        } else {
-            $checkoutOrderId = $sveaOrderId;
-        }
-
-        if (!$checkoutOrderId) {
+        if (!$sveaOrderId) {
             $checkout->getLogger()->error("Validate Order: Found no svea order ID.");
-            return $this->throwCheckoutException("Your session has expired, found no svea order id.");
+            return $this->throwCheckoutException("Found no svea order id.");
         }
 
-        if ($compareSveaIdWithSession && $this->getCheckoutSession()->getSveaOrderId() != $sveaOrderId) {
-            $checkout->getLogger()->error("Validate Order: Svea order ID not matching");
-            return $this->throwCheckoutException("Your session has expired, found no svea order id.");
+        if (!is_integer($sveaOrderId)) {
+            $checkout->getLogger()->error("Validate Order: The Svea Order ID is invalid!");
+            return $this->throwCheckoutException("The Svea Order ID is invalid.");
         }
 
+    }
 
-        $quote = $this->getSveaCheckout()->getQuote();
-        if (!$quote) {
-            $checkout->getLogger()->error("Validate Order: No quote found for this customer.");
-            return $this->throwCheckoutException("Your session has expired, found no quote.");
-        }
-
-
+    /**
+     * @param $sveaOrderId
+     * @return \Svea\Checkout\Model\Client\DTO\GetOrderResponse|void
+     * @throws CheckoutException
+     */
+    public function loadSveaOrder($sveaOrderId)
+    {
+        $checkout = $this->getSveaCheckout();
         try {
-            $payment = $checkout->getSveaPaymentHandler()->loadSveaOrderById($checkoutOrderId);
+            $sveaOrder = $checkout->getSveaPaymentHandler()->loadSveaOrderById($sveaOrderId);
         } catch (ClientException $e) {
             if ($e->getHttpStatusCode() == 404) {
-                $checkout->getLogger()->error("Validate Order: The svea order with ID: " . $checkoutOrderId . " was not found in svea.");
+                $checkout->getLogger()->error("Validate Order: The svea order with ID: " . $sveaOrderId . " was not found in svea.");
                 return $this->throwCheckoutException("Found no Svea Order for this session. Please refresh the site or clear your cookies.");
             } else {
                 $checkout->getLogger()->error("Validate Order: Something went wrong when we tried to fetch the order ID from Svea. Http Status code: " . $e->getHttpStatusCode());
@@ -81,22 +97,48 @@ class ValidateOrder extends Update
 
             }
         } catch (\Exception $e) {
-            $this->messageManager->addExceptionMessage(
-                $e,
-                __('Something went wrong.')
-            );
-
-            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: ". $checkoutOrderId. "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: ". $sveaOrderId. "... Error message:" . $e->getMessage());
             return $this->throwCheckoutException("Something went wrong... Contact site admin.");
         }
 
-        if ($payment->getShippingAddress() === null) {
+        return $sveaOrder;
+    }
+
+    /**
+     * @param $quoteId int
+     * @return Quote|void
+     * @throws CheckoutException
+     */
+    public function loadQuote($quoteId)
+    {
+        try {
+            $quote = $this->loadQuoteById($quoteId);
+        } catch (\Exception $e) {
+            $this->getSveaCheckout()->getLogger()->error("Validate Order: We found no quote for this Svea order.");
+            return $this->throwCheckoutException("Found no quote object for this Svea order ID.");
+        }
+
+        return $quote;
+    }
+
+    /**
+     * @param $sveaOrder GetOrderResponse
+     * @param $quote Quote
+     * @return void
+     * @throws CheckoutException
+     */
+    public function validateOrder(GetOrderResponse $sveaOrder, Quote $quote)
+    {
+
+        $checkout = $this->getSveaCheckout();
+
+        if ($sveaOrder->getShippingAddress() === null) {
             $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
             return $this->throwCheckoutException("Please add shipping information.");
         }
 
-        $currentPostalCode = $payment->getShippingAddress()->getPostalCode();
-        $currentCountryId = $payment->getCountryCode();
+        $currentPostalCode = $sveaOrder->getShippingAddress()->getPostalCode();
+        $currentCountryId = $sveaOrder->getCountryCode();
         // check other quote stuff
 
         try {
@@ -111,24 +153,27 @@ class ValidateOrder extends Update
             }
 
             if (!$quote->getShippingAddress()->getShippingMethod()) {
-                $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
+                $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 return $this->throwCheckoutException("Please choose a shipping method.");
             }
 
         } catch (\Exception $e) {
-            $this->messageManager->addExceptionMessage(
-                $e,
-                __('Something went wrong.')
-            );
-
-            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: ". $checkoutOrderId. "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: ". $sveaOrder->getOrderId(). "... Error message:" . $e->getMessage());
             return $this->throwCheckoutException("Something went wrong... Contact site admin.");
         }
 
-
-        return true;
     }
 
+    /**
+     * @param GetOrderResponse $sveaOrder
+     * @param Quote $quote
+     * @return Order
+     */
+    public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
+    {
+        // TODO
+        return null;
+    }
 
     /**
      * @param $message
