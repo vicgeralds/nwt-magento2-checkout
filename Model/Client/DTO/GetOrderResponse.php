@@ -8,7 +8,6 @@ use Svea\Checkout\Model\Client\DTO\Order\Gui;
 use Svea\Checkout\Model\Client\DTO\Order\IdentityFlags;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
-use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 
 class GetOrderResponse extends GetOrder
 {
@@ -59,7 +58,13 @@ class GetOrderResponse extends GetOrder
         $this->setPaymentType($this->get('PaymentType'));
         $this->setCustomerReference($this->get('CustomerReference'));
         $this->setSveaWillBuyOrder($this->get('SveaWillBuyOrder'));
-        $this->setMerchantData($this->get('MerchantData'));
+
+
+        $merchantDataString = $this->get('MerchantData');
+        $merchantDataResponse = new MerchantDataResponse();
+        $merchantDataResponse->setDataFromResponse($merchantDataString);
+
+        $this->setMerchantData($merchantDataResponse);
 
         $flags = $this->get('IdentityFlags');
         if ($flags) {

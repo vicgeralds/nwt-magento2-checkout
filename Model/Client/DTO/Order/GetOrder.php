@@ -1,6 +1,8 @@
 <?php
 namespace Svea\Checkout\Model\Client\DTO\Order;
 
+use Svea\Checkout\Model\Client\DTO\MerchantDataResponse;
+
 class GetOrder
 {
 
@@ -79,7 +81,7 @@ class GetOrder
     /** @var $partnerKey string */
     protected $partnerKey;
 
-    /** @var $merchantData string */
+    /** @var $merchantData MerchantDataResponse */
     protected $merchantData;
 
     /**
@@ -461,7 +463,7 @@ class GetOrder
     }
 
     /**
-     * @return string
+     * @return MerchantDataResponse
      */
     public function getMerchantData()
     {
@@ -469,7 +471,7 @@ class GetOrder
     }
 
     /**
-     * @param string $merchantData
+     * @param MerchantDataResponse $merchantData
      * @return GetOrder
      */
     public function setMerchantData($merchantData)

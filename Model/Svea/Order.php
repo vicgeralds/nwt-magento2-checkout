@@ -153,7 +153,7 @@ class Order
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
-        $payment->setMerchantData($this->getRefHelper()->generateClientOrderNumber());
+        $payment->setMerchantData($this->generateMerchantData());
 
         $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
 
@@ -205,7 +205,7 @@ class Order
         $paymentOrder->setCountryCode($countryCode);
         $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
-       // $paymentOrder->setMerchantData($refId); // we could add merchant data here, also quote signature
+        $paymentOrder->setMerchantData($this->generateMerchantData());
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 
@@ -227,23 +227,6 @@ class Order
         return $this->checkoutApi->createNewOrder($paymentOrder);
     }
 
-
-    /**
-     * @param \Magento\Sales\Model\Order $order
-     * @param $paymentId
-     * @return void
-     * @throws ClientException
-     *
-    public function updateMagentoPaymentReference(\Magento\Sales\Model\Order $order, $paymentId)
-    {
-        $reference = new UpdatePaymentReference();
-        $reference->setReference($order->getIncrementId());
-        $reference->setCheckoutUrl($this->helper->getCheckoutUrl());
-        $this->checkoutApi->UpdatePaymentReference($reference, $paymentId);
-    }
-     * */
-
-
     /**
      * @param GetOrderResponse $payment
      * @param null $countryIdFallback
@@ -257,7 +240,6 @@ class Order
 
         $address = $payment->getShippingAddress();
 
-         // TODO
         $streets = [];
         if (is_array($address->getAddressLines())) {
             $streets = $address->getAddressLines();
