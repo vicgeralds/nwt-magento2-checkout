@@ -56,12 +56,18 @@ class Order
      */
     protected $_countryFactory;
 
+
+    /** @var \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper */
+    protected $sveaCheckoutReferenceHelper;
+
+
     protected $iframeSnippet = null;
 
 
     public function __construct(
         \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi,
         \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
+        \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
         Items $itemsHandler,
@@ -70,6 +76,7 @@ class Order
         $this->helper = $helper;
         $this->items = $itemsHandler;
         $this->checkoutApi = $checkoutApi;
+        $this->sveaCheckoutReferenceHelper = $sveaCheckoutReferenceHelper;
         $this->orderManagementApi = $orderManagementApi;
         $this->_countryFactory  = $countryFactory;
         $this->_locale = $locale;
@@ -92,8 +99,6 @@ class Order
             if ($quote->getHasError()) {
                 throw new LocalizedException(__('Cart has errors, cannot checkout.'));
             }
-
-            // TOdo we should check that the currency is valid (SEK, NOK, DKK)
         }
 
         $this->_quote = $quote;
@@ -108,12 +113,6 @@ class Order
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
     {
-        // todo check if country is cvalid
-        //  if(!$this->getOrderAdapter()->orderDataCountryIsValid($data,$country)){
-        //    throw new Exception
-        //}
-
-
         $paymentResponse = $this->createNewSveaPayment($quote);
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
         return $paymentResponse->getOrderId();
@@ -150,12 +149,11 @@ class Order
      */
     public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
     {
-        // TODO handle this exception?
         $items = $this->items->generateOrderItemsFromQuote($quote);
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
-        $payment->setMerchantData($this->generateReferenceByQuoteId($quote->getId()));
+        $payment->setMerchantData($this->getRefHelper()->generateClientOrderNumber());
 
         $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
 
@@ -176,7 +174,7 @@ class Order
         $isTestMode = $this->helper->isTestMode();
         $countryCode = $quote->getShippingAddress()->getCountryId();
         $items = $this->items->generateOrderItemsFromQuote($quote);
-        $refId = $this->generateReferenceByQuoteId($quote->getId());
+        $refId = $this->getRefHelper()->generateClientOrderNumber();
 
 
         $merchantUrls = new MerchantSettings();
@@ -195,7 +193,7 @@ class Order
         $paymentOrder->setCountryCode($countryCode);
         $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
-        $paymentOrder->setMerchantData($refId); // could be more data
+       // $paymentOrder->setMerchantData($refId); // we could add merchant data here, also quote signature
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 
@@ -284,16 +282,25 @@ class Order
      */
     public function cancelSveaPayment(\Magento\Payment\Model\InfoInterface $payment)
     {
-        $paymentId = $payment->getAdditionalInformation('svea_order_id');
-        if ($paymentId) {
+        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
+        if ($sveaOrderId) {
             // cancel it now!
-            $this->orderManagementApi->cancelOrder($this->generateCancelOrderObject(), $paymentId);
-
+            $this->cancelSveaPaymentById($sveaOrderId);
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea payment ID to void.')
             );
         }
+    }
+
+
+    /**
+     * @param $sveaOrderId
+     * @throws ClientException
+     */
+    public function cancelSveaPaymentById($sveaOrderId)
+    {
+        $this->orderManagementApi->cancelOrder($this->generateCancelOrderObject(), $sveaOrderId);
     }
 
     protected function generateCancelOrderObject()
@@ -477,30 +484,6 @@ class Order
 
 
     /**
-    protected function isFullRefund($creditMemoItems, $deliveryItems)
-    {
-        $countMemoItems = 0;
-        foreach ($creditMemoItems as $creditMemoItem) {
-            /** @var $creditMemoItem OrderRow *
-            $countMemoItems +=  $creditMemoItem->getQuantity();
-        }
-
-
-        $countDeliveryItems = 0;
-        foreach ($deliveryItems as $item) {
-            /** @var $item OrderRow *
-            if ($item->getName() === "InvoiceFee") {
-                continue;
-            }
-
-            $countDeliveryItems += $item->getQuantity();
-        }
-
-        return $countMemoItems >= $countDeliveryItems;
-    }
-    */
-
-    /**
      * @param $paymentId
      * @return GetOrderResponse
      * @throws ClientException
@@ -533,15 +516,6 @@ class Order
         return $this->checkoutApi;
     }
 
-    /**
-     * @param $quoteId
-     * @return string
-     */
-    public function generateReferenceByQuoteId($quoteId)
-    {
-       return "quote_id_" . $quoteId;
-    }
-
     public function setIframeSnippet($snippet)
     {
         $this->iframeSnippet = $snippet;
@@ -555,5 +529,11 @@ class Order
     public function getLocale()
     {
         return $this->_locale;
+    }
+
+
+    public function getRefHelper()
+    {
+        return $this->sveaCheckoutReferenceHelper;
     }
 }

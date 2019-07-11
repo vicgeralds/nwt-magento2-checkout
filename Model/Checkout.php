@@ -19,8 +19,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     /** @var CheckoutContext $context */
     protected $context;
 
-    protected $sveaOrderOrderHandler;
-
     protected $_allowedCountries;
 
     protected $_doNotMarkCartDirty  = false;
@@ -40,6 +38,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function getHelper()
     {
         return $this->context->getHelper();
+    }
+
+    public function getRefHelper()
+    {
+        return $this->context->getSveaCheckoutReferenceHelper();
     }
 
     /**
@@ -303,18 +306,18 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values
         $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
 
+        $sveaOrderId = $this->getRefHelper()->getSveaOrderId(); //check session for Svea Order Id
         // check if we already have started a payment flow with svea
-        $sveaOrderId = $this->getCheckoutSession()->getSveaOrderId(); //check session for Svea Payment Id
         if($sveaOrderId) {
             try {
 
                 // here we should check if we need to update the svea order!
-                if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getCheckoutSession()->getSveaQuoteSignature())) {
+                if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getRefHelper()->getQuoteSignature())) {
                     // try to update svea order data
                     $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
 
                     // Update new svea quote signature!
-                    $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
+                    $this->getRefHelper()->setQuoteSignature($newSignature);
                 } else {
 
                     // if we should update the order, we also set the svea iframe here
@@ -323,17 +326,15 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     // do some validations!
                     // if something went wrong and the order was placed by customer, but not saved in magento!
                     // if the svea order status is final, and the client order number matches with the current quote
-                    // we should cancel this svea order and throw an exception,
-                    if ($sveaOrder->getStatus() === 'Final' && $sveaOrder->getClientOrderNumber() == $this->getSveaPaymentHandler()->generateReferenceByQuoteId($quote->getId())) {
+                    // we should cancel this svea order and throw an exception ( a new svea order will be created),
+                    if ($sveaOrder->getStatus() === 'Final' && $this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
 
-                        // TODO cancel svea Order
-                        /*
                         try {
-                            $this->sveaOrderManagement->cancelOrder($sveaOrder->getOrderId());
+                            $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
                         } catch (\Exception $e) {
                             // do nothing!
                         }
-                        */
+
                         throw new \Exception("This order is already placed in Svea. We cancel it and create an new.");
                     }
                 }
@@ -343,22 +344,20 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 // If we couldn't update the svea order flow for any reason, we try to create an new one...
 
                 // remove sessions
-                $this->getCheckoutSession()->unsSveaOrderId(); //remove payment id from session
-                $this->getCheckoutSession()->unsSveaQuoteSignature(); //remove signature from session
+                $this->getRefHelper()->unsetSessions();
 
-
-
-                // TODO this doesnt seems to create an new order!!!
+                // this will help us create an new order by changing the client_order_number
+                $this->getRefHelper()->addToSequence();
 
                 // this will create an api call to svea and initiaze an new payment
                 $newPaymentId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
                 //save the payment id and quote signature in checkout/session
-                $this->getCheckoutSession()->setSveaOrderId($newPaymentId);
-                $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
+                $this->getRefHelper()->setSveaOrderId($newPaymentId);
+                $this->getRefHelper()->setQuoteSignature($newSignature);
 
                 // We log this!
-                $this->getLogger()->error("Trying to create a new payment because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
+                $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
                 $this->getLogger()->error($e);
             }
 
@@ -368,8 +367,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $sveaOrderId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
             //save svea uri in checkout/session
-            $this->getCheckoutSession()->setSveaOrderId($sveaOrderId);
-            $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
+            $this->getRefHelper()->setSveaOrderId($sveaOrderId);
+            $this->getRefHelper()->setQuoteSignature($newSignature);
         }
 
 
@@ -391,7 +390,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
 
         // Update new svea quote signature!
-        $this->getCheckoutSession()->setSveaQuoteSignature($newSignature);
+        $this->getRefHelper()->setQuoteSignature($newSignature);
     }
 
 
@@ -421,42 +420,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
 
     /**
-        // TODO
-     * Update shipping address
-     *
-     * @param string $methodCode
-     * @return void
-
-    public function updateShippingAddress($data)
-    {
-        $quote = $this->getQuote();
-        if($quote->isVirtual()) {
-            return $this;
-        }
-        $addr = $this->getSveaPaymentHandler()->convertSveaShippingToMagentoAddress($data,$withEmpty = false);
-        if(!$addr) return $this;
-
-        $shippingAddress = $quote->getShippingAddress();
-
-
-        $cnt = 0;
-        foreach($addr as $field=>$value) {
-            $kValue = trim(strtolower($value));
-            $mValue = trim(strtolower((string)$shippingAddress->getData($field)));
-            if($kValue != $mValue) {
-                $shippingAddress->setData($field,$value);
-                $cnt++;
-            }
-        }
-        if($cnt) {
-            $shippingAddress->setShouldIgnoreValidation(true)->setCollectShippingRates(true);
-            $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
-        }
-
-    }
-     */
-
-    /**
      * Make sure addresses will be saved without validation errors
      *
      * @return void
@@ -479,9 +442,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     public function tryToSaveSveaPayment($sveaOrderId, $useSession = false)
     {
-        $session = $this->getCheckoutSession();
 
-        $checkoutPaymentId = $session->getSveaOrderId();
+        $checkoutPaymentId = $this->getRefHelper()->getSveaOrderId();
         $quote = $this->getQuote();
 
         if (!$quote) {
@@ -533,7 +495,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
 
-        if ($payment->getClientOrderNumber() !== $this->getSveaPaymentHandler()->generateReferenceByQuoteId($quote->getId())) {
+        if (!$this->getRefHelper()->clientIdIsMatching($payment->getClientOrderNumber())) {
             $this->getLogger()->error("Save Order: The customer Quote ID doesn't match with the svea order reference: " . $payment->getClientOrderNumber());
             return $this->throwReloadException(__("Could not create an order. Invalid data. Contact admin."));
         }
@@ -570,6 +532,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         */
 
         // clear old sessions
+        $session = $this->getCheckoutSession();
         $session->clearHelperData();
         $session->clearQuote()->clearStorage();
 
@@ -583,6 +546,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             ->setLastRealOrderId($order->getIncrementId())
             ->setLastOrderStatus($order->getStatus());
 
+        $this->getRefHelper()->unsetSequence();
+        $this->getRefHelper()->unsetSveaQuoteSignature();
 
         return true;
     }
