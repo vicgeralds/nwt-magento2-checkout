@@ -542,7 +542,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      * @return mixed
      * @throws \Exception
      */
-    protected function placeOrder(GetOrderResponse $sveaOrder, Quote $quote) {
+    public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote) {
 
         //prevent observer to mark quote dirty, we will check here if quote was changed and, if yes, will redirect to checkout
         $this->setDoNotMarkCartDirty(true);

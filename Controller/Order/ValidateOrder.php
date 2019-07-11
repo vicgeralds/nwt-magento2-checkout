@@ -164,15 +164,24 @@ class ValidateOrder extends Update
 
     }
 
+
     /**
      * @param GetOrderResponse $sveaOrder
      * @param Quote $quote
-     * @return Order
+     * @return mixed
+     * @throws \Exception
      */
     public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
-        // TODO
-        return null;
+        try {
+            $order = $this->getSveaCheckout()->placeOrder($sveaOrder, $quote);
+
+        } catch (\Exception $e) {
+            $this->getSveaCheckout()->getLogger()->error("Validate Order: Could not place order. Svea Order ID: ". $sveaOrder->getOrderId(). "... Error message:" . $e->getMessage());
+            return $this->throwCheckoutException("Could not place the order.");
+        }
+
+        return $order;
     }
 
     /**
