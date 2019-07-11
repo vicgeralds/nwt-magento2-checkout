@@ -51,8 +51,13 @@ class ClientException extends Exception
         return $this->responseBody;
     }
 
-    protected function buildMessage(ResponseInterface $response, $fallbackMessage) {
-        if (!$response) {
+    /**
+     * @param ResponseInterface|null $response
+     * @param string $fallbackMessage
+     * @return string
+     */
+    protected function buildMessage($response, $fallbackMessage = "") {
+        if (!$response || !($response instanceof ResponseInterface)) {
             return $fallbackMessage;
         }
 
@@ -61,31 +66,29 @@ class ClientException extends Exception
         // try to parse the response body with messages
         try {
             $content = json_decode($this->responseBody, true);
-            if (isset($content['errors'])) {
-                $errors = [];
-                foreach ($content['errors'] as $errArray) {
-                    foreach ($errArray as $error) {
-                        $errors[] = $error;
+            $errors = [];
+            if (isset($content['Message'])) {
+                $errors[] = $content['Message'];
+            }
+
+            if (isset($content['Errors'])) {
+                foreach ($content['Errors'] as $err) {
+                    if (isset($err['ErrorMessage'])) {
+                        $errors[] = $err['ErrorMessage'];
                     }
                 }
+            }
 
-                if ($response->getStatusCode() >= 500) {
-                    return "Svea are experiencing technical issues. Try again, or contact the site admin! " . "Svea Error: " . implode(". ", $errors);
-                }
+            if ($response->getStatusCode() >= 500) {
+                return "Svea are experiencing technical issues. Try again, or contact the site admin! " . "Svea Error: " . implode(". ", $errors);
+            }
 
+            if (!empty($errors)) {
                 return "Svea Error: " . implode(". ", $errors);
+            } else {
+                return $fallbackMessage;
             }
 
-            if (isset($content['message'])) {
-                $errMsg = $content['message'];
-                if ($response->getStatusCode() >= 500) {
-                    return "Svea are experiencing technical issues. Try again, or contact the site admin! " . "Svea Error: " . $errMsg;
-                }
-
-                return "Svea Error: " . $errMsg;
-            }
-
-            return $fallbackMessage;
         } catch (\Exception $e) {
             return $fallbackMessage;
         }

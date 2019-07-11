@@ -27,6 +27,9 @@ class CheckoutContext
     /** @var \Svea\Checkout\Model\Svea\Locale $sveaLocale */
     protected $sveaLocale;
 
+    /** @var CheckoutOrderNumberReference $sveaCheckoutReferenceHelper */
+    protected $sveaCheckoutReferenceHelper;
+
    /**
      * Constructor
      *
@@ -41,6 +44,7 @@ class CheckoutContext
     public function __construct(
         \Svea\Checkout\Helper\Data $helper,
         \Svea\Checkout\Model\Svea\Order $sveaOrderHandler,
+        \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper,
         \Svea\Checkout\Logger\Logger $logger,
         \Svea\Checkout\Model\Svea\Locale $sveaLocale,
         \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement,
@@ -50,6 +54,7 @@ class CheckoutContext
         $this->logger = $logger;
         $this->sveaOrderHandler = $sveaOrderHandler;
         $this->sveaLocale = $sveaLocale;
+        $this->sveaCheckoutReferenceHelper = $sveaCheckoutReferenceHelper;
         $this->orderCustomerManagement = $orderCustomerManagement;
         $this->subscriber = $subscriber;
     }
@@ -100,6 +105,14 @@ class CheckoutContext
         return $this->sveaLocale;
     }
 
+
+    /**
+     * @return CheckoutOrderNumberReference
+     */
+    public function getSveaCheckoutReferenceHelper()
+    {
+        return $this->sveaCheckoutReferenceHelper;
+    }
 
 
 
