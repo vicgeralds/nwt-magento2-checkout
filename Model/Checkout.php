@@ -40,6 +40,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         return $this->context->getHelper();
     }
 
+    /**
+     * @return CheckoutOrderNumberReference
+     */
     public function getRefHelper()
     {
         return $this->context->getSveaCheckoutReferenceHelper();
@@ -306,7 +309,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values
         $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
 
-        $sveaOrderId = $this->getRefHelper()->getSveaOrderId(); //check session for Svea Order Id
+        //check session for Svea Order Id
+        $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
+
         // check if we already have started a payment flow with svea
         if($sveaOrderId) {
             try {
@@ -341,6 +346,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             } catch(\Exception $e) {
 
+                // We log this!
+                $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
+                $this->getLogger()->error($e);
                 // If we couldn't update the svea order flow for any reason, we try to create an new one...
 
                 // remove sessions
@@ -349,34 +357,53 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 // this will help us create an new order by changing the client_order_number
                 $this->getRefHelper()->addToSequence();
 
-                // this will create an api call to svea and initiaze an new payment
-                $newPaymentId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                try {
+                    // this will create an api call to svea and initiaze an new payment
+                    $newPaymentId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
-                //save the payment id and quote signature in checkout/session
-                $this->getRefHelper()->setSveaOrderId($newPaymentId);
-                $this->getRefHelper()->setQuoteSignature($newSignature);
+                    //save the payment id and quote signature in checkout/session
+                    $this->getRefHelper()->setSveaOrderId($newPaymentId);
+                    $this->getRefHelper()->setQuoteSignature($newSignature);
 
-                // We log this!
-                $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
-                $this->getLogger()->error($e);
+                } catch (\Exception $e2) {
+                    $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
+                    $this->getLogger()->error($e2);
+
+
+                    $this->throwRedirectToCartException("An error occurred, try again.", $e2);
+                }
+
+
             }
 
         } else {
+            // when a customer visits checkout first time
 
-            // this will create an api call to svea and initiaze a new payment
-            $sveaOrderId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+            try {
+                // this will create an api call to svea and initiaze a new payment
+                $sveaOrderId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
-            //save svea uri in checkout/session
-            $this->getRefHelper()->setSveaOrderId($sveaOrderId);
-            $this->getRefHelper()->setQuoteSignature($newSignature);
+                //save svea uri in checkout/session
+                $this->getRefHelper()->setSveaOrderId($sveaOrderId);
+                $this->getRefHelper()->setQuoteSignature($newSignature);
+            } catch (\Exception $e) {
+                $this->getLogger()->error("Could not create an new order again. " . $e->getMessage());
+                $this->getLogger()->error($e);
+
+
+                $this->throwRedirectToCartException("An error occurred, try again.", $e);
+            }
+
         }
 
 
         return $this;
     }
 
+
     /**
-     * This vill be used in ajax calls
+     * @param $sveaOrderId
+     * @throws ClientException
      * @throws LocalizedException
      */
     public function updateSveaPayment($sveaOrderId)
@@ -739,10 +766,15 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
     /**
      * @param $message
+     * @param $exception
      * @throws CheckoutException
      */
-    protected function throwRedirectToCartException($message)
+    protected function throwRedirectToCartException($message, $exception = null)
     {
+        if (($exception instanceof \Exception) && $this->getHelper()->isTestMode()) {
+            $message = __($message . " Error: %1", $exception->getMessage());
+        }
+
         throw new CheckoutException($message,'checkout/cart');
     }
 
