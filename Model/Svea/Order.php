@@ -145,7 +145,7 @@ class Order
      * @param Quote $quote
      * @param $paymentId
      * @return void
-     * @throws \Exception
+     * @throws ClientException
      */
     public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
     {
