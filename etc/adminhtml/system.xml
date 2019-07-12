@@ -9,10 +9,6 @@
             <label>Checkout</label>
             <tab>svea</tab>
             <resource>Svea_Checkout::system_config</resource>
-            <group id="svea_information" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1"
-                   showInStore="1">
-                <frontend_model>Svea\Checkout\Block\Adminhtml\System\Config\Information</frontend_model>
-            </group>
             <group id="connection" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Connection</label>
                 <field id="enabled" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -77,11 +73,6 @@
                     <label>Replace checkout url with Svea Checkout</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>If Yes, the "Go to Checkout" button in the minicart and cart will point to Svea checkout.</comment>
-                </field>
-                <field id="add_css" type="select" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="150">
-                    <label>Add Svea Css file</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment><![CDATA[If yes, <strong>svea.css</strong> will be added to the frontend <strong>(Only needed if styles-l.css and styles-m.css are removed or if magento default less file compiler is not been used)!</strong>]]></comment>
                 </field>
             </group>
 

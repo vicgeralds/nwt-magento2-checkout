@@ -19,7 +19,7 @@ switch ($type = $block->getType()) {
             $class = $type;
 
             $image = 'cart_cross_sell_products';
-            $title = __('Trending stuff right now');
+            $title = __('Cross-sell products');
             $items = $block->getItemCollection();
 
             $showAddTo = true;
@@ -35,7 +35,7 @@ switch ($type = $block->getType()) {
             $class = $type;
 
             $image = 'cart_cross_sell_products';
-            $title = __('Trending stuff right now');
+            $title = __('Cross-sell products');
             $items = $block->getItems();
 
             $showAddTo = true;
@@ -52,7 +52,6 @@ switch ($type = $block->getType()) {
 <?php if ($exist && $block->isEnable()): ?>
 
 <div class="block svea-<?= /* @escapeNotVerified */$class ?>">
-    <?php endif; ?>
     <div class="block-title title">
         <span id="block-<?= /* @escapeNotVerified */
         $class ?>-heading" role="heading" aria-level="2"><?= /* @escapeNotVerified */
@@ -174,3 +173,4 @@ switch ($type = $block->getType()) {
         });
     });
 </script>
+<?php endif; ?>

@@ -11,8 +11,6 @@
  */
 // svea-checkout_cart id is mandatory (it's used into ajax update blocks part)
 
-$cartHelper = $this->helper('Svea\Checkout\Helper\Cart');
-$currency = $cartHelper->getCurrencyCode();
 ?>
 <div id="svea-checkout_cart" class="table-wrapper order-items">
     <table id="details-table" class="svea-checkout-review" cellspacing="0" cellpadding="0" border="0">
@@ -33,7 +31,6 @@ $currency = $cartHelper->getCurrencyCode();
             <th class="col price" scope="col">
                 <span><?= /* @escapeNotVerified */
                     __('Price') ?></span>
-                <span class="currency"><?= $currency ?></span>
             </th>
         </tr>
         </thead>
@@ -43,6 +40,17 @@ $currency = $cartHelper->getCurrencyCode();
         <?php endforeach ?>
         </tbody>
     </table>
+    <div id="svea_cart_extra">
+        <div id="svea_coupon_toggle">
+            <div class="fieldset comment">
+                <input type="checkbox" name="coupon-toggle" value="1" id="coupon-toggle"
+                       title="<?php echo __('Use coupon'); ?>" class="checkbox">
+                <label for="coupon-toggle"><?php echo __('Do you have a coupon code?'); ?>
+                    <span><?= __('Click here to enter code')?> </span></label>
+            </div>
+        </div>
+        <?php echo $block->getChildHtml('newsletter'); ?>
+    </div>
     <div id="svea-checkout_cart_totals">
         <table cellspacing="0" cellpadding="0" border="0">
             <tfoot>

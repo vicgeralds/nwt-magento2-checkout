@@ -75,7 +75,7 @@ define([
                 var data_remove_url = inputQty.data('cart-url-remove');
                 var increment = inputQty.siblings('.input-number-increment');
                 var decrement = inputQty.siblings('.input-number-decrement');
-                var remove = inputQty.parent().siblings('.remove-product');
+                var remove = inputQty.closest('tr').find('td.subtotal .remove-product');
                 var prevVal = false;
 
                 if (increment.data('binded')) return;
