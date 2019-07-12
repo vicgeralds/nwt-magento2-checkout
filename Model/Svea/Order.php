@@ -185,8 +185,11 @@ class Order
     {
         $isTestMode = $this->helper->isTestMode();
         $countryCode = $quote->getShippingAddress()->getCountryId();
-        $items = $this->items->generateOrderItemsFromQuote($quote);
         $refId = $this->getRefHelper()->generateClientOrderNumber();
+
+        // generate items
+        $items = $this->items->generateOrderItemsFromQuote($quote);
+        $items = $this->items->fixCartItems($items);
 
         // set merchant settings, urls
         $merchantUrls = new MerchantSettings();
