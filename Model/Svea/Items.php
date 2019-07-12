@@ -32,7 +32,9 @@ class Items
      */
     protected $_productConfig;
 
+    /** @var []OrderRow $_cart */
     protected $_cart     = array();
+
     protected $_discounts = array();
     protected $_maxvat = 0;
     protected $_inclTAX = false;
@@ -41,6 +43,12 @@ class Items
     protected $_itemsArray = [];
 
 
+    /**
+     * Items constructor.
+     * @param \Svea\Checkout\Helper\Data $helper
+     * @param \Magento\Catalog\Helper\Product\Configuration $productConfig
+     * @param \Magento\Tax\Model\Calculation $calculationTool
+     */
     public function __construct(
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Catalog\Helper\Product\Configuration $productConfig,
@@ -55,6 +63,10 @@ class Items
     }
 
 
+    /**
+     * @param null $store
+     * @return $this
+     */
     public function init($store = null)
     {
         $this->_store = $store;
@@ -289,7 +301,10 @@ class Items
     }
 
 
-
+    /**
+     * @param $address
+     * @return $this
+     */
     public function addShipping($address) {
 
         if($this->_toInvoice && $address->getBaseShippingAmount() <= $address->getBaseShippingInvoiced()) {
@@ -369,6 +384,11 @@ class Items
     }
 
     // TODO!!
+
+    /**
+     * @param $couponCode
+     * @return $this
+     */
     public function addDiscounts($couponCode)
     {
 
@@ -407,6 +427,11 @@ class Items
 
     }
 
+    /**
+     * @param $grandTotal
+     * @return $this
+     * @throws CheckoutException
+     */
     public function validateTotals($grandTotal)
     {
 
@@ -526,6 +551,12 @@ class Items
 
 
     //generate Svea items from Magento Order
+
+    /**
+     * @param Order $order
+     * @return array
+     * @throws CheckoutException
+     */
     public function fromOrder(Order $order) {
         $this->init($order->getStore());
 
@@ -627,17 +658,29 @@ class Items
         return $rowNumbers;
     }
 
+    /**
+     * @return int
+     */
     public function getMaxVat()
     {
         return $this->_maxvat;
     }
 
+    /**
+     * @return array
+     */
     public function getCart()
     {
         return $this->_cart;
     }
 
-    public function getTotalTaxAmount($price,$vat, $addZeroes = true)
+    /**
+     * @param $price
+     * @param $vat
+     * @param bool $addZeroes
+     * @return float
+     */
+    public function getTotalTaxAmount($price, $vat, $addZeroes = true)
     {
         if ($addZeroes) {
             return $this->addZeroes($this->calculationTool->calcTaxAmount($price, $vat, true));
@@ -646,10 +689,32 @@ class Items
         }
     }
 
+    /**
+     * @param $amount
+     * @return float
+     */
     public function addZeroes($amount)
     {
         return round($amount * 100,0);
     }
 
 
+    /**
+     * Name may only be 40 characters long, we truncate it here to pass API.
+     *
+     * @param $cartItems
+     * @return array
+     */
+    public function fixCartItems($cartItems)
+    {
+        $cart = [];
+        foreach ($cartItems as $item) {
+
+            /** @var $item OrderRow */
+            $item->setName(substr($item->getName(),0,40));
+            $cart[] = $item;
+        }
+
+        return $cart;
+    }
 }
