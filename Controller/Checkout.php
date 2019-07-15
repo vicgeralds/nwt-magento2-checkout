@@ -42,6 +42,10 @@ abstract class Checkout extends Action
     /** @var SveaCheckoutCOntext $sveaCheckoutContext */
     protected $sveaCheckoutContext;
 
+    /** @var \Magento\Quote\Model\QuoteFactory $quoteFactory */
+    protected $quoteFactory;
+
+
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \Magento\Customer\Model\Session $customerSession,
@@ -51,12 +55,14 @@ abstract class Checkout extends Action
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
+        \Magento\Quote\Model\QuoteFactory $quoteFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext
 
     ) {
         $this->sveaCheckout = $sveaCheckout;
         $this->jsonResultFactory = $jsonResultFactory;
+        $this->quoteFactory = $quoteFactory;
         $this->resultPageFactory = $resultPageFactory;
         $this->checkoutSession = $checkoutSession;
         $this->storeManager= $storeManager;
