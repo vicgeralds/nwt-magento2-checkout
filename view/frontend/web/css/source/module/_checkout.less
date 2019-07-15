@@ -453,11 +453,21 @@ table {
     }
   }
 }
-
+#svea_comment {
+  max-width: 660px;
+  margin: 0 auto 25px;
+  #svea-checkout-comment {
+    background: @svea-color-light-grey;
+    border-radius: 7px;
+    textarea {
+      border: none;
+    }
+  }
+}
 .svea-checkout-shipping {
   padding-bottom: 25px;
   border-bottom: @svea-border;
-  max-width: 500px;
+  max-width: 660px;
   margin: 0 auto 25px;
 
   .svea-checkout-section-content {
@@ -643,12 +653,14 @@ button:not(.primary).svea-primary {
   }
 
   .svea-checkout-title {
-    .svea-heading;
     width: 100%;
-    border-bottom: @svea-border;
-    padding-bottom: 20px;
     margin: 0 auto;
     text-align: center;
+    h4 {
+      border-bottom: @svea-border;
+      padding-bottom: 20px;
+      .svea-heading;
+    }
   }
   //   Shipping
   //  _____________________________________________
@@ -701,7 +713,7 @@ button:not(.primary).svea-primary {
   }
   .svea-checkout-block {
     &.discount {
-      width: 500px;
+      width: 660px;
       margin: 0 auto;
     }
 
@@ -731,6 +743,10 @@ button:not(.primary).svea-primary {
     .svea-checkout-order__items {
       padding: 45px 35px 25px;
     }
+  }
+  .svea-checkout-section-shipping,
+  .svea-checkout-section-content {
+    margin: 0 30px;
   }
 }
 

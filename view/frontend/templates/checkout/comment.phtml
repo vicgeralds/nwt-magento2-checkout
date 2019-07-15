@@ -4,9 +4,12 @@
 <div id="svea_comment" class="svea-block svea-block-discount">
     <?php $customerComment = $block->getQuote()->getCustomerNote(); ?>
     <form method="post" action="<?php echo $block->getCommentSubmitUrl(); ?>" id="svea-checkout-comment">
+        <div class="svea-comment-title">
+            <h4><?= __('Order Comment (Optionally)')?></h4>
+        </div>
         <div class="fieldset comment">
             <div class="input-box field">
-                <textarea value="" placeholder="<?php echo __('Enter a comment for this order'); ?>"
+                <textarea rows="10" value="" placeholder="<?php echo __('Enter a comment for this order'); ?>"
                           name="svea_customer_comment" id=svea_order_comment_textarea"
                           class="svea-show-on-focus input-text"><?php echo $customerComment; ?></textarea>
             </div>

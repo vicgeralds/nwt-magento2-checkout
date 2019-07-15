@@ -120,6 +120,9 @@
                             <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.shipping_address"
                                    as="shipping_address" template="Svea_Checkout::checkout/shipping/address.phtml"/>
                         </block>
+                        <!-- Leave a comment -->
+                        <block class="Svea\Checkout\Block\Checkout" name="svea.checkout.comment" as="comment"
+                               template="Svea_Checkout::checkout/comment.phtml"/>
                     </block>
                 </container>
                 <!-- CROSSSELL -->
