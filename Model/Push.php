@@ -18,48 +18,28 @@ class Push extends \Magento\Framework\Model\AbstractModel
         $this->_init('Svea\Checkout\Model\Resource\Push');
     }
 
-    public function loadBySid($sID, $test)
+
+    public static function pushExists($sID, $test)
     {
         $pKey = $sID . '|' . ($test>0 ? 1 : 0);
-        return $this->load($pKey, 'sid');
+        $push = self::getObjectManager()->create('Svea\Checkout\Model\Push')->load($pKey, 'sid');
+
+        return $push->getId() !== null;
     }
 
-    public static function getRequest($sID, $test, $origin)
+    public static function savePush($sID, $test, $origin)
     {
         $pKey = $sID . '|' . ($test>0 ? 1 : 0);
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-
-        // load push
-        $push = $objectManager->create('Svea\Checkout\Model\Push')
-            ->load($pKey, 'sid')
-            ->setIsAlreadyStarted(true);
-
-        if (!$push->getId()) {
-            try {
-                $currentTime =  (new \DateTime())->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT);
-                $push->setSid($pKey)->setOrigin($origin)->setCreatedAt($currentTime)->save();
-                $push->setIsAlreadyStarted(false);
-            } catch (\Exception $e) {
-
-                //duplicate key? try to reload
-                $push->load($pKey, 'sid');
-                if (!$push->getId()) {
-                    //nope, no duplicate key, cant do anything
-                    throw $e;
-                }
-            }
-        } else {
-            $push->setIsAlreadyPlaced(true);
-        }
-
+        $currentTime =  (new \DateTime())->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT);
+        $push = self::getObjectManager()->create('Svea\Checkout\Model\Push');
+        $push->setSid($pKey)->setOrigin($origin)->setCreatedAt($currentTime)->save();
+        $push->setIsAlreadyStarted(false);
         return $push;
     }
 
-    public function getAge()
+
+    private static function getObjectManager()
     {
-        $now  = time();
-        $rup  = strtotime($this->getCreatedAt());
-        $age  = round(($now-$rup)/60, 2); //minutes
-        return $age;
+        return \Magento\Framework\App\ObjectManager::getInstance();
     }
 }

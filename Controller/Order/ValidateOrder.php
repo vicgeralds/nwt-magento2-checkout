@@ -14,6 +14,7 @@ class ValidateOrder extends Update
     public function execute()
     {
         $orderId = $this->getRequest()->getParam('sid');
+        $testMode = (int) $this->getRequest()->getParam('test');
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
@@ -29,12 +30,10 @@ class ValidateOrder extends Update
             // load svea order if it exists
             $sveaOrder = $this->loadSveaOrder($orderId);
 
-            // we check if we already have placed this order before, if any errors have occured
-            $push = Push::getRequest($orderId, true, "confirmation");
-            if ($push->getIsAlreadyPlaced()) {
+            // we check if we already have placed this order before
+            if (Push::pushExists($orderId, $testMode)) {
                 return $result->setData(['Valid' => true]);
             }
-
 
             // load quote if it exists
             $quote = $this->loadQuote($sveaOrder->getMerchantData()->getQuoteId());
@@ -44,6 +43,9 @@ class ValidateOrder extends Update
 
             // we try to create the order now ;)
             $order = $this->placeOrder($sveaOrder, $quote);
+
+            // save to push that we are done!
+            Push::savePush($orderId, $testMode, "validation");
 
         } catch (CheckoutException $e) {
             $result->setHttpResponseCode(400);
