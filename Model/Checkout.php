@@ -312,6 +312,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //check session for Svea Order Id
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
+
         // check if we already have started a payment flow with svea
         if($sveaOrderId) {
             try {
@@ -341,6 +342,10 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                         }
 
                         throw new \Exception("This order is already placed in Svea. We cancel it and create an new.");
+                    }
+
+                    if ($sveaOrder->getStatus() === "Cancelled") {
+                        throw new \Exception("This order is already placed in Svea and has been cancelled.");
                     }
                 }
 
