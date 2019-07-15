@@ -24,6 +24,8 @@ define([
             couponFormSelector: '#discount-coupon-form',
             cartContainerSelector: '#details-table',
             waitLoadingContainer: '#review-please-wait',
+            couponToggler: '#svea_coupon_toggle input',
+            couponFormContainer: '#svea-checkout_coupon',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -42,6 +44,7 @@ define([
             this.uiManipulate();
             this.scrollToPayment();
             this.checkShippingMethod();
+            this.toggleCouponContainer();
         },
 
         _checkIfCartWasUpdated: function () {
@@ -238,7 +241,7 @@ define([
             this.sveaApiChanges();
         },
 
-        _showSveaCheckout: function() {
+        _showSveaCheckout: function () {
             if (window.scoApi) {
                 try {
                     window.scoApi.setCheckoutEnabled(true);
@@ -247,7 +250,7 @@ define([
             }
         },
 
-        _hideSveaCheckout: function() {
+        _hideSveaCheckout: function () {
             if (window.scoApi) {
                 try {
                     window.scoApi.setCheckoutEnabled(false);
@@ -462,6 +465,18 @@ define([
                     jQuery(this).parent().find('.svea-checkout-radio-row').not(this).css('opacity', '.5');
                 }
             })
+        },
+
+        toggleCouponContainer: function () {
+            var target = this.options.couponFormContainer,
+                toggler = this.options.couponToggler;
+
+            jQuery(toggler).change(function () {
+                if (this.checked)
+                    jQuery(target).addClass('visible');
+                else
+                    jQuery(target).removeClass('visible');
+            });
         }
     });
 

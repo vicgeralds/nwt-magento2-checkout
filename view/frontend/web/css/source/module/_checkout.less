@@ -19,9 +19,19 @@
 //  _____________________________________________
 
 .svea-btn {
+  background: @svea-light-blue;
+  border-color: @svea-light-blue;
+  color: @svea-color-white;
+  box-shadow: none;
   border-radius: 7px !important;
   font-family: @svea-font-family !important;
   font-weight: bold;
+
+  &:hover {
+    background: @svea-light-blue;
+    border-color: @svea-light-blue;
+    box-shadow: none;
+  }
 }
 
 .svea-heading {
@@ -97,6 +107,7 @@
   .breadcrumbs {
     text-align: center;
     text-transform: uppercase;
+
     .items, a {
       color: @svea-color-blue;
     }
@@ -119,11 +130,12 @@
     width: 100%;
     display: flex;
     flex-wrap: wrap;
+
     #svea_cart_extra {
       flex: 1.5;
       border-bottom: @svea-border;
       padding-top: 40px;
-      color: @svea-color-blue ;
+      color: @svea-color-blue;
     }
   }
 
@@ -192,6 +204,7 @@
                 border-bottom-left-radius: 0 !important;
                 border-top-left-radius: 0 !important;
                 border-radius: 7px;
+                margin: 0;
               }
             }
           }
@@ -442,9 +455,10 @@ table {
 }
 
 .svea-checkout-shipping {
-  margin-bottom: 25px;
   padding-bottom: 25px;
   border-bottom: @svea-border;
+  max-width: 500px;
+  margin: 0 auto 25px;
 
   .svea-checkout-section-content {
     width: 100%;
@@ -522,15 +536,19 @@ button:not(.primary).svea-primary {
   flex: 1;
   order: 3;
   padding: 30px 30px 0 0;
+
   th {
     font-weight: normal;
   }
+
   td {
     font-weight: 500;
   }
+
   .grand.totals {
     text-transform: uppercase;
-    th,td {
+
+    th, td {
       .svea-heading;
       padding-top: 40px;
     }
@@ -604,11 +622,13 @@ button:not(.primary).svea-primary {
   #svea-checkout_cart_totals {
     text-align: right;
     border-bottom: @svea-border;
+
     table {
       tfoot {
         th {
           text-align: left;
         }
+
         tr:last-of-type {
           th, td {
             padding-bottom: 10px;
@@ -621,10 +641,18 @@ button:not(.primary).svea-primary {
       }
     }
   }
+
+  .svea-checkout-title {
+    .svea-heading;
+    width: 100%;
+    border-bottom: @svea-border;
+    padding-bottom: 20px;
+    margin: 0 auto;
+    text-align: center;
+  }
   //   Shipping
   //  _____________________________________________
   .svea-checkout-shipping {
-    margin-bottom: 25px;
     padding-bottom: 25px;
     border-bottom: @svea-border;
 
@@ -632,33 +660,31 @@ button:not(.primary).svea-primary {
       margin-top: 20px;
       padding-top: 20px;
       border-top: @svea-border;
-
-      .slick-track {
-        margin-right: 0;
-        margin-left: 0;
-      }
     }
 
     input,
     select {
       height: 50px;
-      width: 192px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
 
     input {
       &.postcode {
         position: relative;
-        top: 1px;
-        left: -3px;
-        border-bottom-left-radius: 0 !important;
+        border-top: 0 !important;
+        border-top-right-radius: 0 !important;
         border-top-left-radius: 0 !important;
       }
     }
 
     select {
       border-bottom-right-radius: 0 !important;
-      border-top-right-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+
+    #shipping-method-button {
+      margin: 15px auto;
+      width: 100%;
     }
 
   }
@@ -674,9 +700,9 @@ button:not(.primary).svea-primary {
     flex: 2;
   }
   .svea-checkout-block {
-    &.discount,
-    &.newsletter {
-      width: 400px;
+    &.discount {
+      width: 500px;
+      margin: 0 auto;
     }
 
     &.grand-total {
@@ -705,6 +731,18 @@ button:not(.primary).svea-primary {
     .svea-checkout-order__items {
       padding: 45px 35px 25px;
     }
+  }
+}
+
+#svea-checkout_coupon {
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    display: block;
   }
 }
 
@@ -804,31 +842,6 @@ button:not(.primary).svea-primary {
         display: flex;
         flex-direction: row;
         justify-content: space-between
-      }
-
-      .slick-list.draggable {
-        margin-top: 40px;
-      }
-
-      select {
-        border-bottom-right-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-      }
-
-      input {
-        border-top-right-radius: 0 !important;
-        border-top-left-radius: 0 !important;
-        border-top: 0 !important;
-      }
-
-      #shipping-method-button {
-        margin: 15px auto;
-        width: 100%;
-      }
-
-      .slick-dots {
-        top: -40px;
-        height: 40px;
       }
     }
   }
@@ -986,6 +999,7 @@ button:not(.primary).svea-primary {
     }
   }
 }
+
 label[for="coupon-toggle"] {
   span {
     text-decoration: underline;
