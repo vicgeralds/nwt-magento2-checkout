@@ -150,6 +150,7 @@ class Order
     public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
     {
         $items = $this->items->generateOrderItemsFromQuote($quote);
+        $items = $this->items->fixCartItems($items);
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
