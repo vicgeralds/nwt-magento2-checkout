@@ -186,6 +186,15 @@ class ValidateOrder extends Update
     }
 
     /**
+     * @param $quoteId
+     * @return Quote
+     */
+    public function loadQuoteById($quoteId)
+    {
+        return $this->quoteFactory->create()->loadByIdWithoutStore($quoteId);
+    }
+
+    /**
      * @param $message
      * @throws CheckoutException
      */
