@@ -8,7 +8,6 @@ class Confirmation extends Update
 {
     public function execute()
     {
-
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
 
@@ -24,14 +23,14 @@ class Confirmation extends Update
 
         $quoteId = $quote->getId();
         if (!$sveaOrderId = $quote->getSveaOrderId()) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found in Quote, i.e order has not been placed, quote id: %s.",$quote->getId()));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found in Quote, i.e order has not been placed, quote id: %s.", $quote->getId()));
             $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Order seems not to be placed, please contact the website admin with this quote id: %s.", $quote->getId()));
             return $this->_redirect('*');
         }
 
         $lastOrderId = $quote->getReservedOrderId();
         if (!$lastOrderId) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Missing Last Order ID, i.e order has not been placed, quote id: %s.",$quote->getId()));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Missing Last Order ID, i.e order has not been placed, quote id: %s.", $quote->getId()));
             $this->messageManager->addErrorMessage(sprintf("Missing Order ID. Order seems not to be placed, please contact the website admin with this quote id: %s.", $quote->getId()));
             return $this->_redirect('*');
         }
@@ -45,13 +44,12 @@ class Confirmation extends Update
         try {
             $order = $this->loadOrder($lastOrderId);
         } catch (\Exception $e) {
-            // If there is an order, but we couldnt load it due to technical problems, this could in worst cases lead to the user places an new order...
+            // If there is an order, but we couldn't load it due to technical problems, this could in worst cases lead to the user places an new order...
 
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, quote id: %s last order id: %s.",$quote->getId(), $lastOrderId));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, quote id: %s last order id: %s.", $quote->getId(), $lastOrderId));
             $this->messageManager->addErrorMessage(sprintf("Could not continue. Please contact the website admin, with this quote id: %s and this order id: %s.", $quoteId, $lastOrderId));
             return $this->_redirect('*');
         }
-
 
         // unset our checkout sessions
         $this->getSveaCheckout()->getRefHelper()->unsetSessions(true);
@@ -65,11 +63,8 @@ class Confirmation extends Update
             ->setLastRealOrderId($order->getIncrementId())
             ->setLastOrderStatus($order->getStatus());
 
-
         return $this->_redirect('*/*/success');
-
     }
-
 
     /**
      * @param $orderId

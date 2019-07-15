@@ -7,13 +7,14 @@ use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
+use Svea\Checkout\Model\Push;
 
 class ValidateOrder extends Update
 {
-
     public function execute()
     {
         $orderId = $this->getRequest()->getParam('sid');
+        $testMode = (int) $this->getRequest()->getParam('test');
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
@@ -29,22 +30,28 @@ class ValidateOrder extends Update
             // load svea order if it exists
             $sveaOrder = $this->loadSveaOrder($orderId);
 
+            // we check if we already have placed this order before
+            if (Push::pushExists($orderId, $testMode)) {
+                return $result->setData(['Valid' => true]);
+            }
+
             // load quote if it exists
             $quote = $this->loadQuote($sveaOrder->getMerchantData()->getQuoteId());
 
             // check if everything is valid
-            $this->validateOrder($sveaOrder,$quote);
+            $this->validateOrder($sveaOrder, $quote);
 
             // we try to create the order now ;)
-            $order = $this->placeOrder($sveaOrder,$quote);
+            $order = $this->placeOrder($sveaOrder, $quote);
+
+            // save to push that we are done!
+            Push::savePush($orderId, $testMode, "validation");
 
         } catch (CheckoutException $e) {
-
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
             return $result;
         } catch (\Exception $e) {
-
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
             return $result;
@@ -52,7 +59,6 @@ class ValidateOrder extends Update
 
         return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
     }
-
 
     /**
      * @param $sveaOrderId
@@ -70,7 +76,6 @@ class ValidateOrder extends Update
             $checkout->getLogger()->error("Validate Order: The Svea Order ID is invalid!");
             return $this->throwCheckoutException("The Svea Order ID is invalid.");
         }
-
     }
 
     /**
@@ -94,10 +99,9 @@ class ValidateOrder extends Update
 
                 // todo show error to customer in magento! order could not be placed
                 return $this->throwCheckoutException("Something went wrong when we tried to retrieve the order from Svea. Please try again or contact an admin.");
-
             }
         } catch (\Exception $e) {
-            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: ". $sveaOrderId. "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: " . $sveaOrderId . "... Error message:" . $e->getMessage());
             return $this->throwCheckoutException("Something went wrong... Contact site admin.");
         }
 
@@ -129,7 +133,6 @@ class ValidateOrder extends Update
      */
     public function validateOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
-
         $checkout = $this->getSveaCheckout();
 
         if ($sveaOrder->getShippingAddress() === null) {
@@ -142,7 +145,6 @@ class ValidateOrder extends Update
         // check other quote stuff
 
         try {
-
             $oldPostCode = $quote->getShippingAddress()->getPostcode();
             $oldCountryId = $quote->getShippingAddress()->getCountryId();
 
@@ -156,14 +158,11 @@ class ValidateOrder extends Update
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 return $this->throwCheckoutException("Please choose a shipping method.");
             }
-
         } catch (\Exception $e) {
-            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: ". $sveaOrder->getOrderId(). "... Error message:" . $e->getMessage());
+            $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             return $this->throwCheckoutException("Something went wrong... Contact site admin.");
         }
-
     }
-
 
     /**
      * @param GetOrderResponse $sveaOrder
@@ -176,9 +175,8 @@ class ValidateOrder extends Update
         try {
             /** @var $order Order */
             $order = $this->getSveaCheckout()->placeOrder($sveaOrder, $quote);
-
         } catch (\Exception $e) {
-            $this->getSveaCheckout()->getLogger()->error("Validate Order: Could not place order. Svea Order ID: ". $sveaOrder->getOrderId(). "... Error message:" . $e->getMessage());
+            $this->getSveaCheckout()->getLogger()->error("Validate Order: Could not place order. Svea Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             return $this->throwCheckoutException("Could not place the order.");
         }
 
