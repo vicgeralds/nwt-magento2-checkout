@@ -2,12 +2,12 @@
 
 namespace Svea\Checkout\Controller\Order;
 
-use Svea\Checkout\Helper\Cart as SveaCartHelper;
-use Svea\Checkout\Model\Checkout as SveaCheckout;
-use Svea\Checkout\Model\CheckoutContext as SveaCheckoutCOntext;
 use Magento\Customer\Api\AccountManagementInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Directory\Model\Country\Postcode\ValidatorInterface;
+use Svea\Checkout\Helper\Cart as SveaCartHelper;
+use Svea\Checkout\Model\Checkout as SveaCheckout;
+use Svea\Checkout\Model\CheckoutContext as SveaCheckoutCOntext;
 
 class GetShippingMethod extends Update
 {
@@ -21,7 +21,6 @@ class GetShippingMethod extends Update
      * @var SveaCartHelper
      */
     protected $sveaCartHelper;
-
 
     /**
      * GetShippingMethod constructor.
@@ -49,12 +48,12 @@ class GetShippingMethod extends Update
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
+        \Svea\Checkout\Model\PushFactory $pushFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext,
         ValidatorInterface $validatorInterface,
         SveaCartHelper $sveaCartHelper
-    )
-    {
+    ) {
         parent::__construct(
             $context,
             $customerSession,
@@ -65,6 +64,7 @@ class GetShippingMethod extends Update
             $resultPageFactory,
             $jsonResultFactory,
             $quoteFactory,
+            $pushFactory,
             $sveaCheckout,
             $sveaCheckoutContext
         );
@@ -82,12 +82,12 @@ class GetShippingMethod extends Update
         $postalCode = preg_replace("/[^0-9]/", "", $postalCode);
 
         if (!$postalCode) {
-            $this->getResponse()->setBody(json_encode(array('messages' => 'Please choose a valid Postal code.')));
+            $this->getResponse()->setBody(json_encode(['messages' => 'Please choose a valid Postal code.']));
             return;
         }
 
         if (!$this->validateCountryId($countryId)) {
-            $this->getResponse()->setBody(json_encode(array('messages' => 'Please select a Valid Country.')));
+            $this->getResponse()->setBody(json_encode(['messages' => 'Please select a Valid Country.']));
             return;
         }
 

@@ -1,15 +1,13 @@
 <?php
 
-
 namespace Svea\Checkout\Controller;
 
-
+use Magento\Checkout\Controller\Action;
 use Magento\Customer\Api\AccountManagementInterface;
-use Magento\Customer\Api\CustomerRepositoryInterface;
 
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Svea\Checkout\Model\Checkout as SveaCheckout;
 use Svea\Checkout\Model\CheckoutContext as SveaCheckoutCOntext;
-use Magento\Checkout\Controller\Action;
 
 abstract class Checkout extends Action
 {
@@ -32,12 +30,10 @@ abstract class Checkout extends Action
      */
     protected $checkoutSession;
 
-
     /**
      * @var \Magento\Store\Model\StoreManagerInterface
      */
     protected $storeManager;
-
 
     /** @var SveaCheckoutCOntext $sveaCheckoutContext */
     protected $sveaCheckoutContext;
@@ -45,6 +41,8 @@ abstract class Checkout extends Action
     /** @var \Magento\Quote\Model\QuoteFactory $quoteFactory */
     protected $quoteFactory;
 
+    /** @var \Svea\Checkout\Model\PushFactory $pushFactory */
+    protected $pushFactory;
 
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -56,6 +54,7 @@ abstract class Checkout extends Action
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
+        \Svea\Checkout\Model\PushFactory $pushFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext
 
@@ -67,6 +66,7 @@ abstract class Checkout extends Action
         $this->checkoutSession = $checkoutSession;
         $this->storeManager= $storeManager;
 
+        $this->pushFactory = $pushFactory;
         $this->sveaCheckoutContext = $sveaCheckoutContext;
 
         parent::__construct(
@@ -97,28 +97,27 @@ abstract class Checkout extends Action
      */
     protected function ajaxRequestAllowed()
     {
-        if(!$this->getRequest()->isXmlHttpRequest()) {
+        if (!$this->getRequest()->isXmlHttpRequest()) {
             return false;
         }
 
         //check if quote was changed
         $ctrlkey    = (string)$this->getRequest()->getParam('ctrlkey');
-        if(!$ctrlkey) {
+        if (!$ctrlkey) {
             return false; //do not check
         }
 
         //check if cart was updated
         $currkey    = $this->getSveaCheckout()->getQuoteSignature();
-        if($currkey != $ctrlkey) {
-            $response = array(
+        if ($currkey != $ctrlkey) {
+            $response = [
                 'reload'   => 1,
                 'messages' =>(string)__('The cart was updated (from another location), reloading the checkout, please wait...')
-            );
-            $this->messageManager->addErrorMessage($this->__('The requested changes were not applied. The cart was updated (from another location), please review the cart.'));
+            ];
+            $this->messageManager->addErrorMessage(__('The requested changes were not applied. The cart was updated (from another location), please review the cart.'));
             $this->getResponse()->setBody(Zend_Json::encode($response));
             return true;
         }
-
 
         return false;
     }
