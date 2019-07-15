@@ -1,19 +1,17 @@
 <?php
 
-
 namespace Svea\Checkout\Model;
 
-use Svea\Checkout\Model\Client\ClientException;
-use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Magento\Customer\Api\Data\GroupInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
+use Svea\Checkout\Model\Client\ClientException;
+use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
 class Checkout extends \Magento\Checkout\Model\Type\Onepage
 {
-
     protected $_paymentMethod = 'sveacheckout';
 
     /** @var CheckoutContext $context */
@@ -22,7 +20,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     protected $_allowedCountries;
 
     protected $_doNotMarkCartDirty  = false;
-
 
     /**
      * @param CheckoutContext $context
@@ -68,13 +65,12 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             throw new \Exception("Svea Context must be set first!");
         }
 
-
         $quote  = $this->getQuote();
         $this->checkCart();
 
         //init checkout
         $customer = $this->getCustomerSession();
-        if($customer->getId()) {
+        if ($customer->getId()) {
             $quote->assignCustomer($customer->getCustomerDataObject()); //this will set also primary billing/shipping address as billing address
             $quote->setCustomer($customer->getCustomerDataObject());
         }
@@ -83,37 +79,35 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $defaultCountry = $this->getHelper()->getDefaultCountry();
 
         $billingAddress  = $quote->getBillingAddress();
-        if($quote->isVirtual()) {
+        if ($quote->isVirtual()) {
             $shippingAddress = $billingAddress;
         } else {
             $shippingAddress = $quote->getShippingAddress();
         }
 
         if (!$shippingAddress->getCountryId()) {
-            $this->_logger->info(__("No country set, change to %1",$defaultCountry));
-            $this->changeCountry($defaultCountry,$save = false);
-        } elseif(!in_array($shippingAddress->getCountryId(),$allowCountries)) {
-            $this->_logger->info(__("Wrong country set %1, change to %2",$shippingAddress->getCountryId(),$defaultCountry));
-            $this->messageManager->addNoticeMessage(__("Svea checkout is not available for %1, country was changed to %2.",$shippingAddress->getCountryId(),$defaultCountry));
-            $this->changeCountry($defaultCountry,$save = false);
+            $this->_logger->info(__("No country set, change to %1", $defaultCountry));
+            $this->changeCountry($defaultCountry, $save = false);
+        } elseif (!in_array($shippingAddress->getCountryId(), $allowCountries)) {
+            $this->_logger->info(__("Wrong country set %1, change to %2", $shippingAddress->getCountryId(), $defaultCountry));
+            $this->messageManager->addNoticeMessage(__("Svea checkout is not available for %1, country was changed to %2.", $shippingAddress->getCountryId(), $defaultCountry));
+            $this->changeCountry($defaultCountry, $save = false);
         }
 
-        if(!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
+        if (!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
             //$this->_logger->info(__("Billing country [%1] != shipping [%2]",$billingAddress->getCountryId(),$shippingAddress->getCountryId()));
-            $this->changeCountry($shippingAddress->getCountryId(),$save = false);
+            $this->changeCountry($shippingAddress->getCountryId(), $save = false);
         }
-
 
         $currencyChanged = $this->checkAndChangeCurrency();
         $payment = $quote->getPayment();
-
 
         //force payment method  to our payment method
         $paymentMethod     = $payment->getMethod();
 
         $shipPaymentMethod = $shippingAddress->getPaymentMethod();
 
-        if(!$paymentMethod || !$shipPaymentMethod || $paymentMethod != $this->_paymentMethod || $shipPaymentMethod != $paymentMethod) {
+        if (!$paymentMethod || !$shipPaymentMethod || $paymentMethod != $this->_paymentMethod || $shipPaymentMethod != $paymentMethod) {
             $payment->unsMethodInstance()->setMethod($this->_paymentMethod);
             $quote->setTotalsCollectedFlag(false);
             //if quote is virtual, shipping is set as billing (see above)
@@ -121,13 +115,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $shippingAddress->setPaymentMethod($payment->getMethod())->setCollectShippingRates(true);
         }
 
-
         try {
             $quote->setTotalsCollectedFlag(false)->collectTotals()->save(); //REQUIRED (maybe shipping amount was changed)
         } catch (\Exception $e) {
             // do nothing
         }
-
 
         $billingAddress->save();
         $shippingAddress->save();
@@ -138,7 +130,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $quote->collectTotals();
         $this->quoteRepository->save($quote);
 
-        if($currencyChanged && $reloadIfCurrencyChanged) {
+        if ($currencyChanged && $reloadIfCurrencyChanged) {
             //not needed
             $this->throwReloadException(__('Checkout was reloaded.'));
         }
@@ -158,19 +150,20 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      * @return bool
      * @throws CheckoutException
      */
-    public function checkCart() {
+    public function checkCart()
+    {
         $quote = $this->getQuote();
 
         //@see OnePage::initCheckout
-        if($quote->getIsMultiShipping()) {
+        if ($quote->getIsMultiShipping()) {
             $quote->setIsMultiShipping(false)->removeAllAddresses();
         }
 
-        if(!$this->getHelper()->isEnabled()) {
+        if (!$this->getHelper()->isEnabled()) {
             $this->throwRedirectToCartException(__('The Svea Checkout is not enabled, please use an alternative checkout method.'));
         }
 
-        if(!$this->getAllowedCountries()) {
+        if (!$this->getAllowedCountries()) {
             $this->throwRedirectToCartException(__('The Svea Checkout is NOT available (no allowed country), please use an alternative checkout method.'));
         }
 
@@ -190,10 +183,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             $this->throwRedirectToCartException($error);
         }
-      
+
         return true;
     }
-
 
     /**
      * @return bool
@@ -211,67 +203,63 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             throw new LocalizedException(__('Country is not set.')); // this shouldn't happen
         }
 
-        if($requiredCurrency == $currentCurrency) {
+        if ($requiredCurrency == $currentCurrency) {
             //currency not changed
             return false;
         }
-
 
         // this will try to change currency only if currency is available
         $store->setCurrentCurrencyCode($requiredCurrency);
 
         // check if it was possible to set the currency code!
-        if($store->getCurrentCurrency()->getCode() != $requiredCurrency) {
+        if ($store->getCurrentCurrency()->getCode() != $requiredCurrency) {
             $this->throwRedirectToCartException(__('This currency is not available, please use an alternative checkout.'));
         }
 
         $quote->setTotalsCollectedFlag(false);
-        if(!$quote->isVirtual() && $quote->getShippingAddress()) {
+        if (!$quote->isVirtual() && $quote->getShippingAddress()) {
             $quote->getShippingAddress()->setCollectShippingRates(true);
         }
 
         // we add a message
-        $this->messageManager->addNoticeMessage(__('Currency was changed to %1.',$requiredCurrency));
+        $this->messageManager->addNoticeMessage(__('Currency was changed to %1.', $requiredCurrency));
 
         //currency was changed
         return true;
     }
-
-
-
 
     /**
      * @param $country
      * @param bool $saveQuote
      * @throws LocalizedException
      */
-    public function changeCountry($country, $saveQuote = false) {
-
+    public function changeCountry($country, $saveQuote = false)
+    {
         $allowCountries = $this->getAllowedCountries();
-        if(!$country || !in_array($country,$allowCountries)) {
-            throw new LocalizedException(__('Invalid country (%1)',$country));
+        if (!$country || !in_array($country, $allowCountries)) {
+            throw new LocalizedException(__('Invalid country (%1)', $country));
         }
 
         $blankAddress = $this->getBlankAddress($country);
         $quote        = $this->getQuote();
 
         $quote->getBillingAddress()->addData($blankAddress);
-        if(!$quote->isVirtual()) {
+        if (!$quote->isVirtual()) {
             $quote->getShippingAddress()->addData($blankAddress)->setCollectShippingRates(true);
         }
-        if($saveQuote) {
+        if ($saveQuote) {
             $this->checkAndChangeCurrency();
             $quote->collectTotals()->save();
         }
     }
 
-
     /**
      * @param $country
      * @return array
      */
-    public function getBlankAddress($country) {
-        $blankAddress = array(
+    public function getBlankAddress($country)
+    {
+        $blankAddress = [
             'customer_address_id'=>0,
             'save_in_address_book'=>0,
             'same_as_billing'=>0,
@@ -280,22 +268,21 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             'postcode'=>'',
             'region_id'=>'',
             'country_id'=>$country
-        );
+        ];
         return $blankAddress;
     }
-
 
     /**
      * @return array
      */
-    public function getAllowedCountries() {
-        if(is_null($this->_allowedCountries)) {
+    public function getAllowedCountries()
+    {
+        if (is_null($this->_allowedCountries)) {
             $this->_allowedCountries = $this->getHelper()->getCountries();
         }
 
         return $this->_allowedCountries;
     }
-
 
     /**
      * @return $this
@@ -312,9 +299,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //check session for Svea Order Id
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
-
         // check if we already have started a payment flow with svea
-        if($sveaOrderId) {
+        if ($sveaOrderId) {
             try {
 
                 // here we should check if we need to update the svea order!
@@ -334,7 +320,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     // if the svea order status is final, and the client order number matches with the current quote
                     // we should cancel this svea order and throw an exception ( a new svea order will be created),
                     if ($sveaOrder->getStatus() === 'Final' && $this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
-
                         try {
                             $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
                         } catch (\Exception $e) {
@@ -348,8 +333,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                         throw new \Exception("This order is already placed in Svea and has been cancelled.");
                     }
                 }
-
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
 
                 // We log this!
                 $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
@@ -369,18 +353,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     //save the payment id and quote signature in checkout/session
                     $this->getRefHelper()->setSveaOrderId($newPaymentId);
                     $this->getRefHelper()->setQuoteSignature($newSignature);
-
                 } catch (\Exception $e2) {
                     $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
                     $this->getLogger()->error($e2);
 
-
                     $this->throwRedirectToCartException("An error occurred, try again.", $e2);
                 }
-
-
             }
-
         } else {
             // when a customer visits checkout first time
 
@@ -395,16 +374,12 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 $this->getLogger()->error("Could not create an new order again. " . $e->getMessage());
                 $this->getLogger()->error($e);
 
-
                 $this->throwRedirectToCartException("An error occurred, try again.", $e);
             }
-
         }
-
 
         return $this;
     }
-
 
     /**
      * @param $sveaOrderId
@@ -425,10 +400,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $this->getRefHelper()->setQuoteSignature($newSignature);
     }
 
-
-
     //Checkout ajax updates
-
 
     /**
      * Set shipping method to quote, if needed
@@ -439,7 +411,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function updateShippingMethod($methodCode)
     {
         $quote = $this->getQuote();
-        if($quote->isVirtual()) {
+        if ($quote->isVirtual()) {
             return;
         }
         $shippingAddress = $quote->getShippingAddress();
@@ -449,7 +421,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
         }
     }
-
 
     /**
      * Make sure addresses will be saved without validation errors
@@ -465,7 +436,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
     }
 
-
     /**
      * Todo rethink this. Order should already been placed in the Validation
      *
@@ -477,7 +447,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     public function tryToSaveSveaPayment($sveaOrderId, $useSession = false)
     {
-
         $checkoutPaymentId = $this->getRefHelper()->getSveaOrderId();
         $quote = $this->getQuote();
 
@@ -503,7 +472,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             return $this->getLogger()->error("Save Order: Invalid data.");
         }
 
-
         try {
             $payment = $this->getSveaPaymentHandler()->loadSveaOrderById($sveaOrderId);
         } catch (ClientException $e) {
@@ -523,10 +491,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 __('Something went wrong.')
             );
 
-            $this->getLogger()->error("Save Order: Something went wrong. Might have been the request parser. Order ID: ". $checkoutPaymentId. "... Error message:" . $e->getMessage());
+            $this->getLogger()->error("Save Order: Something went wrong. Might have been the request parser. Order ID: " . $checkoutPaymentId . "... Error message:" . $e->getMessage());
             return $this->throwReloadException(__("Something went wrong... Contact site admin."));
         }
-
 
         if (!$this->getRefHelper()->clientIdIsMatching($payment->getClientOrderNumber())) {
             $this->getLogger()->error("Save Order: The customer Quote ID doesn't match with the svea order reference: " . $payment->getClientOrderNumber());
@@ -534,10 +501,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
         if ($payment->getStatus() !== "Final") {
-            $this->getLogger()->error("Save Order: Order doesnt have correct status (". $payment->getStatus() .") for the order id: " . $payment->getOrderId() . "... This must mean that they customer hasn't checked out yet!");
+            $this->getLogger()->error("Save Order: Order doesnt have correct status (" . $payment->getStatus() . ") for the order id: " . $payment->getOrderId() . "... This must mean that they customer hasn't checked out yet!");
             return $this->throwReloadException(__("We could not create your order... The order hasn't reached Svea. Order id: %1", $payment->getOrderId()));
         }
-
 
         try {
             $order = $this->placeOrder($payment, $quote);
@@ -545,14 +511,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $this->getLogger()->error("Could not place order for svea order with order id: " . $payment->getOrderId() . ", Quote ID:" . $quote->getId());
             $this->getLogger()->error("Error message:" . $e->getMessage());
 
-            return $this->throwReloadException(__("We could not create your order. Please contact the site admin with this error and order id: %1",$payment->getOrderId()));
+            return $this->throwReloadException(__("We could not create your order. Please contact the site admin with this error and order id: %1", $payment->getOrderId()));
         }
 
         // clear old sessions
         $session = $this->getCheckoutSession();
         $session->clearHelperData();
         $session->clearQuote()->clearStorage();
-
 
         // we set new sessions
         $session
@@ -575,7 +540,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      * @return mixed
      * @throws \Exception
      */
-    public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote) {
+    public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
+    {
 
         //prevent observer to mark quote dirty, we will check here if quote was changed and, if yes, will redirect to checkout
         $this->setDoNotMarkCartDirty(true);
@@ -583,10 +549,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //this will be saved in order
         $quote->setSveaOrderId($sveaOrder->getOrderId());
 
-
         // TODO get billing address as well!
         $shipping = $this->getSveaPaymentHandler()->convertSveaShippingToMagentoAddress($sveaOrder);
-
 
         // WE only get shipping address from svea!
         $billingAddress = $quote->getBillingAddress();
@@ -602,12 +566,10 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             ->setSaveInAddressBook(0)
             ->setShouldIgnoreValidation(true);
 
-
         $quote->setCustomerEmail($billingAddress->getEmail());
 
         $customer      = $quote->getCustomer(); //this (customer_id) is set into self::init
         $createCustomer = false;
-
 
         if ($customer && $customer->getId()) {
             $quote->setCheckoutMethod(self::METHOD_CUSTOMER)
@@ -628,18 +590,17 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             // register the customer, if its required, the customer will then be registered after order is placed
             if ($billingAddress->getEmail() && $this->getHelper()->registerCustomerOnCheckout()) {
-                if (!$this->_customerEmailExists($billingAddress->getEmail(),$quote->getStore()->getWebsiteId())) {
+                if (!$this->_customerEmailExists($billingAddress->getEmail(), $quote->getStore()->getWebsiteId())) {
                     $createCustomer = true;
                 }
             }
         }
 
-
         //set payment
         $payment = $quote->getPayment();
 
         //force payment method
-        if(!$payment->getMethod() || $payment->getMethod() != $this->_paymentMethod) {
+        if (!$payment->getMethod() || $payment->getMethod() != $this->_paymentMethod) {
             $payment->unsMethodInstance()->setMethod($this->_paymentMethod);
         }
 
@@ -647,14 +608,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             ->setSveaOrderId($sveaOrder->getOrderId())
             ->setCountryId($shippingAddress->getCountryId());
 
-
         $quote->getPayment()->getMethodInstance()->assignData($paymentData);
         $quote->setSveaOrderId($sveaOrder->getOrderId()); //this is used by pushAction
 
-
         // we need to add invoice fee here to order if its enabled
         if ($sveaInvoiceFeeRow = $this->getInvoiceFeeRow($sveaOrder->getCartItems())) {
-
             $fee  = $sveaInvoiceFeeRow->getUnitPrice() / 100;
             $quote->setSveaInvoiceFee($fee);
             $quote->setGrandTotal($quote->getGrandTotal() + $fee);
@@ -666,12 +624,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //- do not recollect totals
         $quote->setTotalsCollectedFlag(true);
 
-
         //!
         // Now we create the order from the quote
         $order = $this->quoteManagement->submit($quote);
-
-
 
         $this->_eventManager->dispatch(
             'checkout_type_onepage_save_order_after',
@@ -686,14 +641,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             }
         }
 
-
         // add order information to the session
         $this->_checkoutSession
             ->setLastOrderId($order->getId())
             ->setLastRealOrderId($order->getIncrementId())
             ->setLastOrderStatus($order->getStatus());
-
-
 
         $this->_eventManager->dispatch(
             'checkout_submit_all_after',
@@ -708,18 +660,17 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             try {
                 $this->context->getOrderCustomerManagement()->create($order->getId());
             } catch (\Exception $e) {
-                $this->_logger->error(__("Order %1, cannot create customer [%2]: %3",$order->getIncrementId(),$order->getCustomerEmail(),$e->getMessage()));
+                $this->_logger->error(__("Order %1, cannot create customer [%2]: %3", $order->getIncrementId(), $order->getCustomerEmail(), $e->getMessage()));
                 $this->_logger->critical($e);
             }
         }
 
-
-        if($order->getCustomerEmail() && $this->getHelper()->subscribeNewsletter($this->getQuote())) {
+        if ($order->getCustomerEmail() && $this->getHelper()->subscribeNewsletter($this->getQuote())) {
             try {
                 //subscribe to newsletter
                 $this->orderSubscribeToNewsLetter($order);
-            } catch(\Exception $e) {
-                $this->_logger->error("Cannot subscribe customer ({$order->getCustomerEmail()}) to the Newsletter: ".$e->getMessage());
+            } catch (\Exception $e) {
+                $this->_logger->error("Cannot subscribe customer ({$order->getCustomerEmail()}) to the Newsletter: " . $e->getMessage());
             }
         }
 
@@ -732,8 +683,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     public function getInvoiceFeeRow($orderItems)
     {
-        foreach ($orderItems as $item)
-        {
+        foreach ($orderItems as $item) {
             /** @var $item OrderRow */
             if ($item->getName() === "InvoiceFee") {
                 return $item;
@@ -742,7 +692,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         return null;
     }
-
 
     /**
      * @param \Magento\Sales\Model\Order $order
@@ -759,15 +708,12 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $subscriber = $this->context->getSubscriber();
         $subscriber->loadByEmail($email);
 
-        if($subscriber->getId()) {
+        if ($subscriber->getId()) {
             return false;
         }
 
         return $subscriber->subscribe($email);
     }
-
-
-
 
     /**
      * @param $message
@@ -780,7 +726,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $message = __($message . " Error: %1", $exception->getMessage());
         }
 
-        throw new CheckoutException($message,'checkout/cart');
+        throw new CheckoutException($message, 'checkout/cart');
     }
 
     /**
@@ -789,9 +735,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     protected function throwReloadException($message)
     {
-        throw new CheckoutException($message,'*/*');
+        throw new CheckoutException($message, '*/*');
     }
-
 
     /**
      * Get frontend checkout session object
@@ -809,7 +754,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     {
         return $this->context->getSveaOrderHandler();
     }
-
 
     /**
      * @param $markDirty

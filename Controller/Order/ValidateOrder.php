@@ -52,6 +52,8 @@ class ValidateOrder extends Update
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
             return $result;
         } catch (\Exception $e) {
+            $checkout->getLogger()->error("Validate Order Error: " . $e->getMessage());
+
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
             return $result;
