@@ -41,8 +41,11 @@ abstract class Checkout extends Action
     /** @var \Magento\Quote\Model\QuoteFactory $quoteFactory */
     protected $quoteFactory;
 
-    /** @var \Svea\Checkout\Model\PushFactory $pushFactory */
-    protected $pushFactory;
+    /** @var \Svea\Checkout\Api\Data\PushInterfaceFactory $pushInterfaceFactory */
+    protected $pushInterfaceFactory;
+
+    /** @var \Svea\Checkout\Model\PushRepositoryFactory $pushRepositoryFactory */
+    protected $pushRepositoryFactory;
 
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -54,7 +57,8 @@ abstract class Checkout extends Action
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
-        \Svea\Checkout\Model\PushFactory $pushFactory,
+        \Svea\Checkout\Api\Data\PushInterfaceFactory $pushInterfaceFactory,
+        \Svea\Checkout\Model\PushRepositoryFactory $pushRepositoryFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext
 
@@ -65,9 +69,11 @@ abstract class Checkout extends Action
         $this->resultPageFactory = $resultPageFactory;
         $this->checkoutSession = $checkoutSession;
         $this->storeManager= $storeManager;
-
-        $this->pushFactory = $pushFactory;
         $this->sveaCheckoutContext = $sveaCheckoutContext;
+
+        $this->pushInterfaceFactory = $pushInterfaceFactory;
+        $this->pushRepositoryFactory = $pushRepositoryFactory;
+
 
         parent::__construct(
             $context,

@@ -32,7 +32,7 @@ class InstallSchema implements InstallSchemaInterface
             CREATE TABLE IF NOT EXISTS `{$pushTable}` (
               `entity_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
               `sid` varchar(255) NOT NULL,
-              `origin` varchar(255) NOT NULL DEFAULT '' COMMENT 'confirmation or push',
+              `order_id` int(11) DEFAULT NULL COMMENT 'magento order id',
               `error`  tinyint(3) NOT NULL,
               `error_msg` TEXT,
               `created_at` timestamp NULL DEFAULT NULL,

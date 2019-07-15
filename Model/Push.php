@@ -2,13 +2,17 @@
 
 namespace Svea\Checkout\Model;
 
+use Magento\Framework\Model\AbstractModel;
+use Svea\Checkout\Api\Data\PushInterface;
+
 /**
  * Svea Push model
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)
+ * @since 100.0.2
  */
 
-class Push extends \Magento\Framework\Model\AbstractModel
+class Push extends AbstractModel implements PushInterface
 {
-
     /**
      * Define resource model
      */
@@ -18,28 +22,54 @@ class Push extends \Magento\Framework\Model\AbstractModel
         $this->_init('Svea\Checkout\Model\Resource\Push');
     }
 
-
-    public static function pushExists($sID, $test)
+    public function setId($id)
     {
-        $pKey = $sID . '|' . ($test>0 ? 1 : 0);
-        $push = self::getObjectManager()->create('Svea\Checkout\Model\Push')->load($pKey, 'sid');
-
-        return $push->getId() !== null;
+        $this->setData(self::ENTITY_ID, $id);
     }
 
-    public static function savePush($sID, $test, $origin)
+    public function setSid($sid)
     {
-        $pKey = $sID . '|' . ($test>0 ? 1 : 0);
-        $currentTime =  (new \DateTime())->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT);
-        $push = self::getObjectManager()->create('Svea\Checkout\Model\Push');
-        $push->setSid($pKey)->setOrigin($origin)->setCreatedAt($currentTime)->save();
-        $push->setIsAlreadyStarted(false);
-        return $push;
+        $this->setData(self::SVEA_ORDER_ID, $sid);
+        return $this;
     }
 
-
-    private static function getObjectManager()
+    public function setCreatedAt($createdAt)
     {
-        return \Magento\Framework\App\ObjectManager::getInstance();
+        $this->setData(self::CREATED_AT, $createdAt);
+        return $this;
+    }
+
+    public function setOrderId($orderId)
+    {
+        $this->setData(self::MAGENTO_ORDER_ID, $orderId);
+        return $this;
+    }
+
+    public function getId()
+    {
+        return $this->getData(self::ENTITY_ID);
+    }
+
+    public function getOrderId()
+    {
+        return $this->getData(self::MAGENTO_ORDER_ID);
+    }
+
+    public function getSid()
+    {
+        return $this->getData(self::SVEA_ORDER_ID);
+    }
+
+    public function getCreatedAt()
+    {
+        return $this->getData(self::CREATED_AT);
+    }
+
+    public function getAge()
+    {
+        $now  = time();
+        $rup  = strtotime($this->getCreatedAt());
+        $age  = round(($now-$rup)/60, 2); //minutes
+        return $age;
     }
 }
