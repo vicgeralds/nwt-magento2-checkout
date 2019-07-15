@@ -61,11 +61,21 @@ class ClientException extends Exception
             return $fallbackMessage;
         }
 
+
         $this->responseBody = $response->getBody()->getContents();
+
+        $headerError = $response->getHeader("ErrorMessage");
+        if (!empty($headerError)) {
+            return $headerError[0];
+        }
 
         // try to parse the response body with messages
         try {
             $content = json_decode($this->responseBody, true);
+            if ($content === null) { // not valid json, so its a string?
+                return $this->responseBody;
+            }
+
             $errors = [];
             if (isset($content['Message'])) {
                 $errors[] = $content['Message'];

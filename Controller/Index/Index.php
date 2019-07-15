@@ -30,14 +30,19 @@ class Index extends Checkout
                 $this->messageManager->addErrorMessage($e->getMessage());
             }
 
+
             if ($e->getRedirect()) {
                 $this->_redirect($e->getRedirect());
                 return;
             }
         } catch (\Exception $e) {
-            $this->messageManager->addErrorMessage($e->getMessage() ? $e->getMessage() : $this->__('Cannot initialize Svea Checkout (%1)', get_class($e)));
-            //$this->getLogger()->error("[" . __METHOD__ . "] (" . get_class($e) . ") {$e->getMessage()} ");
-            //$this->getLogger()->critical($e);
+
+            $this->messageManager->addErrorMessage($e->getMessage() ? $e->getMessage() : __('Cannot initialize Svea Checkout (%1)', get_class($e)));
+            $checkout->getLogger()->error("[" . __METHOD__ . "] (" . get_class($e) . ") {$e->getMessage()} ");
+            $checkout->getLogger()->critical($e);
+
+            $this->_redirect('checkout/cart');
+            return;
         }
 
         $resultPage = $this->resultPageFactory->create();

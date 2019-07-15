@@ -145,11 +145,12 @@ class Order
      * @param Quote $quote
      * @param $paymentId
      * @return void
-     * @throws \Exception
+     * @throws ClientException
      */
     public function updateCheckoutPaymentByQuoteAndOrderId(Quote $quote, $paymentId)
     {
         $items = $this->items->generateOrderItemsFromQuote($quote);
+        $items = $this->items->fixCartItems($items);
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
@@ -185,18 +186,19 @@ class Order
     {
         $isTestMode = $this->helper->isTestMode();
         $countryCode = $quote->getShippingAddress()->getCountryId();
-        $items = $this->items->generateOrderItemsFromQuote($quote);
         $refId = $this->getRefHelper()->generateClientOrderNumber();
 
+        // generate items
+        $items = $this->items->generateOrderItemsFromQuote($quote);
+        $items = $this->items->fixCartItems($items);
 
+        // set merchant settings, urls
         $merchantUrls = new MerchantSettings();
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
         $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($isTestMode));
         $merchantUrls->setPushUri($this->helper->getPushUrl($isTestMode));
-        //$merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($mode));
-
-
+        $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($isTestMode));
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
@@ -209,6 +211,7 @@ class Order
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 
+        // set preset values if test mode! we could also set values if customer is logged in
         if ($isTestMode) {
             $presetValues = [];
             $testValues = $this->getLocale()->getTestPresetValuesByCountryCode($countryCode);
@@ -223,7 +226,7 @@ class Order
             }
         }
 
-
+        // now call the api
         return $this->checkoutApi->createNewOrder($paymentOrder);
     }
 
