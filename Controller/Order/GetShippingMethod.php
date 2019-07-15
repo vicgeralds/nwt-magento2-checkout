@@ -22,6 +22,7 @@ class GetShippingMethod extends Update
      */
     protected $sveaCartHelper;
 
+
     /**
      * GetShippingMethod constructor.
      * @param \Magento\Framework\App\Action\Context $context
@@ -29,7 +30,10 @@ class GetShippingMethod extends Update
      * @param CustomerRepositoryInterface $customerRepository
      * @param AccountManagementInterface $accountManagement
      * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
+     * @param \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory
+     * @param \Magento\Quote\Model\QuoteFactory $quoteFactory
      * @param SveaCheckout $sveaCheckout
      * @param SveaCheckoutCOntext $sveaCheckoutContext
      * @param ValidatorInterface $validatorInterface
@@ -44,6 +48,7 @@ class GetShippingMethod extends Update
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
+        \Magento\Quote\Model\QuoteFactory $quoteFactory,
         SveaCheckout $sveaCheckout,
         SveaCheckoutCOntext $sveaCheckoutContext,
         ValidatorInterface $validatorInterface,
@@ -59,6 +64,7 @@ class GetShippingMethod extends Update
             $storeManager,
             $resultPageFactory,
             $jsonResultFactory,
+            $quoteFactory,
             $sveaCheckout,
             $sveaCheckoutContext
         );
