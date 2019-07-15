@@ -66,7 +66,7 @@ class ValidateOrder extends Update
             return $this->throwCheckoutException("Found no svea order id.");
         }
 
-        if (!is_integer($sveaOrderId)) {
+        if (!is_numeric($sveaOrderId)) {
             $checkout->getLogger()->error("Validate Order: The Svea Order ID is invalid!");
             return $this->throwCheckoutException("The Svea Order ID is invalid.");
         }
