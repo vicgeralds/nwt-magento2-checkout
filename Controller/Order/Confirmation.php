@@ -65,14 +65,21 @@ class Confirmation extends Update
         // unset our checkout sessions
         $this->getSveaCheckout()->getRefHelper()->unsetSessions(true);
 
+
+
+        // add order information to the session
+        $session
+            ->setLastOrderId($order->getId())
+            ->setLastRealOrderId($order->getIncrementId())
+            ->setLastOrderStatus($order->getStatus());
+
+
         // we set new sessions
         $session
             ->setSveaOrderId($sveaOrderId) // we need this in the success page
             ->setLastQuoteId($quoteId) // we need this in the success page
-            ->setLastSuccessQuoteId($order->getQuoteId())
-            ->setLastOrderId($order->getId())
-            ->setLastRealOrderId($order->getIncrementId())
-            ->setLastOrderStatus($order->getStatus());
+            ->setLastSuccessQuoteId($order->getQuoteId());
+
 
         return $this->_redirect('*/*/success');
     }
