@@ -83,25 +83,25 @@ class CheckoutOrderNumberReference
 
     public function getClientOrderNumber()
     {
-        if (!$this->getQuote()->getClientOrderNumber()) {
+        if (!$this->getQuote()->getSveaClientOrderNumber()) {
             $this->generateClientOrderNumberToQuote();
         }
 
-        return $this->getQuote()->getClientOrderNumber();
+        return $this->getQuote()->getSveaClientOrderNumber();
     }
 
     /**
      * @return void
      */
-    public function generateClientOrderNumberToQuote()
+    private function generateClientOrderNumberToQuote()
     {
-        $this->getQuote()->setClientOrderNumber($this->generateClientOrderNumber());
+        $this->getQuote()->setSveaClientOrderNumber($this->generateClientOrderNumber());
         $this->quoteRepository->save($this->getQuote());
     }
 
     public function unsetClientOrderNumber()
     {
-        $this->getQuote()->setClientOrderNumber(null);
+        $this->getQuote()->setSveaClientOrderNumber(null);
         $this->quoteRepository->save($this->getQuote());
     }
 
@@ -137,7 +137,7 @@ class CheckoutOrderNumberReference
      */
     public function clientIdIsMatching($clientId)
     {
-        return $clientId === $this->getQuote()->getClientOrderNumber();
+        return $clientId === $this->getQuote()->getSveaClientOrderNumber();
     }
 
     /**
