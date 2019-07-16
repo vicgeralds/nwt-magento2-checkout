@@ -319,14 +319,17 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     // if something went wrong and the order was placed by customer, but not saved in magento!
                     // if the svea order status is final, and the client order number matches with the current quote
                     // we should cancel this svea order and throw an exception ( a new svea order will be created),
-                    if ($sveaOrder->getStatus() === 'Final' && $this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
-                        try {
-                            $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
-                        } catch (\Exception $e) {
-                            // do nothing!
+                    if ($sveaOrder->getStatus() === 'Final') {
+
+                        if ($this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
+                            try {
+                                $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
+                            } catch (\Exception $e) {
+                                // do nothing!
+                            }
                         }
 
-                        throw new \Exception("This order is already placed in Svea. We cancel it and create an new.");
+                        throw new \Exception("This order is already placed in Svea. Creating a new.");
                     }
 
                     if ($sveaOrder->getStatus() === "Cancelled") {
@@ -340,18 +343,19 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                 $this->getLogger()->error($e);
                 // If we couldn't update the svea order flow for any reason, we try to create an new one...
 
-                // remove sessions
+                // remove sessions, remove client order number
                 $this->getRefHelper()->unsetSessions();
 
-                // this will help us create an new order by changing the client_order_number
+                // will help us reassure client order number will be unique
                 $this->getRefHelper()->addToSequence();
 
                 try {
                     // this will create an api call to svea and initiaze an new payment
-                    $newPaymentId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                    $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                    $sveaOrderId = $sveaOrder->getOrderId();
 
                     //save the payment id and quote signature in checkout/session
-                    $this->getRefHelper()->setSveaOrderId($newPaymentId);
+                    $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                     $this->getRefHelper()->setQuoteSignature($newSignature);
                 } catch (\Exception $e2) {
                     $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
@@ -365,14 +369,21 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             try {
                 // this will create an api call to svea and initiaze a new payment
-                $sveaOrderId = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                $sveaOrderId = $sveaOrder->getOrderId();
 
                 //save svea uri in checkout/session
                 $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                 $this->getRefHelper()->setQuoteSignature($newSignature);
             } catch (\Exception $e) {
-                $this->getLogger()->error("Could not create an new order again. " . $e->getMessage());
+                $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
                 $this->getLogger()->error($e);
+
+                // remove sessions, remove client order number
+                $this->getRefHelper()->unsetSessions();
+
+                // will help us reassure client order number will be unique
+                $this->getRefHelper()->addToSequence();
 
                 $this->throwRedirectToCartException("An error occurred, try again.", $e);
             }

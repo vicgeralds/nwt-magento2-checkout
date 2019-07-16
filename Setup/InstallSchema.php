@@ -1,20 +1,17 @@
 <?php
 
-
 namespace Svea\Checkout\Setup;
 
+use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Setup\InstallSchemaInterface;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
-use Magento\Framework\DB\Ddl\Table;
-
 
 /**
  * @codeCoverageIgnore
  */
 class InstallSchema implements InstallSchemaInterface
 {
-
 
     /**
      * {@inheritdoc}
@@ -41,24 +38,21 @@ class InstallSchema implements InstallSchemaInterface
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
         ");
 
-
-
-        $quoteData = array(
+        $quoteData = [
             'svea_order_id' => ['type' => Table::TYPE_TEXT, 'length' => '255', 'comment' => 'svea_order_id', 'nullable' => true, 'default' => ''],
-        );
-        $orderData = array(
+            'svea_client_order_id' => ['type' => Table::TYPE_TEXT, 'length' => '255', 'comment' => 'svea_client_order_id', 'nullable' => true, 'default' => ''],
+            'svea_hash' => ['type' => Table::TYPE_TEXT, 'length' => '255', 'comment' => 'svea_hash', 'nullable' => true, 'default' => ''],
+        ];
+        $orderData = [
             'svea_order_id' => ['type' => Table::TYPE_TEXT, 'length' => '255', 'comment' => 'svea_order_id', 'nullable' => true, 'default' => ''],
-        );
+        ];
 
-
-        $alterTables = array(
+        $alterTables = [
             'quote' => $quoteData,
             'sales_order' => $orderData,
-        );
-
+        ];
 
         foreach ($alterTables as $_table => $columns) {
-
             $table = $installer->getTable($_table);
             $tableInfo = $connection->describeTable($table);
             foreach ($columns as $column => $definition) {
@@ -81,9 +75,6 @@ class InstallSchema implements InstallSchemaInterface
         $idxName = $installer->getIdxName($_table, ['svea_order_id']);
         $connection->addIndex($table, $idxName, ['svea_order_id']);
 
-
         $installer->endSetup();
     }
-
-
 }

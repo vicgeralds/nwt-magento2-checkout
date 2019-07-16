@@ -22,6 +22,11 @@ class CheckoutOrderNumberReference
     const CLIENT_ID_PREFIX = "quote_id_";
 
     /**
+     * @var \Magento\Quote\Api\CartRepositoryInterface
+     */
+    protected $quoteRepository;
+
+    /**
      * @var \Magento\Checkout\Model\Session
      */
     protected $_checkoutSession;
@@ -29,11 +34,13 @@ class CheckoutOrderNumberReference
     /**
      * @param \Magento\Checkout\Model\Session $_checkoutSession
      */
-    public function __construct(\Magento\Checkout\Model\Session $_checkoutSession)
-    {
+    public function __construct(
+        \Magento\Checkout\Model\Session $_checkoutSession,
+        \Magento\Quote\Api\CartRepositoryInterface $quoteRepository
+    ) {
         $this->_checkoutSession = $_checkoutSession;
+        $this->quoteRepository = $quoteRepository;
     }
-
 
     /**
      * @return int|null
@@ -74,18 +81,54 @@ class CheckoutOrderNumberReference
         return $this->getQuote()->getId();
     }
 
+    public function getClientOrderNumber()
+    {
+        if (!$this->getQuote()->getClientOrderNumber()) {
+            $this->generateClientOrderNumberToQuote();
+        }
+
+        return $this->getQuote()->getClientOrderNumber();
+    }
+
+    /**
+     * @return void
+     */
+    public function generateClientOrderNumberToQuote()
+    {
+        $this->getQuote()->setClientOrderNumber($this->generateClientOrderNumber());
+        $this->quoteRepository->save($this->getQuote());
+    }
+
+    public function unsetClientOrderNumber()
+    {
+        $this->getQuote()->setClientOrderNumber(null);
+        $this->quoteRepository->save($this->getQuote());
+    }
+
+    private function generateClientOrderNumber()
+    {
+        $sequence = $this->getSequence();
+        $cn = $this->getQuoteId();
+        if ($sequence > 1) {
+            $cn = $cn . $sequence;
+        }
+
+        $cn = $cn . bin2hex(random_bytes(16));
+        return substr($cn, 0, 32);
+    }
+
     /**
      * @return string
      */
-    public function generateClientOrderNumber()
+    public function getSveaHash()
     {
-        $sequence = $this->getSequence();
-        $cn = self::CLIENT_ID_PREFIX . $this->getQuoteId();
-        if ($sequence > 1) {
-            $cn = $cn . "_" . $sequence;
+        if (!$this->getQuote()->getSveaHash()) {
+            $hash = hash("sha1", $this->generateClientOrderNumber());
+            $this->getQuote()->setSveaHash($hash);
+            $this->quoteRepository->save($this->getQuote());
         }
 
-        return $cn;
+        return $this->getQuote()->getSveaHash();
     }
 
     /**
@@ -94,8 +137,7 @@ class CheckoutOrderNumberReference
      */
     public function clientIdIsMatching($clientId)
     {
-        $cn = self::CLIENT_ID_PREFIX . $this->getQuoteId();
-        return strpos($clientId, $cn) !== false;
+        return $clientId === $this->getQuote()->getClientOrderNumber();
     }
 
     /**
@@ -119,7 +161,6 @@ class CheckoutOrderNumberReference
     {
         $this->getCheckoutSession()->setSveaCheckoutSequence($this->getSequence() + 1);
     }
-
 
     /**
      * Quote object getter
@@ -153,17 +194,20 @@ class CheckoutOrderNumberReference
         return $this->_checkoutSession;
     }
 
-    public function unsetSessions($unsetSequence = false)
+    public function unsetSessions($unsetSequence = false, $keepClientNumberInQuote = false)
     {
 
         // remove sessions
         $this->getCheckoutSession()->unsSveaOrderId(); //remove svea order id from session
         $this->unsetSveaQuoteSignature(); //remove signature from session
 
+        if (!$keepClientNumberInQuote) {
+            $this->unsetClientOrderNumber();
+        }
+
         if ($unsetSequence) {
             $this->unsetSequence();
         }
-
     }
 
     public function unsetSequence()
@@ -171,11 +215,8 @@ class CheckoutOrderNumberReference
         $this->getCheckoutSession()->unsSveaCheckoutSequence();
     }
 
-
     public function unsetSveaQuoteSignature()
     {
         $this->getCheckoutSession()->unsetSveaQuoteSignature();
     }
-
-
 }

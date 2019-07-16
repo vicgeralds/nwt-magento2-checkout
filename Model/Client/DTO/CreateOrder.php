@@ -1,7 +1,6 @@
 <?php
 namespace Svea\Checkout\Model\Client\DTO;
 
-
 use Svea\Checkout\Model\Client\DTO\Order\IdentityFlags;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
@@ -9,7 +8,6 @@ use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 
 class CreateOrder extends AbstractRequest
 {
-
 
     /** @var $countryCode string */
     protected $countryCode;
@@ -221,8 +219,6 @@ class CreateOrder extends AbstractRequest
         return $this;
     }
 
-
-
     public function toJSON()
     {
         return json_encode($this->toArray());
@@ -272,6 +268,4 @@ class CreateOrder extends AbstractRequest
 
         return $data;
     }
-
-
 }

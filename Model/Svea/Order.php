@@ -1,10 +1,11 @@
 <?php
 
-
 namespace Svea\Checkout\Model\Svea;
 
-
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order\Creditmemo;
+use Magento\Sales\Model\Order\Invoice;
 use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
@@ -17,9 +18,6 @@ use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Quote\Model\Quote;
-use Magento\Sales\Model\Order\Invoice;
 
 class Order
 {
@@ -39,12 +37,10 @@ class Order
      */
     protected $checkoutApi;
 
-
     /**
      * @var \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi
      */
     protected $orderManagementApi;
-
 
     /**
      * @var \Svea\Checkout\Helper\Data $helper
@@ -56,13 +52,10 @@ class Order
      */
     protected $_countryFactory;
 
-
     /** @var \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper */
     protected $sveaCheckoutReferenceHelper;
 
-
     protected $iframeSnippet = null;
-
 
     public function __construct(
         \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi,
@@ -89,9 +82,8 @@ class Order
      * @throws LocalizedException
      * @return $this
      */
-    public function assignQuote(Quote $quote,$validate = true)
+    public function assignQuote(Quote $quote, $validate = true)
     {
-
         if ($validate) {
             if (!$quote->hasItems()) {
                 throw new LocalizedException(__('Empty Cart'));
@@ -105,17 +97,16 @@ class Order
         return $this;
     }
 
-
     /**
      * @param Quote $quote
-     * @return int
+     * @return GetOrderResponse
      * @throws \Exception
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
     {
         $paymentResponse = $this->createNewSveaPayment($quote);
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
-        return $paymentResponse->getOrderId();
+        return $paymentResponse;
     }
 
     /**
@@ -139,7 +130,6 @@ class Order
         // nothing happened to the quote, we dont need to update payment at svea!
         return false;
     }
-
 
     /**
      * @param Quote $quote
@@ -169,10 +159,9 @@ class Order
     {
         return json_encode([
             "quote_id" => $this->getRefHelper()->getQuoteId(),
-            "client_order_number" => $this->getRefHelper()->generateClientOrderNumber(),
+            "client_order_number" => $this->getRefHelper()->getClientOrderNumber(),
         ]);
     }
-
 
     /**
      * This function will create a new svea payment.
@@ -184,9 +173,11 @@ class Order
      */
     protected function createNewSveaPayment(Quote $quote)
     {
+        $sveaHash = $this->getRefHelper()->getSveaHash();
+
         $isTestMode = $this->helper->isTestMode();
         $countryCode = $quote->getShippingAddress()->getCountryId();
-        $refId = $this->getRefHelper()->generateClientOrderNumber();
+        $refId = $this->getRefHelper()->getClientOrderNumber();
 
         // generate items
         $items = $this->items->generateOrderItemsFromQuote($quote);
@@ -196,9 +187,9 @@ class Order
         $merchantUrls = new MerchantSettings();
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
-        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($isTestMode));
-        $merchantUrls->setPushUri($this->helper->getPushUrl($isTestMode));
-        $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($isTestMode));
+        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($sveaHash));
+        $merchantUrls->setPushUri($this->helper->getPushUrl($sveaHash));
+        $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($sveaHash));
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
@@ -238,7 +229,7 @@ class Order
     public function convertSveaShippingToMagentoAddress(GetOrderResponse $payment)
     {
         if ($payment->getShippingAddress() === null) {
-            return array();
+            return [];
         }
 
         $address = $payment->getShippingAddress();
@@ -251,7 +242,6 @@ class Order
         }
 
         // TODO COMPANY $data['company'] = ....
-
 
         $data = [
             'firstname' => $address->getFirstName(),
@@ -271,7 +261,6 @@ class Order
         return $data;
     }
 
-
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
      * @throws ClientException
@@ -290,7 +279,6 @@ class Order
         }
     }
 
-
     /**
      * @param $sveaOrderId
      * @throws ClientException
@@ -307,7 +295,6 @@ class Order
         return $obj;
     }
 
-
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
      * @param $amount
@@ -321,7 +308,7 @@ class Order
 
             /** @var Invoice $invoice */
             $invoice = $payment->getCapturedInvoice(); // we get this from Observer\PaymentCapture
-            if(!$invoice) {
+            if (!$invoice) {
                 throw new LocalizedException(__('Cannot capture online, no invoice set'));
             }
 
@@ -350,7 +337,6 @@ class Order
                 throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
             }
 
-
             $paymentObj = new DeliverOrder();
             $paymentObj->setOrderRowIds($rowIds);
 
@@ -360,15 +346,12 @@ class Order
             // save queue_id, we need it later! if a refund will be made
             $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
             $payment->setTransactionId($response->getQueueId());
-
-
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea payment ID to capture.')
             );
         }
     }
-
 
     /**
      * @param \Magento\Payment\Model\InfoInterface $payment
@@ -382,7 +365,6 @@ class Order
         $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
 
         if ($queueId && $sveaOrderId) {
-
             $responseArray = $this->orderManagementApi->getTask($queueId);
             if (isset($responseArray['Status']) && $responseArray['Status'] === "InProgress") {
                 throw new LocalizedException(__("This delivery is still in progress. Try again soon."));
@@ -409,7 +391,6 @@ class Order
             // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
-
             // we only refund invoice fee if its a full refund!
             if ($this->isFullRefund($this->items->getCart(), $delivery->getCartItems())) {
 
@@ -417,7 +398,6 @@ class Order
                 if ($invoiceFeeRow) {
                     $this->items->addInvoiceFeeItem($invoiceFeeRow);
                 }
-
             } else {
 
                 // if not a full refund and there is a invoice fee, it has to be added as an adjustment fee!
@@ -430,7 +410,6 @@ class Order
                     }
                 }
             }
-
 
             // We validate the items before we send them to Svea. This might throw an exception!
             $this->items->validateTotals($creditMemoTotal);
@@ -448,15 +427,12 @@ class Order
 
             // try to refund it now!
             $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $delivery->getId());
-
-
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea ID and Svea Delivery ID to refund.')
             );
         }
     }
-
 
     /**
      * @param $creditMemoItems array
@@ -478,7 +454,6 @@ class Order
 
         return $countMemoItems >= $countDeliveryItems;
     }
-
 
     /**
      * @param $paymentId
@@ -504,7 +479,6 @@ class Order
         return $price * 100;
     }
 
-
     /**
      * @return Checkout
      */
@@ -527,7 +501,6 @@ class Order
     {
         return $this->_locale;
     }
-
 
     public function getRefHelper()
     {
