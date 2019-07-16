@@ -2,6 +2,9 @@
 
 namespace Svea\Checkout\Controller\Order;
 
+use Magento\Framework\Exception\CouldNotSaveException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Phrase;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
@@ -23,38 +26,84 @@ class ValidateOrder extends Update
 
         // one step at the time, all exceptions will be caught
         try {
-
             // check if svea order id is correct
             $this->validateSveaOrderId($orderId);
 
             // load svea order if it exists
             $sveaOrder = $this->loadSveaOrder($orderId);
+        } catch (CheckoutException $e) {
+            $result->setHttpResponseCode(400);
+            $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
+            return $result;
+        } catch (\Exception $e) {
+            $checkout->getLogger()->error("Validate Order Error: " . $e->getMessage());
 
-            // we check if we already have placed this order before
-            if (Push::pushExists($orderId, $testMode)) {
-                return $result->setData(['Valid' => true]);
-            }
+            $result->setHttpResponseCode(400);
+            $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
+            return $result;
+        }
 
+        // check if there is a push! we will save the mapping in database, svea order id and magento order id
+        $pushRepo = $this->pushRepositoryFactory->create();
+        try {
+            $pushRepo->get($orderId, $testMode);
+            return $result->setData(['Valid' => true]);
+        } catch (NoSuchEntityException $e) {
+            // ignore we will create a new push entity below after validation!
+        }
+
+        try {
             // load quote if it exists
             $quote = $this->loadQuote($sveaOrder->getMerchantData()->getQuoteId());
 
             // check if everything is valid
             $this->validateOrder($sveaOrder, $quote);
 
-            // we try to create the order now ;)
-            $order = $this->placeOrder($sveaOrder, $quote);
-
-            // save to push that we are done!
-            Push::savePush($orderId, $testMode, "validation");
-
         } catch (CheckoutException $e) {
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
             return $result;
         } catch (\Exception $e) {
+            $checkout->getLogger()->error("Validate Order Error: " . $e->getMessage());
+
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
             return $result;
+        }
+
+        // we save the push now after the validation!
+        try {
+            $pushRepo->save($this->createNewPushObject($orderId));
+        } catch (CouldNotSaveException $e2) {
+            $checkout->getLogger()->error("Validate Order Error, save Push: " . $e2->getMessage());
+
+            $result->setHttpResponseCode(400);
+            $result->setData(['errorMessage' => _("Could not place order. It might already been saved."), 'Valid' => false]);
+            return $result;
+        }
+
+        // here we create the magento order
+        try {
+            // we try to create the order now ;)
+            $order = $this->placeOrder($sveaOrder, $quote);
+        } catch (CheckoutException $e) {
+            $result->setHttpResponseCode(400);
+            $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
+
+            // TODO shall we delete the push? set it as error or something?
+
+            return $result;
+        }
+        
+
+        // we are almost done!
+        // save order id to push that we are done!
+        try {
+            $push = $pushRepo->get($orderId, $testMode);
+            $push->setOrderId($order->getId());
+            $pushRepo->save($push);
+        } catch (\Exception $e) {
+            $checkout->getLogger()->critical("Validate Order: Could not save Push, error: " . $e->getMessage());
         }
 
         return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
@@ -69,12 +118,12 @@ class ValidateOrder extends Update
         $checkout = $this->getSveaCheckout();
         if (!$sveaOrderId) {
             $checkout->getLogger()->error("Validate Order: Found no svea order ID.");
-            return $this->throwCheckoutException("Found no svea order id.");
+            throw new CheckoutException(__("Found no svea order id."));
         }
 
         if (!is_numeric($sveaOrderId)) {
             $checkout->getLogger()->error("Validate Order: The Svea Order ID is invalid!");
-            return $this->throwCheckoutException("The Svea Order ID is invalid.");
+            throw new CheckoutException(__("The Svea Order ID is invalid."));
         }
     }
 
@@ -91,18 +140,18 @@ class ValidateOrder extends Update
         } catch (ClientException $e) {
             if ($e->getHttpStatusCode() == 404) {
                 $checkout->getLogger()->error("Validate Order: The svea order with ID: " . $sveaOrderId . " was not found in svea.");
-                return $this->throwCheckoutException("Found no Svea Order for this session. Please refresh the site or clear your cookies.");
+                throw new CheckoutException(__("Found no Svea Order for this session. Please refresh the site or clear your cookies."));
             } else {
                 $checkout->getLogger()->error("Validate Order: Something went wrong when we tried to fetch the order ID from Svea. Http Status code: " . $e->getHttpStatusCode());
                 $checkout->getLogger()->error("Validate Order: Error message:" . $e->getMessage());
                 $checkout->getLogger()->debug($e->getResponseBody());
 
                 // todo show error to customer in magento! order could not be placed
-                return $this->throwCheckoutException("Something went wrong when we tried to retrieve the order from Svea. Please try again or contact an admin.");
+                throw new CheckoutException(__("Something went wrong when we tried to retrieve the order from Svea. Please try again or contact an admin."));
             }
         } catch (\Exception $e) {
             $checkout->getLogger()->error("Validate Order: Something went wrong. Might have been the request parser. Order ID: " . $sveaOrderId . "... Error message:" . $e->getMessage());
-            return $this->throwCheckoutException("Something went wrong... Contact site admin.");
+            throw new CheckoutException(__("Something went wrong... Contact site admin."));
         }
 
         return $sveaOrder;
@@ -119,7 +168,7 @@ class ValidateOrder extends Update
             $quote = $this->loadQuoteById($quoteId);
         } catch (\Exception $e) {
             $this->getSveaCheckout()->getLogger()->error("Validate Order: We found no quote for this Svea order.");
-            return $this->throwCheckoutException("Found no quote object for this Svea order ID.");
+            throw new CheckoutException(__("Found no quote object for this Svea order ID."));
         }
 
         return $quote;
@@ -137,7 +186,7 @@ class ValidateOrder extends Update
 
         if ($sveaOrder->getShippingAddress() === null) {
             $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
-            return $this->throwCheckoutException("Please add shipping information.");
+            throw new CheckoutException(__("Please add shipping information."));
         }
 
         $currentPostalCode = $sveaOrder->getShippingAddress()->getPostalCode();
@@ -151,16 +200,16 @@ class ValidateOrder extends Update
             // we do nothing
             if (!($oldCountryId == $currentCountryId && $oldPostCode == $currentPostalCode)) {
                 $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
-                return $this->throwCheckoutException("The country or postal code doesn't match with the one you entered earlier. Please re-enter the new postal code for the shipping above.");
+                throw new CheckoutException(__("The country or postal code doesn't match with the one you entered earlier. Please re-enter the new postal code for the shipping above."));
             }
 
             if (!$quote->getShippingAddress()->getShippingMethod()) {
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
-                return $this->throwCheckoutException("Please choose a shipping method.");
+                throw new CheckoutException(__("Please choose a shipping method."));
             }
         } catch (\Exception $e) {
             $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
-            return $this->throwCheckoutException("Something went wrong... Contact site admin.");
+            throw new CheckoutException(__("Something went wrong... Contact site admin."));
         }
     }
 
@@ -168,7 +217,7 @@ class ValidateOrder extends Update
      * @param GetOrderResponse $sveaOrder
      * @param Quote $quote
      * @return Order
-     * @throws \Exception
+     * @throws CheckoutException
      */
     public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
@@ -177,7 +226,7 @@ class ValidateOrder extends Update
             $order = $this->getSveaCheckout()->placeOrder($sveaOrder, $quote);
         } catch (\Exception $e) {
             $this->getSveaCheckout()->getLogger()->error("Validate Order: Could not place order. Svea Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
-            return $this->throwCheckoutException("Could not place the order.");
+            throw new CheckoutException(__("Could not place the order."));
         }
 
         return $order;
@@ -193,11 +242,21 @@ class ValidateOrder extends Update
     }
 
     /**
-     * @param $message
-     * @throws CheckoutException
+     * @param $sveaOrderId
+     * @return \Svea\Checkout\Api\Data\PushInterface
      */
-    protected function throwCheckoutException($message)
+    public function createNewPushObject($sveaOrderId)
     {
-        throw new CheckoutException($message);
+        $currentTime = null;
+        try {
+            $currentTime =  (new \DateTime())->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT);
+        } catch (\Exception $e) {
+            // do nothing
+        }
+
+        $push = $this->pushInterfaceFactory->create();
+        $push->setSid($sveaOrderId);
+        $push->setCreatedAt($currentTime);
+        return $push;
     }
 }
