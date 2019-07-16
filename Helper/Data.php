@@ -1,7 +1,6 @@
 <?php
 namespace Svea\Checkout\Helper;
 
-
 use Magento\Quote\Model\Quote;
 
 /**
@@ -14,7 +13,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * Cart Cookie name. Will be used to check if the cart was updated
      */
     const COOKIE_CART_CTRL_KEY = 'SveaCartCtrlKey';
-
 
     /**
      * Svea System Settings, Connection group
@@ -61,7 +59,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     /** @var \Svea\Checkout\Model\Svea\Locale $sveaLocale */
     protected $sveaLocale;
 
-
     /**
      * Data constructor.
      * @param \Magento\Framework\App\Helper\Context $context
@@ -78,68 +75,69 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         parent::__construct($context);
     }
 
+    /**
+     * @param null $store
+     * @return mixed
+     */
+    public function getSharedSecret($store = null)
+    {
+        return $this->scopeConfig->getValue(
+            self::XML_PATH_CONNECTION . 'shared_secret',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
 
     /**
      * @param null $store
      * @return mixed
      */
-    public function getSharedSecret($store = null) {
+    public function getMerchantId($store = null)
+    {
         return $this->scopeConfig->getValue(
-            self::XML_PATH_CONNECTION.'shared_secret',
+            self::XML_PATH_CONNECTION . 'merchant_id',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
-
-    /**
-     * @param null $store
-     * @return mixed
-     */
-    public function getMerchantId($store = null) {
-        return $this->scopeConfig->getValue(
-            self::XML_PATH_CONNECTION.'merchant_id',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-    }
-
 
     /**
      * @param null $store
      * @return bool
      */
-    public function isEnabled($store = null) {
+    public function isEnabled($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CONNECTION.'enabled',
+            self::XML_PATH_CONNECTION . 'enabled',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
-
 
     /**
      * @param null $store
      * @return bool
      */
-    public function isTestMode($store = null) {
+    public function isTestMode($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CONNECTION.'test_mode',
+            self::XML_PATH_CONNECTION . 'test_mode',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
 
-
-    public function getInvoiceFeeLabel($store = null) {
+    public function getInvoiceFeeLabel($store = null)
+    {
         return __("Invoice Fee");
     }
-
 
     /**
      * @param null $store
      * @return string
      */
-    public function getApiUrl($store = null){
+    public function getApiUrl($store = null)
+    {
         if ($this->isTestMode($store)) {
             return self::API_BASE_URL_TEST;
         } else {
@@ -156,14 +154,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
-
     /**
      * @param null $store
      * @return bool
      */
-    protected function _replaceCheckout($store = null) {
+    protected function _replaceCheckout($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_SETTINGS.'replace_checkout',
+            self::XML_PATH_SETTINGS . 'replace_checkout',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -186,7 +184,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         return $this->getStoreConfigFlag(self::XML_PATH_SETTINGS . 'register_customer', $store);
     }
-
 
     /**
      * @param null $store
@@ -221,33 +218,27 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getSuccessPageUrl()
     {
-        return $this->getCheckoutUrl( 'success');
+        return $this->getCheckoutUrl('success');
     }
 
-
-    public function getConfirmationUrl($testMode)
+    public function getConfirmationUrl($hash)
     {
-        $mode = $testMode ? 1 : 0;
-        return $this->getCheckoutUrl('confirmation');
+        return $this->getCheckoutUrl('confirmation', ['hash' => $hash, '_escape_params' => false]);
     }
 
-
-    public function getValidationUrl($testMode)
+    public function getValidationUrl($hash)
     {
-        $mode = $testMode ? 1 : 0;
-        return $this->getCheckoutUrl('validateOrder', array('sid'=>'{checkout.order.uri}','test'=> $mode, '_escape_params' => false));
+        return $this->getCheckoutUrl('validateOrder', ['sid'=>'{checkout.order.uri}', 'hash' => $hash, '_escape_params' => false]);
     }
 
     /**
-     * @param $testMode
+     * @param $hash
      * @return string
      */
-    public function getPushUrl($testMode)
+    public function getPushUrl($hash)
     {
-        $mode = $testMode ? 1 : 0;
-        return $this->getCheckoutUrl('push', array('sid'=>'{checkout.order.uri}','test'=> $mode, '_escape_params' => false));
+        return $this->getCheckoutUrl('push', ['sid'=>'{checkout.order.uri}','hash' => $hash, '_escape_params' => false]);
     }
-
 
     /**
      * @param null $path
@@ -272,7 +263,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $url = explode('|', (string)$this->getStoreConfig(self::XML_PATH_SETTINGS . 'terms_url', $store));
         return $this->_getUrl($url[0]);
     }
-
 
     /**
      * @return string
@@ -309,7 +299,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getCountries($store = null)
     {
         $values = $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'allowed_countries',
+            self::XML_PATH_SETTINGS . 'allowed_countries',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -317,11 +307,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->splitStringToArray($values);
     }
 
-
     public function getDefaultCountry($store = null)
     {
         return $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'default_country',
+            self::XML_PATH_SETTINGS . 'default_country',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -329,9 +318,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function getDefaultConsumerType($store = null)
     {
-
         return $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'default_customer_type',
+            self::XML_PATH_SETTINGS . 'default_customer_type',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -339,9 +327,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function getConsumerTypes($store = null)
     {
-
         $values =  $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'customer_types',
+            self::XML_PATH_SETTINGS . 'customer_types',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -396,7 +383,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param null $store
      * @return mixed
      */
-    public function getStoreConfig($path, $store = null) {
+    public function getStoreConfig($path, $store = null)
+    {
         return $this->scopeConfig->getValue(
             $path,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
@@ -409,7 +397,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param null $store
      * @return bool
      */
-    public function getStoreConfigFlag($path, $store = null) {
+    public function getStoreConfigFlag($path, $store = null)
+    {
         return $this->scopeConfig->isSetFlag(
             $path,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,

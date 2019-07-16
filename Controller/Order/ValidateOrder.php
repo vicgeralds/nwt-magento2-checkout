@@ -9,14 +9,13 @@ use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
-use Svea\Checkout\Model\Push;
 
 class ValidateOrder extends Update
 {
     public function execute()
     {
         $orderId = $this->getRequest()->getParam('sid');
-        //$sveaHash = $this->getRequest()->getParam('hash'); // todo for security!
+        $sveaHash = $this->getRequest()->getParam('hash'); // for security!
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
@@ -54,6 +53,12 @@ class ValidateOrder extends Update
         try {
             // load quote if it exists
             $quote = $this->loadQuote($sveaOrder->getMerchantData()->getQuoteId());
+
+            // compare the hashes, so no one tries to create an order without our permission
+            if ($quote->getSveaHash() !== $sveaHash) {
+                $checkout->getLogger()->error("Validate Order: The quote hash (%s) does not match the request hash (%s)." . $quote->getSveaHash(), $sveaHash);
+                throw new CheckoutException(__("Invalid Quote hash"));
+            }
 
             // check if everything is valid
             $this->validateOrder($sveaOrder, $quote);

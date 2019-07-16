@@ -3,7 +3,7 @@
 namespace Svea\Checkout\Controller\Order;
 
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Sales\Model\Order;
+use Svea\Checkout\Model\CheckoutException;
 
 class Confirmation extends Update
 {
@@ -11,6 +11,7 @@ class Confirmation extends Update
     {
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
+        $sveaHash = $this->getRequest()->getParam('hash'); // for security!
 
         $quote = $checkout->getQuote();
         if (!$quote) {
@@ -25,6 +26,13 @@ class Confirmation extends Update
         $quoteId = $quote->getId();
         if (!$quoteId) {
             $checkout->getLogger()->critical(sprintf("Confirmation Error: Quote ID missing %s.", $quote->getId()));
+        }
+
+        // compare the hashes, no one should access this without permissions
+        if ($quote->getSveaHash() !== $sveaHash) {
+            $checkout->getLogger()->error("Validate Order: The quote hash (%s) does not match the request hash (%s)." . $quote->getSveaHash(), $sveaHash);
+            $this->messageManager->addErrorMessage("An error occurred...");
+            return $this->_redirect('*');
         }
 
         if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
@@ -67,7 +75,7 @@ class Confirmation extends Update
         }
 
         // unset our checkout sessions
-        $this->getSveaCheckout()->getRefHelper()->unsetSessions(true);
+        $this->getSveaCheckout()->getRefHelper()->unsetSessions(true, true);
 
 
 
