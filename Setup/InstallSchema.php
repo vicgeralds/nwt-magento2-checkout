@@ -64,7 +64,7 @@ class InstallSchema implements InstallSchemaInterface
             }
         }
 
-        /*
+
         $_table = 'quote';
         $table = $installer->getTable($_table);
         $idxName = $installer->getIdxName($_table, ['svea_order_id']);
@@ -74,7 +74,7 @@ class InstallSchema implements InstallSchemaInterface
         $table = $installer->getTable($_table);
         $idxName = $installer->getIdxName($_table, ['svea_order_id']);
         $connection->addIndex($table, $idxName, ['svea_order_id']);
-*/
+
         $installer->endSetup();
     }
 }
