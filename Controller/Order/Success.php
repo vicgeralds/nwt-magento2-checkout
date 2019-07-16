@@ -9,12 +9,10 @@ class Success extends \Svea\Checkout\Controller\Checkout
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
         $session = $this->getCheckoutSession();
 
-        /** @var \Magento\Checkout\Model\Session\SuccessValidator $successValidator */
-        $successValidator = $this->_objectManager->get('Magento\Checkout\Model\Session\SuccessValidator');
 
-        if (!$successValidator->isValid()) {
+        if (!$this->sessionIsValid()) {
             $checkout->getLogger()->error("Success Page: Success Validation invalid.");
-            $checkout->getLogger()->error($session->getData());
+            $checkout->getLogger()->error(json_encode($session->getData()));
             return $this->resultRedirectFactory->create()->setPath('checkout/cart');
         }
 
@@ -52,5 +50,17 @@ class Success extends \Svea\Checkout\Controller\Checkout
         );
 
         return $resultPage;
+    }
+
+    public function sessionIsValid()
+    {
+        if (!$this->getCheckoutSession()->getLastSuccessQuoteId()) {
+            return false;
+        }
+
+        if (!$this->getCheckoutSession()->getLastOrderId()) {
+            return false;
+        }
+        return true;
     }
 }

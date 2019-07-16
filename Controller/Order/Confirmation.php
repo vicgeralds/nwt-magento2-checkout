@@ -23,6 +23,10 @@ class Confirmation extends Update
         }
 
         $quoteId = $quote->getId();
+        if (!$quoteId) {
+            $checkout->getLogger()->critical(sprintf("Confirmation Error: Quote ID missing %s.", $quote->getId()));
+        }
+
         if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
             $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Quote ID %s.", $quote->getId()));
             $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Please contact the website admin with this quote id: %s.", $quote->getId()));
@@ -77,7 +81,7 @@ class Confirmation extends Update
         // we set new sessions
         $session
             ->setSveaOrderId($sveaOrderId) // we need this in the success page
-            ->setLastQuoteId($quoteId) // we need this in the success page
+            ->setLastQuoteId($order->getQuoteId()) // we need this in the success page
             ->setLastSuccessQuoteId($order->getQuoteId());
 
 
