@@ -4,7 +4,6 @@ namespace Svea\Checkout\Controller\Order;
 
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Phrase;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
@@ -17,7 +16,7 @@ class ValidateOrder extends Update
     public function execute()
     {
         $orderId = $this->getRequest()->getParam('sid');
-        $testMode = (int) $this->getRequest()->getParam('test');
+        //$sveaHash = $this->getRequest()->getParam('hash'); // todo for security!
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
@@ -46,7 +45,7 @@ class ValidateOrder extends Update
         // check if there is a push! we will save the mapping in database, svea order id and magento order id
         $pushRepo = $this->pushRepositoryFactory->create();
         try {
-            $pushRepo->get($orderId, $testMode);
+            $pushRepo->get($orderId);
             return $result->setData(['Valid' => true]);
         } catch (NoSuchEntityException $e) {
             // ignore we will create a new push entity below after validation!
@@ -58,7 +57,6 @@ class ValidateOrder extends Update
 
             // check if everything is valid
             $this->validateOrder($sveaOrder, $quote);
-
         } catch (CheckoutException $e) {
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
@@ -94,12 +92,11 @@ class ValidateOrder extends Update
 
             return $result;
         }
-        
 
         // we are almost done!
         // save order id to push that we are done!
         try {
-            $push = $pushRepo->get($orderId, $testMode);
+            $push = $pushRepo->get($orderId);
             $push->setOrderId($order->getId());
             $pushRepo->save($push);
         } catch (\Exception $e) {
@@ -207,6 +204,11 @@ class ValidateOrder extends Update
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 throw new CheckoutException(__("Please choose a shipping method."));
             }
+
+            // todo we should store a unique hashed value in quote and compare it to sveaOrder
+            //if ($sveaOrder->getMerchantData()->getHash() !== $quote->getSveaHash() || $sveaHash !== $quote->getSveaHash()) {
+            //  throw new CheckoutException(__("Invalid Quote Hash"));
+            //}
         } catch (\Exception $e) {
             $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             throw new CheckoutException(__("Something went wrong... Contact site admin."));

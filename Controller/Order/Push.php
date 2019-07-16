@@ -7,17 +7,17 @@ use Svea\Checkout\Controller\Checkout;
 
 class Push extends Checkout
 {
-
     public function execute()
     {
         $orderId = $this->getRequest()->getParam('sid');
         $testMode = (int) $this->getRequest()->getParam('test');
+        //$secret = $this->getRequest()->getParam('secret'); // todo for security!
+        //if ($secret !== $this->helper->secret) // pseudo code,
 
         $result = $this->jsonResultFactory->create();
         $pushRepo = $this->pushRepositoryFactory->create();
 
         for ($i =0; $i<5; $i++) {
-
             try {
                 $push = $pushRepo->get($orderId, $testMode);
                 if (!$push->getOrderId()) {

@@ -2,7 +2,6 @@
 
 namespace Svea\Checkout\Model;
 
-
 class CheckoutContext
 {
     /**
@@ -30,17 +29,21 @@ class CheckoutContext
     /** @var CheckoutOrderNumberReference $sveaCheckoutReferenceHelper */
     protected $sveaCheckoutReferenceHelper;
 
-   /**
-     * Constructor
-     *
-     * @param \Svea\Checkout\Helper\Data $helper
-     * @param \Svea\Checkout\Model\Svea\Order $sveaOrderHandler
-     * @param \Svea\Checkout\Logger\Logger $logger
-     * @param \Svea\Checkout\Model\Svea\Locale $sveaLocale,
-     * @param \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement
-     * @param \Magento\Newsletter\Model\Subscriber $subscriber
-     *
-     */
+    /** @var \Magento\Sales\Api\OrderRepositoryInterface $orderRepository */
+    protected $orderRepository;
+
+
+    /**
+      * Constructor
+      *
+      * @param \Svea\Checkout\Helper\Data $helper
+      * @param \Svea\Checkout\Model\Svea\Order $sveaOrderHandler
+      * @param \Svea\Checkout\Logger\Logger $logger
+      * @param \Svea\Checkout\Model\Svea\Locale $sveaLocale,
+      * @param \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement
+      * @param \Magento\Newsletter\Model\Subscriber $subscriber
+      *
+      */
     public function __construct(
         \Svea\Checkout\Helper\Data $helper,
         \Svea\Checkout\Model\Svea\Order $sveaOrderHandler,
@@ -48,6 +51,7 @@ class CheckoutContext
         \Svea\Checkout\Logger\Logger $logger,
         \Svea\Checkout\Model\Svea\Locale $sveaLocale,
         \Magento\Sales\Api\OrderCustomerManagementInterface $orderCustomerManagement,
+        \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
         \Magento\Newsletter\Model\Subscriber $subscriber
     ) {
         $this->helper        = $helper;
@@ -57,6 +61,7 @@ class CheckoutContext
         $this->sveaCheckoutReferenceHelper = $sveaCheckoutReferenceHelper;
         $this->orderCustomerManagement = $orderCustomerManagement;
         $this->subscriber = $subscriber;
+        $this->orderRepository = $orderRepository;
     }
 
     /**
@@ -75,7 +80,7 @@ class CheckoutContext
         return $this->logger;
     }
 
-   /** @return \Svea\Checkout\Model\Svea\Order */
+    /** @return \Svea\Checkout\Model\Svea\Order */
     public function getSveaOrderHandler()
     {
         return $this->sveaOrderHandler;
@@ -105,7 +110,6 @@ class CheckoutContext
         return $this->sveaLocale;
     }
 
-
     /**
      * @return CheckoutOrderNumberReference
      */
@@ -114,6 +118,13 @@ class CheckoutContext
         return $this->sveaCheckoutReferenceHelper;
     }
 
+    /**
+     * @return \Magento\Sales\Api\OrderRepositoryInterface
+     */
+    public function getOrderRepository()
+    {
+        return $this->orderRepository;
+    }
 
 
 }

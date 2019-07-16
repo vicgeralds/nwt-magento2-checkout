@@ -17,11 +17,10 @@ interface PushRepositoryInterface
      * Retrieve push.
      *
      * @param int $sveaOrderId
-     * @param int $testMode
      * @return \Svea\Checkout\Api\Data\PushInterface
      * @throws \Magento\Framework\Exception\NoSuchEntityException If customer with the specified email does not exist.
      */
-    public function get($sveaOrderId, $testMode);
+    public function get($sveaOrderId);
 
     /**
      * Get push by Entity ID.
