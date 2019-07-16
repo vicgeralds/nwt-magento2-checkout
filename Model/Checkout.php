@@ -641,12 +641,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             }
         }
 
-        // add order information to the session
-        $this->_checkoutSession
-            ->setLastOrderId($order->getId())
-            ->setLastRealOrderId($order->getIncrementId())
-            ->setLastOrderStatus($order->getStatus());
-
         $this->_eventManager->dispatch(
             'checkout_submit_all_after',
             [
