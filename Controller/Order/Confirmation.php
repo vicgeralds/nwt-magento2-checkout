@@ -2,6 +2,7 @@
 
 namespace Svea\Checkout\Controller\Order;
 
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Model\Order;
 
 class Confirmation extends Update
@@ -22,18 +23,28 @@ class Confirmation extends Update
         }
 
         $quoteId = $quote->getId();
-        if (!$sveaOrderId = $quote->getSveaOrderId()) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found in Quote, i.e order has not been placed, quote id: %s.", $quote->getId()));
-            $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Order seems not to be placed, please contact the website admin with this quote id: %s.", $quote->getId()));
+        if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Quote ID %s.", $quote->getId()));
+            $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Please contact the website admin with this quote id: %s.", $quote->getId()));
             return $this->_redirect('*');
         }
 
-        $lastOrderId = $quote->getReservedOrderId();
-        if (!$lastOrderId) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Missing Last Order ID, i.e order has not been placed, quote id: %s.", $quote->getId()));
+
+        $pushRepo = $this->pushRepositoryFactory->create();
+        try {
+            $push = $pushRepo->get($sveaOrderId);
+            if (!$push->getOrderId()) {
+                throw new NoSuchEntityException(__("Order id missing"));
+            }
+
+        } catch (NoSuchEntityException $e) {
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Push missing, i.e order has not been placed, quote id: %s.", $quote->getId()));
             $this->messageManager->addErrorMessage(sprintf("Missing Order ID. Order seems not to be placed, please contact the website admin with this quote id: %s.", $quote->getId()));
             return $this->_redirect('*');
         }
+
+
+        $lastOrderId = $push->getOrderId();
 
         // clear old sessions
         $session = $this->getCheckoutSession();
@@ -46,7 +57,7 @@ class Confirmation extends Update
         } catch (\Exception $e) {
             // If there is an order, but we couldn't load it due to technical problems, this could in worst cases lead to the user places an new order...
 
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, quote id: %s last order id: %s.", $quote->getId(), $lastOrderId));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, quote id: %s last order id: %s. Error: %s", $quote->getId(), $lastOrderId, $e->getMessage()));
             $this->messageManager->addErrorMessage(sprintf("Could not continue. Please contact the website admin, with this quote id: %s and this order id: %s.", $quoteId, $lastOrderId));
             return $this->_redirect('*');
         }
@@ -66,13 +77,13 @@ class Confirmation extends Update
         return $this->_redirect('*/*/success');
     }
 
+
     /**
      * @param $orderId
-     * @return Order
-     * @throws \Exception
+     * @return \Magento\Sales\Api\Data\OrderInterface
      */
     protected function loadOrder($orderId)
     {
-        // TODO
+        return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
     }
 }

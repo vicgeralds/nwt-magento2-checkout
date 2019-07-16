@@ -73,11 +73,10 @@ class PushRepository implements PushRepositoryInterface
 
     /**
      * @param int $sveaOrderId
-     * @param int $testMode
      * @return Push
      * @throws NoSuchEntityException
      */
-    public function get($sveaOrderId, $testMode)
+    public function get($sveaOrderId)
     {
         $push = $this->pushFactory->create();
         $this->resource->load($push, $sveaOrderId, 'sid');
