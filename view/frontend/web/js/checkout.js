@@ -24,6 +24,8 @@ define([
             couponFormSelector: '#discount-coupon-form',
             cartContainerSelector: '#details-table',
             waitLoadingContainer: '#review-please-wait',
+            couponToggler: '#svea_coupon_toggle input',
+            couponFormContainer: '#svea-checkout_coupon',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -41,7 +43,7 @@ define([
             this._bindEvents();
             this.uiManipulate();
             this.scrollToPayment();
-            this.checkShippingMethod();
+            this.toggleCouponContainer();
         },
 
         _checkIfCartWasUpdated: function () {
@@ -75,7 +77,7 @@ define([
                 var data_remove_url = inputQty.data('cart-url-remove');
                 var increment = inputQty.siblings('.input-number-increment');
                 var decrement = inputQty.siblings('.input-number-decrement');
-                var remove = inputQty.parent().siblings('.remove-product');
+                var remove = inputQty.closest('tr').find('td.subtotal .remove-product');
                 var prevVal = false;
 
                 if (increment.data('binded')) return;
@@ -179,7 +181,6 @@ define([
             block = block ? block : null;
             if (!block || block == 'shipping') {
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
-                this.checkShippingMethod();
             }
             if (!block || block == 'shipping_method') {
                 jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
@@ -232,13 +233,13 @@ define([
          * hide ajax loader
          */
         _ajaxComplete: function (dontHidePayment) {
-            this._showSveaCheckout()
+            this._showSveaCheckout();
             jQuery(this.options.waitLoadingContainer).hide();
-            this.checkShippingMethod();
             this.sveaApiChanges();
+            this.toggleCouponContainer();
         },
 
-        _showSveaCheckout: function() {
+        _showSveaCheckout: function () {
             if (window.scoApi) {
                 try {
                     window.scoApi.setCheckoutEnabled(true);
@@ -247,7 +248,7 @@ define([
             }
         },
 
-        _hideSveaCheckout: function() {
+        _hideSveaCheckout: function () {
             if (window.scoApi) {
                 try {
                     window.scoApi.setCheckoutEnabled(false);
@@ -451,17 +452,16 @@ define([
                 }, 500);
             })
         },
+        toggleCouponContainer: function () {
+            var target = this.options.couponFormContainer,
+                toggler = this.options.couponToggler;
 
-        checkShippingMethod: function () {
-            var holder = this.options.shippingMethodCheckBoxHolder;
-            jQuery(holder).click(function () {
-                var $checks = jQuery(this).find('input:radio[name=shipping_method]');
-                $checks.prop("checked", !$checks.is(":checked")).trigger('change');
-                if ($checks.is(":checked")) {
-                    jQuery(this).css('opacity', '1');
-                    jQuery(this).parent().find('.svea-checkout-radio-row').not(this).css('opacity', '.5');
-                }
-            })
+            jQuery(toggler).change(function () {
+                if (this.checked)
+                    jQuery(target).addClass('visible');
+                else
+                    jQuery(target).removeClass('visible');
+            });
         }
     });
 

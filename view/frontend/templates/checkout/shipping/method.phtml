@@ -7,8 +7,8 @@
 //id  #svea-checkout_shipping_method is mandatory
 
 ?>
-<div id="svea-checkout_shipping_method" style="display: none;">
-    <div class="shipping-method-holder">
+<div id="svea-checkout_shipping_method" style="display: none">
+    <div class="shipping-method-holder" >
 
 
         <?php if ($groups = $block->getShippingRateGroups()): ?>
@@ -42,44 +42,4 @@
             </p>
         <?php endif; ?>
     </div>
-    <script>
-        require([
-            'jquery',
-            'slick'
-        ], function ($) {
-            jQuery(document).ready(function () {
-                jQuery(".shipping-method-holder").slick({
-                    dots: true,
-                    prevArrow: false,
-                    nextArrow: false,
-                    infinite: false,
-                    slidesToShow: 5,
-                    slidesToScroll: 1,
-                    responsive: [
-                        {
-                            breakpoint: 1280,
-                            settings: {
-                                slidesToShow: 2,
-                                slidesToScroll: 1
-                            }
-                        },
-                        {
-                            breakpoint: 900,
-                            settings: {
-                                slidesToShow: 1.5,
-                                slidesToScroll: 1
-                            }
-                        },
-                        {
-                            breakpoint: 768,
-                            settings: {
-                                slidesToShow: 1.5,
-                                slidesToScroll: 1,
-                            }
-                        }
-                    ]
-                })
-            });
-        });
-    </script>
 </div>

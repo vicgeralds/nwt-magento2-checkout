@@ -12,7 +12,6 @@ $shippingAddress = $quote->getShippingAddress();
         <h4 id="svea-checkout-review-heading" role="heading" aria-level="2">
             <?php echo $block->escapeHtml(__('Shipping Method')) ?>
         </h4>
-        <?php echo $block->getChildHtml('svea_shipping_total'); ?>
     </div>
     <div class="svea-checkout-section-shipping">
         <form method="post" id="shipping-method-loader" class="form"

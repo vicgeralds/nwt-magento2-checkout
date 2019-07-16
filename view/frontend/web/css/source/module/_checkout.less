@@ -1,15 +1,11 @@
 //
-//  Fonts
-//  _____________________________________________
-@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,600,700&display=swap');
-
-//
 //  Variables
 //  _____________________________________________
-@svea-font-family: 'Source Sans Pro', sans-serif;
-@svea-color-blue: #247EB2;
-@svea-light-blue: #0094CF;
-@svea-color-light-grey: #E5E5E5;
+@svea-font-family: 'Asap';
+@svea-color-blue: #00325c;
+@svea-light-blue: #00aece;
+@svea-hover-blue: #00839b;
+@svea-color-light-grey: #F4F4F4;
 @svea-color-dark-grey: #979797;
 @svea-color-white: #FFFFFF;
 @svea-color-black: #000000;
@@ -24,39 +20,26 @@
 //  _____________________________________________
 
 .svea-btn {
-  background-image: linear-gradient(0deg, #007EB2 0%, #0094CF 99%) !important;
-  border-radius: 25px !important;
-  color: #ffffff !important;
-  border: none !important;
+  background: @svea-light-blue;
+  border-color: @svea-light-blue;
+  color: @svea-color-white;
+  box-shadow: none;
+  border-radius: 7px !important;
   font-family: @svea-font-family !important;
-  font-weight: 600;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-
-  &:focus {
-    box-shadow: 0 0 0 3px rgba(0, 126, 178, 0.5) !important;
-  }
+  font-weight: bold;
 
   &:hover {
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+    background: @svea-hover-blue;
+    border-color: @svea-hover-blue;
+    box-shadow: none;
   }
-}
-
-.svea-white__backdrop {
-  background-color: @svea-color-white;
-  border-radius: 4px;
-  padding: 40px;
 }
 
 .svea-heading {
   font-size: 25px;
   font-weight: 700;
-  color: @svea-color-black;
-}
-
-.svea-table-align {
-  width: ~"calc(100% - 205px)";
-  left: 205px;
-  position: relative;
+  color: @svea-color-blue;
+  text-transform: uppercase;
 }
 
 .radio {
@@ -72,7 +55,7 @@
   height: 20px;
   top: 4px;
   left: 0;
-  border: @svea-border;
+  border: 1px solid @svea-color-blue;
   -webkit-transition: all .2s ease;
   -o-transition: all .2s ease;
   transition: all .2s ease;
@@ -84,6 +67,7 @@
   appearance: none;
   border-radius: 4px;
   margin-bottom: 0 !important;
+  margin-right: 15px;
 
   &:checked:after {
     content: "";
@@ -91,12 +75,12 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    border-radius: 4px;
+    border-radius: 3px;
     top: 0;
     left: 0;
     line-height: 20px;
     text-align: center;
-    background: @svea-light-blue url("../images/checkmark.svg") no-repeat 50% 50%;
+    background: transparent url("../images/checkmark.svg") no-repeat 50% 50%;
     -webkit-transition: all .2s ease;
     -o-transition: all .2s ease;
     transition: all .2s ease;
@@ -111,17 +95,23 @@
 .svea_checkout-index-index {
   -webkit-font-smoothing: antialiased;
 
-  .page-title-wrapper,
-  .nav-toggle {
-    display: none;
+  .page-title-wrapper {
+    text-align: center;
   }
 
-  .page-header {
-    background-color: @svea-color-white;
+  .page-title {
+    .svea-heading;
+    margin-bottom: 20px;
+
   }
 
-  .page-wrapper {
-    background-color: @svea-color-light-grey;
+  .breadcrumbs {
+    text-align: center;
+    text-transform: uppercase;
+
+    .items, a {
+      color: @svea-color-blue;
+    }
   }
 }
 
@@ -132,39 +122,22 @@
   font-family: @svea-font-family;
   color: @svea-color-dark;
   display: block;
-  .svea-white__backdrop;
 
   .svea-checkout-cart {
-    #svea-checkout-cart-heading {
-      .svea-heading;
-
-      span {
-        &.counter {
-          &:before {
-            content: "";
-            display: inline-block;
-            border: 2px solid @svea-color-black;
-            vertical-align: middle;
-            padding: 0 4px;
-            margin: 0 2px;
-          }
-        }
-
-        &.svea-payment-methods__img {
-
-          img {
-            vertical-align: bottom;
-            float: right;
-          }
-        }
-      }
-    }
   }
 
   #svea-checkout_cart {
     border-top: @svea-border;
-    display: inline-block;
     width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+
+    #svea_cart_extra {
+      flex: 1.5;
+      border-bottom: @svea-border;
+      padding-top: 40px;
+      color: @svea-color-blue;
+    }
   }
 
   .load.indicator {
@@ -179,7 +152,7 @@
   select,
   textarea {
     border: @svea-border;
-    border-radius: 4px;
+    border-radius: 7px;
   }
 
   input, select {
@@ -193,7 +166,18 @@
 
     &[type='radio'] {
       .radio;
-      .checkbox;
+      + label:after {
+        content: none;
+      }
+
+      &:checked + label:after {
+        content: url("../images/check.svg");
+        padding-top: 1px;
+        left: 0;
+      }
+      &:checked + label:before {
+        display: none;
+      }
     }
   }
 
@@ -212,6 +196,7 @@
         .fieldset {
           position: relative;
           display: flex;
+          padding: 0 30px;
 
           .field {
             flex: 1;
@@ -225,14 +210,19 @@
 
           .actions-toolbar {
             .action.apply.primary, .action.cancel.primary {
-              &, &:hover {
-                background: transparent;
-                border: @svea-border;
-                color: @svea-light-blue;
+              & {
+                background: @svea-light-blue;
+                border-color: @svea-light-blue;
                 height: 50px;
-                border-left: none !important;
                 border-bottom-left-radius: 0 !important;
                 border-top-left-radius: 0 !important;
+                border-radius: 7px;
+                margin: 0;
+
+                &:hover {
+                  background: @svea-hover-blue;
+                  border-color: @svea-hover-blue;
+                }
               }
             }
           }
@@ -273,16 +263,21 @@
 .different-checkout-link {
   text-align: center;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: bold;
   width: 100%;
   margin: 0 auto;
   padding: 20px 0;
-  border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 4px;
-  background: @svea-color-white;
 
   a {
     color: @svea-light-blue;
+  }
+}
+
+.svea-comment-title {
+  h4 {
+    color: @svea-color-blue;
+    padding-top: 20px;
+    font-size: 18px;
   }
 }
 
@@ -291,14 +286,15 @@ table {
     th {
       padding-top: 10px;
       padding-bottom: 10px;
-      font-weight: 400;
+      font-weight: bold;
+      text-transform: uppercase;
     }
 
     th, td {
       vertical-align: middle;
 
       &.qty {
-        text-align: center !important;
+        text-align: right !important;
       }
     }
 
@@ -306,6 +302,7 @@ table {
       &.qty {
         div.qty {
           display: flex;
+          justify-content: flex-end;
         }
 
         .remove-product {
@@ -329,6 +326,7 @@ table {
 
         span.qty {
           display: flex;
+          color: @svea-color-blue;
 
           input {
             &:not([disabled]):focus {
@@ -338,7 +336,7 @@ table {
             border-left: 0 !important;
             border-right: 0 !important;
             border: @svea-border;
-            width: 50px;
+            width: 40px;
             height: 40px;
             text-align: center;
           }
@@ -353,23 +351,35 @@ table {
           }
 
           .input-number-increment {
-            border-bottom-right-radius: 50%;
-            border-top-right-radius: 50%;
             font-size: 20px;
-            line-height: 40px;
+            line-height: 36px;
+            border-bottom-right-radius: 7px;
+            border-top-right-radius: 7px;
           }
 
           .input-number-decrement {
-            border-bottom-left-radius: 50%;
-            border-top-left-radius: 50%;
+            border-bottom-left-radius: 7px;
+            border-top-left-radius: 7px;
             font-size: 28px;
-            line-height: initial;
+            line-height: 34px;
           }
         }
       }
 
       &.subtotal {
-        text-align: right !important;
+        text-align: right;
+
+        .remove-product {
+          position: relative;
+          top: 20px;
+          color: @svea-color-blue;
+
+          &:after {
+            content: url("../images/trash.svg");
+            padding-left: 20px;
+            display: inline-block;
+          }
+        }
 
         .price {
           .svea-heading;
@@ -437,6 +447,8 @@ table {
       text-align: center;
       margin-bottom: 0;
       margin-top: 30px;
+      border-bottom: @svea-border;
+      padding-bottom: 20px;
     }
 
     .svea-products-grid {
@@ -470,10 +482,38 @@ table {
   }
 }
 
+#svea_comment {
+  max-width: 660px;
+  margin: 0 auto 25px;
+
+  #svea-checkout-comment {
+    margin: 0 30px;
+    padding: 0 20px;
+    background: @svea-color-light-grey;
+    border-radius: 7px;
+
+    textarea {
+      border: none;
+    }
+
+    .actions-toolbar > .primary {
+      width: 100%;
+      margin: 20px auto;
+    }
+
+    button {
+      .svea-btn;
+      width: 100%;
+      height: 50px;
+      font-size: 18px;
+    }
+  }
+}
+
 .svea-checkout-shipping {
-  margin-bottom: 25px;
   padding-bottom: 25px;
-  border-bottom: @svea-border;
+  max-width: 660px;
+  margin: 0 auto 25px;
 
   .svea-checkout-section-content {
     width: 100%;
@@ -484,66 +524,60 @@ table {
     margin: 0;
 
     .svea-checkout-radio-row {
-      text-align: center;
-      background: @svea-color-white;
-      border-radius: 4px;
-      margin: 0 34px 0 0;
-      padding: 50px 30px;
-      border: @svea-border;
-      position: relative;
-
-      &:hover {
-        border-color: @svea-light-blue;
-        opacity: 1 !important;
-      }
+      padding: 20px 30px;
+      border-bottom: @svea-border;
 
       input[type='radio'] {
-        visibility: hidden;
-        position: absolute;
-        top: 0;
-        left: 0;
-        margin: 0;
-        width: 100%;
-        height: 100%;
+        margin: 0 20px 0 0;
+        display: none;
       }
 
-      span > * {
-        display: block;
+      span  {
+        position: relative;
+      }
+
+      label {
+        font-size: 16px;
+        color: @svea-color-blue;
+        display: flex;
+        cursor: pointer;
+        padding-left: 40px;
+        &:after {
+          background: transparent;
+          text-align: center;
+          left: 0;
+          position: absolute;
+          content: '';
+          display: inline-block;
+          pointer-events: none;
+          box-sizing: inherit;
+          height: 20px;
+          width: 20px;
+        }
+        &:before {
+          box-sizing: inherit;
+          position: absolute;
+          content: '';
+          display: inline-block;
+          pointer-events: none;
+          top: 1px;
+          left: 0;
+          height: 16px;
+          width: 16px;
+          border: 2px solid @svea-color-blue;
+          border-radius: 20px;
+        }
       }
 
       .price {
-        .svea-heading;
-        display: block;
+        font-weight: 500;
+        font-size: 16px;
+        float: right;
+        cursor: pointer;
+        flex-grow: 1;
+        text-align: right;
+        color: @svea-color-blue;
       }
-    }
-  }
-
-  .slick-list.draggable {
-    margin-top: 10px;
-  }
-
-  .slick-dots {
-    li {
-      margin: 0;
-
-      &.slick-active {
-        button {
-          border-color: @svea-light-blue;
-          background-color: @svea-light-blue;
-        }
-      }
-    }
-
-    button {
-      display: block;
-      width: 7px;
-      height: 7px;
-      padding: 0;
-      border: @svea-border;
-      border-radius: 50%;
-      background-color: white;
-      text-indent: -9999px;
-      box-shadow: none !important;
     }
   }
 
@@ -589,8 +623,39 @@ button:not(.primary).svea-primary {
 //  Totals
 //  _____________________________________________
 #svea-checkout_cart_totals {
-  text-align: right;
-  color: @svea-color-black;
+  color: @svea-color-blue;
+  flex: 1;
+  order: 3;
+  padding: 30px 30px 0 0;
+
+  th {
+    font-weight: normal;
+  }
+
+  td {
+    font-weight: 500;
+  }
+
+  .grand.totals {
+    text-transform: uppercase;
+
+    th, td {
+      .svea-heading;
+      padding-top: 40px;
+    }
+  }
+}
+
+.svea-checkout-title {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+
+  h4 {
+    border-bottom: @svea-border;
+    padding-bottom: 20px;
+    .svea-heading;
+  }
 }
 
 //
@@ -613,13 +678,13 @@ button:not(.primary).svea-primary {
         &.qty,
         &.price,
         &.subtotal {
-          padding-left: 40px;
-          padding-right: 0;
+          padding-left: 30px;
+          padding-right: 30px;
         }
 
         &.item-img {
           padding-right: 0;
-          padding-left: 0;
+          padding-left: 30px;
           width: @calc-width;
           max-width: @calc-width;
         }
@@ -629,18 +694,15 @@ button:not(.primary).svea-primary {
           padding-left: 0;
         }
 
-        &:not(.item-img) {
+        & {
           border-bottom: @svea-border;
         }
 
-        &.qty {
-          text-align: center !important;
-        }
       }
 
       td {
-        padding-top: 30px;
-        padding-bottom: 30px;
+        padding-top: 10px;
+        padding-bottom: 10px;
 
         &.subtotal {
           text-align: right !important;
@@ -661,27 +723,23 @@ button:not(.primary).svea-primary {
   //  Totals
   //  _____________________________________________
   #svea-checkout_cart_totals {
-    .svea-table-align;
     text-align: right;
     border-bottom: @svea-border;
-    color: @svea-color-black;
-    float: left;
 
     table {
-      width: 35%;
-      float: right;
-
       tfoot {
+        th {
+          text-align: left;
+        }
+
         tr:last-of-type {
           th, td {
-            padding-bottom: 15px;
+            padding-bottom: 10px;
           }
         }
 
         td, th {
-          padding: 15px 0 0;
-          font-size: 14px;
-          font-weight: 700;
+          padding: 10px 0 0;
         }
       }
     }
@@ -689,50 +747,47 @@ button:not(.primary).svea-primary {
   //   Shipping
   //  _____________________________________________
   .svea-checkout-shipping {
-    margin-bottom: 25px;
     padding-bottom: 25px;
-    border-bottom: @svea-border;
+
+    .shipping-method-holder {
+    }
 
     #svea-checkout_shipping_method {
       margin-top: 20px;
-      padding-top: 20px;
+      padding-top: 0;
       border-top: @svea-border;
-
-      .slick-track {
-        margin-right: 0;
-        margin-left: 0;
-      }
     }
 
     input,
     select {
       height: 50px;
-      width: 192px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
 
     input {
       &.postcode {
         position: relative;
-        top: 1px;
-        left: -3px;
-        border-bottom-left-radius: 0 !important;
+        border-top: 0 !important;
+        border-top-right-radius: 0 !important;
         border-top-left-radius: 0 !important;
       }
     }
 
     select {
       border-bottom-right-radius: 0 !important;
-      border-top-right-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+
+    #shipping-method-button {
+      margin: 15px auto;
+      width: 100%;
     }
 
   }
   .svea-checkout-shipping,
   .svea-checkout-extra {
-    .svea-table-align;
   }
   .svea-checkout-extra {
-    //display: flex;
   }
   .svea-checkout-extra__left {
     flex: 1;
@@ -741,9 +796,9 @@ button:not(.primary).svea-primary {
     flex: 2;
   }
   .svea-checkout-block {
-    &.discount,
-    &.newsletter {
-      width: 400px;
+    &.discount {
+      width: 660px;
+      margin: 0 auto;
     }
 
     &.grand-total {
@@ -773,6 +828,21 @@ button:not(.primary).svea-primary {
       padding: 45px 35px 25px;
     }
   }
+  .svea-checkout-section-shipping {
+    margin: 0 30px;
+  }
+}
+
+#svea-checkout_coupon {
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    display: block;
+  }
 }
 
 //
@@ -791,16 +861,6 @@ button:not(.primary).svea-primary {
               right: 0;
             }
           }
-        }
-      }
-    }
-
-    .svea-checkout-cart {
-      #svea-checkout-cart-heading {
-        span.svea-payment-methods__img {
-          width: 100%;
-          float: right;
-          margin-bottom: 25px;
         }
       }
     }
@@ -881,31 +941,6 @@ button:not(.primary).svea-primary {
         display: flex;
         flex-direction: row;
         justify-content: space-between
-      }
-
-      .slick-list.draggable {
-        margin-top: 40px;
-      }
-
-      select {
-        border-bottom-right-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-      }
-
-      input {
-        border-top-right-radius: 0 !important;
-        border-top-left-radius: 0 !important;
-        border-top: 0 !important;
-      }
-
-      #shipping-method-button {
-        margin: 15px auto;
-        width: 100%;
-      }
-
-      .slick-dots {
-        top: -40px;
-        height: 40px;
       }
     }
   }
@@ -1064,3 +1099,8 @@ button:not(.primary).svea-primary {
   }
 }
 
+label[for="coupon-toggle"] {
+  span {
+    text-decoration: underline;
+  }
+}
