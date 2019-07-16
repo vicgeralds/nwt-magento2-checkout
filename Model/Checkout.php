@@ -316,25 +316,9 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
                     $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
 
                     // do some validations!
-                    // if something went wrong and the order was placed by customer, but not saved in magento!
                     // if the svea order status is final, and the client order number matches with the current quote
-                    // we should cancel this svea order and throw an exception ( a new svea order will be created),
-                    if ($sveaOrder->getStatus() === 'Final') {
-
-                        if ($this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
-                            try {
-                                $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
-                            } catch (\Exception $e) {
-                                // do nothing!
-                            }
-                        }
-
-                        throw new \Exception("This order is already placed in Svea. Creating a new.");
-                    }
-
-                    if ($sveaOrder->getStatus() === "Cancelled") {
-                        throw new \Exception("This order is already placed in Svea and has been cancelled.");
-                    }
+                    // we will cancel this svea order and throw an exception ( a new svea order will be created),
+                    $this->validateCheckoutSveaOrder($sveaOrder);
                 }
             } catch (\Exception $e) {
 
@@ -370,9 +354,15 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             try {
                 // this will create an api call to svea and initiaze a new payment
                 $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
-                $sveaOrderId = $sveaOrder->getOrderId();
+
+                // do some validations!
+                // if the svea order status is final, and the client order number matches with the current quote
+                // we will cancel this svea order and throw an exception ( a new svea order will be created),
+                $this->validateCheckoutSveaOrder($sveaOrder);
+
 
                 //save svea uri in checkout/session
+                $sveaOrderId = $sveaOrder->getOrderId();
                 $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                 $this->getRefHelper()->setQuoteSignature($newSignature);
             } catch (\Exception $e) {
@@ -390,6 +380,30 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
         return $this;
+    }
+
+    /**
+     * @param $sveaOrder GetOrderResponse
+     * @throws \Exception
+     */
+    private function validateCheckoutSveaOrder($sveaOrder)
+    {
+        if ($sveaOrder->getStatus() === 'Final') {
+
+            if ($this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
+                try {
+                    $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
+                } catch (\Exception $e) {
+                    // do nothing!
+                }
+            }
+
+            throw new \Exception("This order is already placed in Svea. Creating a new.");
+        }
+
+        if ($sveaOrder->getStatus() === "Cancelled") {
+            throw new \Exception("This order is already placed in Svea and has been cancelled.");
+        }
     }
 
     /**
