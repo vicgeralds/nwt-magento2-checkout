@@ -45,6 +45,7 @@ class ValidateOrder extends Update
         $pushRepo = $this->pushRepositoryFactory->create();
         try {
             $pushRepo->get($orderId);
+            $checkout->getLogger()->error(sprintf("Validate Order: A push already exists for svea order id (%s). Respond with Valid=true", $orderId));
             return $result->setData(['Valid' => true]);
         } catch (NoSuchEntityException $e) {
             // ignore we will create a new push entity below after validation!
@@ -108,7 +109,13 @@ class ValidateOrder extends Update
             $checkout->getLogger()->critical("Validate Order: Could not save Push, error: " . $e->getMessage());
         }
 
-        return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
+        // we log this as well!
+        $responseData = ['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()];
+
+        $checkout->getLogger()->info("Validate Order: Successfully created order and push:");
+        $checkout->getLogger()->info(json_encode($responseData));
+
+        return $result->setData($responseData);
     }
 
     /**
