@@ -30,7 +30,7 @@ class Confirmation extends Update
 
         // compare the hashes, no one should access this without permissions
         if ($quote->getSveaHash() !== $sveaHash) {
-            $checkout->getLogger()->error("Validate Order: The quote hash (%s) does not match the request hash (%s)." . $quote->getSveaHash(), $sveaHash);
+            $checkout->getLogger()->error(sprintf("Validate Order: The quote hash (%s) does not match the request hash (%s)." . $quote->getSveaHash(), $sveaHash));
             $this->messageManager->addErrorMessage("An error occurred...");
             return $this->_redirect('*');
         }
