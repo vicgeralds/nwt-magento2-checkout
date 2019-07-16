@@ -3,44 +3,25 @@
 namespace Svea\Checkout\Controller\Order;
 
 use Magento\Framework\Exception\NoSuchEntityException;
-use Svea\Checkout\Model\CheckoutException;
+use Magento\Quote\Model\Quote;
 
 class Confirmation extends Update
 {
+    /**
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
         $sveaHash = $this->getRequest()->getParam('hash'); // for security!
 
-        $quote = $checkout->getQuote();
-        if (!$quote) {
-            // What if the quote session expires after the order is placed in magento? It should never happen
-            // but if it does, the customer will never be redirected to the success page
-            // however the user should receive an e-mail confirmation with all info...
-            $checkout->getLogger()->error("Confirmation Error: Quote not found.");
-            $this->messageManager->addErrorMessage("Your session has expired...");
-            return $this->_redirect('*');
-        }
-
-        $quoteId = $quote->getId();
-        if (!$quoteId) {
-            $checkout->getLogger()->critical(sprintf("Confirmation Error: Quote ID missing %s.", $quote->getId()));
-        }
-
-        // compare the hashes, no one should access this without permissions
-        if ($quote->getSveaHash() !== $sveaHash) {
-            $checkout->getLogger()->error(sprintf("Validate Order: The quote hash (%s) does not match the request hash (%s).", $quote->getSveaHash(), $sveaHash));
-            $this->messageManager->addErrorMessage("An error occurred...");
-            return $this->_redirect('*');
-        }
-
+        // it seems like we dont have quote information here, so we try to load everything with the svea_order_id instead!
         if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Quote ID %s.", $quote->getId()));
-            $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Please contact the website admin with this quote id: %s.", $quote->getId()));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Svea Order ID %s.", $sveaOrderId));
+            $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Please try again."));
             return $this->_redirect('*');
         }
-
 
         $pushRepo = $this->pushRepositoryFactory->create();
         try {
@@ -48,36 +29,45 @@ class Confirmation extends Update
             if (!$push->getOrderId()) {
                 throw new NoSuchEntityException(__("Order id missing"));
             }
-
         } catch (NoSuchEntityException $e) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Push missing, i.e order has not been placed, quote id: %s.", $quote->getId()));
-            $this->messageManager->addErrorMessage(sprintf("Missing Order ID. Order seems not to be placed, please contact the website admin with this quote id: %s.", $quote->getId()));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Push missing, i.e order has not been placed, svea id: %s.", $sveaOrderId));
+            $this->messageManager->addErrorMessage(sprintf("An error occured. Could not fetch the new order. Please contact the website admin with this svea id: %s.", $sveaOrderId));
             return $this->_redirect('*');
         }
 
-
-        $lastOrderId = $push->getOrderId();
-
-        // clear old sessions
-        $session = $this->getCheckoutSession();
-        $session->clearHelperData();
-        $session->clearQuote()->clearStorage();
-
         // try load order by id
+        $lastOrderId = $push->getOrderId();
         try {
             $order = $this->loadOrder($lastOrderId);
         } catch (\Exception $e) {
             // If there is an order, but we couldn't load it due to technical problems, this could in worst cases lead to the user places an new order...
 
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, quote id: %s last order id: %s. Error: %s", $quote->getId(), $lastOrderId, $e->getMessage()));
-            $this->messageManager->addErrorMessage(sprintf("Could not continue. Please contact the website admin, with this quote id: %s and this order id: %s.", $quoteId, $lastOrderId));
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not load Order, push id: %s last order id: %s. Error: %s", $push->getId(), $lastOrderId, $e->getMessage()));
+            $this->messageManager->addErrorMessage(sprintf("Could not continue. Please contact the website admin, with this push id: %s and this order id: %s.", $push->getId(), $lastOrderId));
+            return $this->_redirect('*');
+        }
+
+        try {
+            $quote = $this->loadQuoteById($order->getQuoteId());
+        } catch (\Exception $e) {
+            $this->getSveaCheckout()->getLogger()->error("Confirmation Order: We found no quote for this Svea order.");
+            $this->messageManager->addErrorMessage((__("Found no quote object for this Svea order ID.")));
+            return $this->_redirect('*');
+        }
+
+        // compare the hashes, no one should access this without permissions
+        if ($quote->getSveaHash() !== $sveaHash) {
+            $checkout->getLogger()->error(sprintf("Confirmation Order: The quote hash (%s) does not match the request hash (%s) for order id (%s).", $quote->getSveaHash(), $sveaHash, $push->getOrderId()));
+            $this->messageManager->addErrorMessage(__("An error occurred..."));
             return $this->_redirect('*');
         }
 
         // unset our checkout sessions
         $this->getSveaCheckout()->getRefHelper()->unsetSessions(true, true);
-
-
+        // clear old sessions
+        $session = $this->getCheckoutSession();
+        $session->clearHelperData();
+        $session->clearQuote()->clearStorage();
 
         // add order information to the session
         $session
@@ -85,17 +75,14 @@ class Confirmation extends Update
             ->setLastRealOrderId($order->getIncrementId())
             ->setLastOrderStatus($order->getStatus());
 
-
         // we set new sessions
         $session
             ->setSveaOrderId($sveaOrderId) // we need this in the success page
             ->setLastQuoteId($order->getQuoteId()) // we need this in the success page
             ->setLastSuccessQuoteId($order->getQuoteId());
 
-
         return $this->_redirect('*/*/success');
     }
-
 
     /**
      * @param $orderId
@@ -104,5 +91,14 @@ class Confirmation extends Update
     protected function loadOrder($orderId)
     {
         return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
+    }
+
+    /**
+     * @param $quoteId
+     * @return Quote
+     */
+    protected function loadQuoteById($quoteId)
+    {
+        return $this->quoteFactory->create()->loadByIdWithoutStore($quoteId);
     }
 }
