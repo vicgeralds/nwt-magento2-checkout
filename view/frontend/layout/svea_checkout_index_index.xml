@@ -122,7 +122,8 @@
                         </block>
                         <!-- Leave a comment -->
                         <block class="Svea\Checkout\Block\Checkout" name="svea.checkout.comment" as="comment"
-                               template="Svea_Checkout::checkout/comment.phtml"/>
+                               template="Svea_Checkout::checkout/comment.phtml"
+                               ifconfig="svea_checkout/layout/display_comment"/>
                     </block>
                 </container>
                 <!-- CROSSSELL -->

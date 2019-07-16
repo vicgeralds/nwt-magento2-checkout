@@ -43,7 +43,6 @@ define([
             this._bindEvents();
             this.uiManipulate();
             this.scrollToPayment();
-            this.checkShippingMethod();
             this.toggleCouponContainer();
         },
 
@@ -182,7 +181,6 @@ define([
             block = block ? block : null;
             if (!block || block == 'shipping') {
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
-                this.checkShippingMethod();
             }
             if (!block || block == 'shipping_method') {
                 jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
@@ -235,10 +233,10 @@ define([
          * hide ajax loader
          */
         _ajaxComplete: function (dontHidePayment) {
-            this._showSveaCheckout()
+            this._showSveaCheckout();
             jQuery(this.options.waitLoadingContainer).hide();
-            this.checkShippingMethod();
             this.sveaApiChanges();
+            this.toggleCouponContainer();
         },
 
         _showSveaCheckout: function () {
@@ -454,19 +452,6 @@ define([
                 }, 500);
             })
         },
-
-        checkShippingMethod: function () {
-            var holder = this.options.shippingMethodCheckBoxHolder;
-            jQuery(holder).click(function () {
-                var $checks = jQuery(this).find('input:radio[name=shipping_method]');
-                $checks.prop("checked", !$checks.is(":checked")).trigger('change');
-                if ($checks.is(":checked")) {
-                    jQuery(this).css('opacity', '1');
-                    jQuery(this).parent().find('.svea-checkout-radio-row').not(this).css('opacity', '.5');
-                }
-            })
-        },
-
         toggleCouponContainer: function () {
             var target = this.options.couponFormContainer,
                 toggler = this.options.couponToggler;
