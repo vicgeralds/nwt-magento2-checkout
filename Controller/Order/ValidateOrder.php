@@ -43,10 +43,24 @@ class ValidateOrder extends Update
 
         // check if there is a push! we will save the mapping in database, svea order id and magento order id
         $pushRepo = $this->pushRepositoryFactory->create();
+        $push = null;
         try {
-            $pushRepo->get($orderId);
-            $checkout->getLogger()->error(sprintf("Validate Order: A push already exists for svea order id (%s). Respond with Valid=true", $orderId));
-            return $result->setData(['Valid' => true]);
+            $p = $pushRepo->get($orderId);
+            if ($p->getOrderId()) {
+
+                try {
+                    $order = $this->loadOrder($p->getOrderId());
+                    if ($order->getIncrementId()) {
+                        $checkout->getLogger()->error(sprintf("Validate Order: A push already exists for svea order id (%s). Respond with Valid=true and ClientOrderNumber=%s", $orderId, $order->getIncrementId()));
+                        return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
+                    }
+                } catch (\Exception $e2) {
+                    $push = $p;
+                }
+
+            }
+
+
         } catch (NoSuchEntityException $e) {
             // ignore we will create a new push entity below after validation!
         }
@@ -76,15 +90,18 @@ class ValidateOrder extends Update
         }
 
         // we save the push now after the validation!
-        try {
-            $pushRepo->save($this->createNewPushObject($orderId));
-        } catch (CouldNotSaveException $e2) {
-            $checkout->getLogger()->error("Validate Order Error, save Push: " . $e2->getMessage());
+        if ($push === null) {
+            try {
+                $pushRepo->save($this->createNewPushObject($orderId));
+            } catch (CouldNotSaveException $e2) {
+                $checkout->getLogger()->error("Validate Order Error, save Push: " . $e2->getMessage());
 
-            $result->setHttpResponseCode(400);
-            $result->setData(['errorMessage' => _("Could not place order. It might already been saved."), 'Valid' => false]);
-            return $result;
+                $result->setHttpResponseCode(400);
+                $result->setData(['errorMessage' => _("Could not place order. It might already been saved."), 'Valid' => false]);
+                return $result;
+            }
         }
+
 
         // here we create the magento order
         try {
@@ -273,4 +290,14 @@ class ValidateOrder extends Update
         $push->setCreatedAt($currentTime);
         return $push;
     }
+
+    /**
+     * @param $orderId
+     * @return \Magento\Sales\Api\Data\OrderInterface
+     */
+    protected function loadOrder($orderId)
+    {
+        return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
+    }
+
 }
