@@ -383,7 +383,6 @@ class Items
         $this->_cart[$invoiceFeeRow->getArticleNumber()] = $invoiceFeeRow;
     }
 
-    // TODO!!
 
     /**
      * @param $couponCode
@@ -401,9 +400,6 @@ class Items
             if ($this->_toInvoice) {
                 $reference = 'discount-toinvoice';
             }
-
-
-            // TODO!
 
 
             $taxAmount = $this->getTotalTaxAmount($amountInclTax, $vat);
@@ -540,7 +536,6 @@ class Items
         try {
             $this->validateTotals($quote->getGrandTotal());
         } catch (\Exception $e) {
-            //!! todo handle somehow!
             throw $e;
         }
 

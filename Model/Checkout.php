@@ -476,12 +476,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         //this will be saved in order
         $quote->setSveaOrderId($sveaOrder->getOrderId());
 
-        // TODO get billing address as well!
-        $shipping = $this->getSveaPaymentHandler()->convertSveaShippingToMagentoAddress($sveaOrder);
+        // we convert the addresses
+        $shipping = $this->getSveaPaymentHandler()->convertSveaAddressToMagentoAddress($sveaOrder, $sveaOrder->getShippingAddress());
+        $billing = $this->getSveaPaymentHandler()->convertSveaAddressToMagentoAddress($sveaOrder, $sveaOrder->getBillingAddress());
 
-        // WE only get shipping address from svea!
+        // we set the addresses
         $billingAddress = $quote->getBillingAddress();
-        $billingAddress->addData($shipping)
+        $billingAddress->addData($billing)
             ->setCustomerAddressId(0)
             ->setSaveInAddressBook(0)
             ->setShouldIgnoreValidation(true);
