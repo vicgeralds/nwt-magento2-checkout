@@ -7,6 +7,28 @@
     </head>
 
     <body>
+        <referenceContainer name="page.wrapper">
+            <referenceBlock name="breadcrumbs" remove="true"/>
+            <referenceBlock name="page.main.title">
+                <block class="Magento\Theme\Block\Html\Breadcrumbs" name="breadcrumbs.cms" after="-">
+                    <action method="addCrumb">
+                        <argument name="crumbName" xsi:type="string">Home</argument>
+                        <argument name="crumbInfo" xsi:type="array">
+                            <item name="title" xsi:type="string">Home</item>
+                            <item name="label" xsi:type="string">Home</item>
+                            <item name="link" xsi:type="string">/</item>
+                        </argument>
+                    </action>
+                    <action method="addCrumb">
+                        <argument name="crumbName" xsi:type="string">Checkout</argument>
+                        <argument name="crumbInfo" xsi:type="array">
+                            <item name="title" xsi:type="string">Checkout</item>
+                            <item name="label" xsi:type="string">Checkout</item>
+                        </argument>
+                    </action>
+                </block>
+            </referenceBlock>
+        </referenceContainer>
         <referenceContainer name="page.messages">
             <block class="Svea\Checkout\Block\Messages" name="svea_checkout_validationmessages"/>
         </referenceContainer>
