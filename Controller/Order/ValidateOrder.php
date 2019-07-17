@@ -172,7 +172,6 @@ class ValidateOrder extends Update
                 $checkout->getLogger()->error("Validate Order: Error message:" . $e->getMessage());
                 $checkout->getLogger()->debug($e->getResponseBody());
 
-                // todo show error to customer in magento! order could not be placed
                 throw new CheckoutException(__("Something went wrong when we tried to retrieve the order from Svea. Please try again or contact an admin."));
             }
         } catch (\Exception $e) {
@@ -234,10 +233,6 @@ class ValidateOrder extends Update
                 throw new CheckoutException(__("Please choose a shipping method."));
             }
 
-            // todo we should store a unique hashed value in quote and compare it to sveaOrder
-            //if ($sveaOrder->getMerchantData()->getHash() !== $quote->getSveaHash() || $sveaHash !== $quote->getSveaHash()) {
-            //  throw new CheckoutException(__("Invalid Quote Hash"));
-            //}
         } catch (\Exception $e) {
             $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             throw new CheckoutException(__("Something went wrong... Contact site admin."));

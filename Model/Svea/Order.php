@@ -13,6 +13,7 @@ use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
+use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
@@ -223,16 +224,15 @@ class Order
 
     /**
      * @param GetOrderResponse $payment
+     * @param Address $address
      * @param null $countryIdFallback
      * @return array
      */
-    public function convertSveaShippingToMagentoAddress(GetOrderResponse $payment)
+    public function convertSveaAddressToMagentoAddress(GetOrderResponse $payment, Address $address)
     {
-        if ($payment->getShippingAddress() === null) {
+        if ($address=== null) {
             return [];
         }
-
-        $address = $payment->getShippingAddress();
 
         $streets = [];
         if (is_array($address->getAddressLines())) {
@@ -240,8 +240,6 @@ class Order
         } else {
             $streets[] = $address->getStreetAddress();
         }
-
-        // TODO COMPANY $data['company'] = ....
 
         $data = [
             'firstname' => $address->getFirstName(),
