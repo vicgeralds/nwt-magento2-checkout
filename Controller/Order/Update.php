@@ -13,7 +13,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
 
         //reload the blocks even we have an error
         if(is_null($blocks)) {
-            $blocks = ['shipping_method','cart','coupon','messages', 'svea','newsletter','grand_total'];
+            $blocks = ['shipping_method','cart','coupon','messages', 'svea','newsletter'];
         } elseif($blocks) {
             $blocks = (array)$blocks;
         } else {

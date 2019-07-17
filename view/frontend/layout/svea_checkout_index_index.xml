@@ -3,6 +3,7 @@
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
         <title>Svea Checkout</title>
+        <css src="Svea_Checkout::css/svea.css"/>
     </head>
     <update handle="checkout_item_price_renderers"/>
     <body>
@@ -141,6 +142,7 @@
                 <container name="svea_checkout.main" as="svea_checkoutMain" label="Main svea_checkout Container"
                            htmlTag="div" htmlId="svea_checkoutMain">
                     <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.svea.container"
+                           as="sveaContainer"
                            template="Svea_Checkout::main.phtml">
                         <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.svea" as="svea"
                                template="Svea_Checkout::iframe.phtml" cacheable="false"/>

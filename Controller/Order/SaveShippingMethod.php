@@ -39,7 +39,7 @@ class SaveShippingMethod extends \Svea\Checkout\Controller\Order\Update
                 );
             }
         }
-        $this->_sendResponse(['cart', 'coupon', 'svea_shipping_total', 'messages', 'svea', 'newsletter', 'grand_total']);
+        $this->_sendResponse(['cart', 'coupon', 'messages', 'svea', 'newsletter']);
     }
 
 }

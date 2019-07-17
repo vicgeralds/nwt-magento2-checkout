@@ -26,6 +26,7 @@ define([
             waitLoadingContainer: '#review-please-wait',
             couponToggler: '#svea_coupon_toggle input',
             couponFormContainer: '#svea-checkout_coupon',
+            commentFormSelector: '#svea-checkout-comment',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -33,16 +34,13 @@ define([
             sveaShippingChange: false,
             hasInitFlag: false,
             shippingAjaxInProgress: false,
-            scrollTrigger: '.go-to.svea-btn',
-            scrollTarget: '#sveaOrder'
+            iframeOverlay: '#iframe-overlay'
         },
         _create: function () {
             jQuery.mage.cookies.set(this.options.ctrlcookie, this.options.ctrlkey);
             this._checkIfCartWasUpdated();
-            this.hidePaymentAndIframe();
             this._bindEvents();
             this.uiManipulate();
-            this.scrollToPayment();
             this.toggleCouponContainer();
         },
 
@@ -195,6 +193,10 @@ define([
                 jQuery(this.options.couponFormSelector).on('submit', jQuery.proxy(this._applyCoupon, this));
                 this.checkValueOfInputs(jQuery(this.options.couponFormSelector));
             }
+            if (!block || block == 'comment') {
+                jQuery(this.options.commentFormSelector).on('submit', jQuery.proxy(this._saveComment, this));
+                this.checkValueOfInputs(jQuery(this.options.commentFormSelector));
+            }
 
             if (!block || block == 'svea') {
                 this.sveaApiChanges();
@@ -259,7 +261,11 @@ define([
 
         _changeShippingMethod: function () {
             this._ajaxFormSubmit(jQuery(this.options.shippingMethodFormSelector));
-            jQuery(this.options.scrollTrigger).show();
+            jQuery(this.options.iframeOverlay).css({
+                'display': 'none',
+                'visibility': 'hidden',
+                'opacity': '0'
+            })
         },
 
         _loadShippingMethod: function () {
@@ -276,6 +282,10 @@ define([
             return false;
         },
 
+        _saveComment: function () {
+            this._ajaxFormSubmit(jQuery(this.options.commentFormSelector));
+            return false;
+        },
 
         _ajaxFormSubmit: function (form) {
             return this._ajaxSubmit(form.prop('action'), form.serialize());
@@ -429,29 +439,7 @@ define([
                 t.fiddleSidebar();
             });
         },
-        hidePaymentAndIframe: function () {
-            var trigger = this.options.getShippingMethodButton;
-            var pay = this.options.scrollTrigger;
-            jQuery(trigger).click(function () {
-                jQuery(pay).css({
-                    'display': 'none'
-                });
-            })
-        },
-        scrollToPayment: function () {
-            var trigger = this.options.scrollTrigger;
-            var target = this.options.scrollTarget;
-            var self = this;
-            jQuery(trigger).click(function () {
-                jQuery(target).css({
-                    'visibility': 'visible',
-                    'height': 'auto',
-                });
-                jQuery('html, body').animate({
-                    scrollTop: jQuery(target).offset().top
-                }, 500);
-            })
-        },
+
         toggleCouponContainer: function () {
             var target = this.options.couponFormContainer,
                 toggler = this.options.couponToggler;
