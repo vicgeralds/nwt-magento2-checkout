@@ -13,6 +13,8 @@
 @svea-color-border: #D1D1D1;
 @svea-border: 1px solid @svea-color-border;
 @calc-width: 205px;
+@screen__m: 768px;
+@screen__l: 1024px;
 
 
 //
@@ -95,6 +97,10 @@
 .svea_checkout-index-index {
   -webkit-font-smoothing: antialiased;
 
+  .page-main {
+    font-family: @svea-font-family;
+  }
+
   .page-title-wrapper {
     text-align: center;
   }
@@ -123,9 +129,6 @@
   color: @svea-color-dark;
   display: block;
 
-  .svea-checkout-cart {
-  }
-
   #svea-checkout_cart {
     border-top: @svea-border;
     width: 100%;
@@ -148,6 +151,10 @@
     }
   }
 
+  select {
+    background: @svea-color-white url(../images/svea-select-bg.svg) no-repeat 98% 50%;
+  }
+
   input:not(.qty),
   select,
   textarea {
@@ -166,6 +173,7 @@
 
     &[type='radio'] {
       .radio;
+
       + label:after {
         content: none;
       }
@@ -175,6 +183,7 @@
         padding-top: 1px;
         left: 0;
       }
+
       &:checked + label:before {
         display: none;
       }
@@ -256,6 +265,16 @@
   }
 }
 
+label[for="coupon-toggle"] {
+  span {
+    text-decoration: underline;
+  }
+}
+
+#sveaOrder {
+  position: relative;
+}
+
 #svea-checkout-iframe {
   vertical-align: bottom;
 }
@@ -263,10 +282,12 @@
 .different-checkout-link {
   text-align: center;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 500;
   width: 100%;
   margin: 0 auto;
   padding: 20px 0;
+  text-decoration: none;
+  font-size: 18px;
 
   a {
     color: @svea-light-blue;
@@ -464,6 +485,14 @@ table {
           width: 25%;
           margin: 0 15px;
 
+          .price-box {
+            margin: 20px 0 10px;
+
+            .price-box {
+              margin: 0;
+            }
+          }
+
           img {
             border-radius: 4px;
           }
@@ -472,6 +501,11 @@ table {
             width: 100%;
             border: @svea-border;
             border-radius: 7px;
+
+            .product-item-name > a, button, .price-box, .price-container .price {
+              color: @svea-color-blue;
+              font-size: 16px;
+            }
           }
 
           .product-item-details {
@@ -479,10 +513,20 @@ table {
             padding-left: 20px;
             padding-right: 20px;
             text-align: left;
+
+            button.tocart {
+              background: none;
+              box-shadow: none;
+              font-weight: 700;
+              padding: 0;
+              text-transform: none;
+              border-color: transparent;
+              margin: 20px 0 10px;
+              line-height: 1.2;
+            }
           }
         }
       }
-
     }
   }
 }
@@ -494,7 +538,7 @@ table {
   #svea-checkout-comment {
     margin: 0 30px;
     padding: 0 20px;
-    background: @svea-color-light-grey;
+    background: rgba(217, 217, 217, 0.2);
     border-radius: 7px;
 
     textarea {
@@ -532,12 +576,16 @@ table {
       padding: 20px 30px;
       border-bottom: @svea-border;
 
+      &:hover {
+        background: rgba(217, 217, 217, 0.2);
+      }
+
       input[type='radio'] {
         margin: 0 20px 0 0;
         display: none;
       }
 
-      span  {
+      span {
         position: relative;
       }
 
@@ -547,6 +595,7 @@ table {
         display: flex;
         cursor: pointer;
         padding-left: 40px;
+
         &:after {
           background: transparent;
           text-align: center;
@@ -559,6 +608,7 @@ table {
           height: 20px;
           width: 20px;
         }
+
         &:before {
           box-sizing: inherit;
           position: absolute;
@@ -601,22 +651,6 @@ button:not(.primary).svea-primary {
   font-size: 14px;
   padding: 10px 50px;
   text-transform: uppercase;
-}
-
-.go-to-container {
-  margin-top: 20px;
-
-  .go-to {
-    .svea-btn;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.20) !important;
-    text-align: center;
-    font-size: 18px;
-    text-transform: none;
-    text-decoration: none;
-    padding: 12px 30px;
-    width: 174px;
-    height: 50px;
-  }
 }
 
 .shipping-price {
@@ -663,10 +697,41 @@ button:not(.primary).svea-primary {
   }
 }
 
+#svea-checkout_coupon {
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    display: block;
+  }
+}
+
+.iframe-overlay {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, .6);
+  z-index: 9999;
+}
+
 //
 //  Desktop
 //  _____________________________________________
-.media-width(@extremum, @break) when (@extremum = 'min') and (@break = @screen__m) {
+@media only screen and (min-width: @screen__m) {
+  .table-wrapper,
+  #svea_checkoutSidebar {
+    margin-bottom: 50px;
+  }
+
+  .svea-product-info-btm {
+    display: flex;
+    justify-content: space-between;
+  }
 
   table {
     &.svea-checkout-review {
@@ -711,10 +776,6 @@ button:not(.primary).svea-primary {
 
         &.subtotal {
           text-align: right !important;
-
-          .price {
-            .svea-heading;
-          }
         }
       }
 
@@ -725,6 +786,7 @@ button:not(.primary).svea-primary {
       }
     }
   }
+
   //  Totals
   //  _____________________________________________
   #svea-checkout_cart_totals {
@@ -749,13 +811,11 @@ button:not(.primary).svea-primary {
       }
     }
   }
+
   //   Shipping
   //  _____________________________________________
   .svea-checkout-shipping {
     padding-bottom: 25px;
-
-    .shipping-method-holder {
-    }
 
     #svea-checkout_shipping_method {
       margin-top: 20px;
@@ -789,27 +849,22 @@ button:not(.primary).svea-primary {
     }
 
   }
-  .svea-checkout-shipping,
-  .svea-checkout-extra {
-  }
-  .svea-checkout-extra {
-  }
+
   .svea-checkout-extra__left {
     flex: 1;
   }
+
   .svea-checkout-extra__right {
     flex: 2;
   }
+
   .svea-checkout-block {
     &.discount {
       width: 660px;
       margin: 0 auto;
     }
-
-    &.grand-total {
-
-    }
   }
+
   // ----- Success Page
   .svea_checkout-order-success {
     .page-title {
@@ -833,20 +888,9 @@ button:not(.primary).svea-primary {
       padding: 45px 35px 25px;
     }
   }
+
   .svea-checkout-section-shipping {
     margin: 0 30px;
-  }
-}
-
-#svea-checkout_coupon {
-  opacity: 0;
-  visibility: hidden;
-  display: none;
-
-  &.visible {
-    opacity: 1;
-    visibility: visible;
-    display: block;
   }
 }
 
@@ -854,7 +898,7 @@ button:not(.primary).svea-primary {
 //  Mobile
 //  _____________________________________________
 
-.media-width(@extremum, @break) when (@extremum = 'max') and (@break = @screen__m) {
+@media only screen and (max-width: @screen__m) {
   #svea_checkoutSidebar {
     padding: 20px 10px;
 
@@ -949,6 +993,7 @@ button:not(.primary).svea-primary {
       }
     }
   }
+
   #svea-checkout_cart_totals {
     table {
       tfoot {
@@ -968,10 +1013,12 @@ button:not(.primary).svea-primary {
     display: inline-block;
     margin-bottom: 15px;
   }
+
   .go-to {
     width: 100% !important;
     float: none;
   }
+
   // ----- Success Page
   .svea_checkout-order-success {
     #svea_checkoutSidebar {
@@ -1003,10 +1050,11 @@ button:not(.primary).svea-primary {
   }
 }
 
-.media-width(@extremum, @break) when (@extremum = 'min') and (@break = @screen__l) {
+@media only screen and (min-width: @screen__l) {
   .svea-checkout-extra {
     display: flex;
   }
+
   .go-to {
     float: right;
   }
@@ -1101,11 +1149,5 @@ button:not(.primary).svea-primary {
         }
       }
     }
-  }
-}
-
-label[for="coupon-toggle"] {
-  span {
-    text-decoration: underline;
   }
 }

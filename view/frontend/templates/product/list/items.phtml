@@ -83,49 +83,52 @@ switch ($type = $block->getType()) {
                                         <?= $block->escapeHtml($_item->getName()) ?>
                                     </a>
                                 </strong>
-                                <?= /* @escapeNotVerified */
-                                $block->getProductPrice($_item) ?>
-                                <?php if ($showAddTo || $showCart): ?>
-                                    <div class="product actions product-item-actions">
-                                        <?php if ($showCart): ?>
-                                            <div class="actions-primary">
-                                                <?php if ($_item->isSaleable()): ?>
-                                                    <?php if ($_item->getTypeInstance()->hasRequiredOptions($_item)): ?>
-                                                        <button class="action tocart svea-primary"
-                                                                data-mage-init='{"redirectUrl": {"url": "<?= /* @escapeNotVerified */
-                                                                $block->getAddToCartUrl($_item) ?>"}}' type="button"
-                                                                title="<?= /* @escapeNotVerified */
-                                                                __('Add to Cart') ?>">
+                                <div class="svea-product-info-btm">
+                                    <?= /* @escapeNotVerified */
+                                    $block->getProductPrice($_item) ?>
+                                    <?php if ($showAddTo || $showCart): ?>
+                                        <div class="product actions product-item-actions">
+                                            <?php if ($showCart): ?>
+                                                <div class="actions-primary">
+                                                    <?php if ($_item->isSaleable()): ?>
+                                                        <?php if ($_item->getTypeInstance()->hasRequiredOptions($_item)): ?>
+                                                            <button class="action tocart svea-primary"
+                                                                    data-mage-init='{"redirectUrl": {"url": "<?= /* @escapeNotVerified */
+                                                                    $block->getAddToCartUrl($_item) ?>"}}' type="button"
+                                                                    title="<?= /* @escapeNotVerified */
+                                                                    __('Add to Cart') ?>">
                                                             <span><?= /* @escapeNotVerified */
                                                                 __('Add to Cart') ?></span>
-                                                        </button>
-                                                    <?php else: ?>
-                                                        <?php $postDataHelper = $this->helper('Magento\Framework\Data\Helper\PostHelper');
-                                                        $postData = $postDataHelper->getPostData($block->getAddToCartUrl($_item), ['product' => $_item->getEntityId()])
-                                                        ?>
-                                                        <button class="action tocart svea-primary"
-                                                                data-post='<?= /* @escapeNotVerified */
-                                                                $postData ?>'
-                                                                type="button" title="<?= /* @escapeNotVerified */
-                                                        __('Add to Cart') ?>">
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <?php $postDataHelper = $this->helper('Magento\Framework\Data\Helper\PostHelper');
+                                                            $postData = $postDataHelper->getPostData($block->getAddToCartUrl($_item), ['product' => $_item->getEntityId()])
+                                                            ?>
+                                                            <button class="action tocart"
+                                                                    data-post='<?= /* @escapeNotVerified */
+                                                                    $postData ?>'
+                                                                    type="button" title="<?= /* @escapeNotVerified */
+                                                            __('Add to Cart') ?>">
                                                             <span><?= /* @escapeNotVerified */
                                                                 __('Add to Cart') ?></span>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                <?php else: ?>
-                                                    <?php if ($_item->getIsSalable()): ?>
-                                                        <div class="stock available"><span><?= /* @escapeNotVerified */
-                                                                __('In stock') ?></span></div>
+                                                            </button>
+                                                        <?php endif; ?>
                                                     <?php else: ?>
-                                                        <div class="stock unavailable">
+                                                        <?php if ($_item->getIsSalable()): ?>
+                                                            <div class="stock available"><span><?= /* @escapeNotVerified */
+                                                                    __('In stock') ?></span></div>
+                                                        <?php else: ?>
+                                                            <div class="stock unavailable">
                                                             <span><?= /* @escapeNotVerified */
                                                                 __('Out of stock') ?></span></div>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
                             </div>
                         </div>
                     </li>
