@@ -20,13 +20,13 @@ $shippingAddress = $quote->getShippingAddress();
                 <option><?= __('Country') ?></option>
                 <?php foreach ($allowedCountries as $key => $country): ?>
                     <option data-title="<?= $country ?>" value="<?= $key ?>"
-                        <?= ($shippingAddress !== null && $shippingAddress->getCountryId() == $key) ? 'selected="selected"' : __('') ?>
+                        <?= ($shippingAddress !== null && $shippingAddress->getCountryId() == $key) ? 'selected="selected"' : ''?>
                     ><?= $country ?></option>
                 <?php endforeach; ?>
             </select>
             <input class="postcode" type="text" id="postcode-box" name="postal"
                    placeholder="<?php echo __('Postal code') ?>"
-                   value="<?= ($shippingAddress === null || !$shippingAddress->getPostcode()) ? __('') : $shippingAddress->getPostcode() ?>"
+                   value="<?= ($shippingAddress === null || !$shippingAddress->getPostcode()) ? '' : $shippingAddress->getPostcode() ?>"
                    autofocus required/>
             <button type="submit" id="shipping-method-button"
                     class="action svea-primary" title="<?php echo __('Choose Delivery'); ?>">
@@ -46,4 +46,3 @@ $shippingAddress = $quote->getShippingAddress();
         <?php endif; ?>
     </div>
 </div>
-
