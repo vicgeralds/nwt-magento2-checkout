@@ -5,7 +5,7 @@
 
 $_item = $block->getItem();
 $product = $_item->getProduct();
-
+$helper = $this->helper('\Svea\Checkout\Helper\Cart');
 ?>
 
 <tr>
@@ -62,8 +62,7 @@ $product = $_item->getProduct();
     <?php endif; ?>
     <td class="svea-checkout-col qty" data-th="<?php echo $block->escapeHtml(__('Qty')); ?>">
         <?php
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $FormKey = $objectManager->get('Magento\Framework\Data\Form\FormKey');
+        $FormKey = $helper->getFormKey();
         ?>
         <div class="qty" data-th="<?php echo $block->escapeHtml(__('Qty')); ?>">
             <span class="qty">
@@ -110,6 +109,6 @@ $product = $_item->getProduct();
                     <?php echo $block->getRowTotalExclTaxHtml($_item); ?>
                 </span>
         <?php endif; ?>
-        <span class="remove-product"><span><?= __('Remove')?></span></span>
+        <span class="remove-product"><span><?= __('Remove') ?></span></span>
     </td>
 </tr>
