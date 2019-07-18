@@ -7,7 +7,7 @@
 // @codingStandardsIgnoreFile
 
 /* @var $block \Svea\Checkout\Block\Checkout\Cart\Crosssell */
-
+use Magento\Framework\App\Action\Action;
 ?>
 
 <?php
@@ -91,28 +91,17 @@ switch ($type = $block->getType()) {
                                             <?php if ($showCart): ?>
                                                 <div class="actions-primary">
                                                     <?php if ($_item->isSaleable()): ?>
-                                                        <?php if ($_item->getTypeInstance()->hasRequiredOptions($_item)): ?>
-                                                            <button class="action tocart svea-primary"
-                                                                    data-mage-init='{"redirectUrl": {"url": "<?= /* @escapeNotVerified */
-                                                                    $block->getAddToCartUrl($_item) ?>"}}' type="button"
-                                                                    title="<?= /* @escapeNotVerified */
-                                                                    __('Add to Cart') ?>">
-                                                            <span><?= /* @escapeNotVerified */
-                                                                __('Add to Cart') ?></span>
+                                                        <?php $postParams = $block->getAddToCartPostParams($_item); ?>
+                                                        <form data-role="tocart-form" data-product-sku="<?= $block->escapeHtml($_item->getSku()) ?>" action="<?= /* @NoEscape */ $postParams['action'] ?>" method="post">
+                                                            <input type="hidden" name="product" value="<?= /* @escapeNotVerified */ $postParams['data']['product'] ?>">
+                                                            <input type="hidden" name="<?= /* @escapeNotVerified */ Action::PARAM_NAME_URL_ENCODED ?>" value="<?= /* @escapeNotVerified */ $postParams['data'][Action::PARAM_NAME_URL_ENCODED] ?>">
+                                                            <?= $block->getBlockHtml('formkey') ?>
+                                                            <button type="submit"
+                                                                    title="<?= $block->escapeHtml(__('Add to Cart')) ?>"
+                                                                    class="action tocart primary">
+                                                                <span><?= /* @escapeNotVerified */ __('Add to Cart') ?></span>
                                                             </button>
-                                                        <?php else: ?>
-                                                            <?php $postDataHelper = $this->helper('Magento\Framework\Data\Helper\PostHelper');
-                                                            $postData = $postDataHelper->getPostData($block->getAddToCartUrl($_item), ['product' => $_item->getEntityId()])
-                                                            ?>
-                                                            <button class="action tocart"
-                                                                    data-post='<?= /* @escapeNotVerified */
-                                                                    $postData ?>'
-                                                                    type="button" title="<?= /* @escapeNotVerified */
-                                                            __('Add to Cart') ?>">
-                                                            <span><?= /* @escapeNotVerified */
-                                                                __('Add to Cart') ?></span>
-                                                            </button>
-                                                        <?php endif; ?>
+                                                        </form>
                                                     <?php else: ?>
                                                         <?php if ($_item->getIsSalable()): ?>
                                                             <div class="stock available"><span><?= /* @escapeNotVerified */
@@ -176,4 +165,15 @@ switch ($type = $block->getType()) {
         });
     });
 </script>
+<?php endif; ?>
+<?php if (!$block->isRedirectToCartEnabled()) : ?>
+    <script type="text/x-magento-init">
+        {
+            "[data-role=tocart-form], .form.map.checkout": {
+                "catalogAddToCart": {
+                    "product_sku": "<?= /* @NoEscape */ $_item->getSku() ?>"
+                }
+            }
+        }
+        </script>
 <?php endif; ?>

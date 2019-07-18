@@ -131,6 +131,7 @@
                 <container name="svea_crosssell" as="svea_crosssell" label="svea_Crosssell" htmlTag="div"
                            htmlId="svea_checkoutCrosssell">
                     <block class="Svea\Checkout\Block\Checkout\Cart\Crosssell" name="checkout.cart.crosssell"
+                           as="sveaCrosssell"
                            template="Svea_Checkout::product/list/items.phtml" after="-"
                            ifconfig="checkout/cart/crosssell_enabled">
                         <arguments>

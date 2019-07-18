@@ -6,6 +6,7 @@ use Magento\Directory\Model\AllowedCountries;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
@@ -35,22 +36,30 @@ class Cart extends AbstractHelper
     protected $countryFactory;
 
     /**
+     * @var FormKey
+     */
+    protected $formKey;
+
+    /**
      * Cart constructor.
      * @param Context $context
      * @param StoreManagerInterface $storeManager
      * @param AllowedCountries $allowedCountryModel
      * @param CountryFactory $countryFactory
+     * @param FormKey $formKey
      */
     public function __construct(
         Context $context,
         StoreManagerInterface $storeManager,
         AllowedCountries $allowedCountryModel,
-        CountryFactory $countryFactory
+        CountryFactory $countryFactory,
+        FormKey $formKey
     )
     {
         $this->storeManager = $storeManager;
         $this->allowedCountryModel = $allowedCountryModel;
         $this->countryFactory = $countryFactory;
+        $this->formKey = $formKey;
         parent::__construct($context);
     }
 
@@ -117,5 +126,13 @@ class Cart extends AbstractHelper
     public function getCountryNameByCode($countryId)
     {
         return $this->countryFactory->create()->loadByCode($countryId)->getName();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFormKey()
+    {
+        return $this->formKey;
     }
 }
