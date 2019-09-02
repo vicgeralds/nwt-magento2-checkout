@@ -27,6 +27,8 @@ define([
             couponToggler: '#svea_coupon_toggle input',
             couponFormContainer: '#svea-checkout_coupon',
             commentFormSelector: '#svea-checkout-comment',
+            commentTextAreaSelector: '#svea-checkout-comment .fieldset.comment',
+            commentTextAreaToggler: '#svea-checkout-comment .svea-btn.show-more',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -42,6 +44,7 @@ define([
             this._bindEvents();
             this.uiManipulate();
             this.toggleCouponContainer();
+            this.toggleOrderCommentTextArea();
         },
 
         _checkIfCartWasUpdated: function () {
@@ -450,6 +453,14 @@ define([
                 else
                     jQuery(target).removeClass('visible');
             });
+        },
+
+        toggleOrderCommentTextArea: function () {
+            var target = this.options.commentTextAreaSelector,
+                toggler = this.options.commentTextAreaToggler;
+            jQuery(toggler).on('click', function () {
+                jQuery(target).slideDown();
+            })
         }
     });
 
