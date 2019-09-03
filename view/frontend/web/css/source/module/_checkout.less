@@ -294,10 +294,16 @@ label[for="coupon-toggle"] {
 }
 
 .svea-comment-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   h4 {
     color: @svea-color-blue;
-    padding-top: 10px;
     font-size: 18px;
+  }
+
+  .svea-btn.show-more {
+    height: 30px !important;
   }
 }
 
@@ -540,6 +546,10 @@ table {
 
     textarea {
       border: none;
+    }
+
+    .fieldset.comment {
+      display: none;
     }
 
     .actions-toolbar > .primary {
