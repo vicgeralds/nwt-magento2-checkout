@@ -12,30 +12,17 @@ class Totals extends \Magento\Framework\View\Element\Template
      */
     protected $_sveaHelper;
 
-    /**
-     * @var \Magento\Directory\Model\Currency
-     */
-    protected $_currency;
-
-
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Svea\Checkout\Helper\Data $sveaHelper,
-        \Magento\Directory\Model\Currency $currency,
         array $data = []
     ) {
         
         $this->_sveaHelper = $sveaHelper;
-        $this->_currency = $currency;
-        
+
         parent::__construct($context, $data);
     }
 
-
-    public function getOrder()
-    {
-        return $this->getParentBlock()->getOrder();
-    }
 
     /**
      * @return mixed
@@ -43,14 +30,6 @@ class Totals extends \Magento\Framework\View\Element\Template
     public function getSource()
     {
         return $this->getParentBlock()->getSource();
-    }
-
-    /**
-     * @return string
-     */
-    public function getCurrencySymbol()
-    {
-        return $this->_currency->getCurrencySymbol();
     }
 
     /**
@@ -69,7 +48,7 @@ class Totals extends \Magento\Framework\View\Element\Template
         ]);
 
         // add it to totals!
-        $this->getParentBlock()->addTotalBefore($total, 'grand_total');
+        $this->getParentBlock()->addTotal($total, 'svea_invoice_fee');
         return $this;
     }
     

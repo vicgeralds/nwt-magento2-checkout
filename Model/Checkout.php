@@ -543,8 +543,8 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         if ($sveaInvoiceFeeRow = $this->getInvoiceFeeRow($sveaOrder->getCartItems())) {
             $fee  = $sveaInvoiceFeeRow->getUnitPrice() / 100;
             $quote->setSveaInvoiceFee($fee);
-            $quote->setGrandTotal($quote->getGrandTotal() + $fee);
-            $quote->setBaseGrandTotal($quote->getGrandTotal() + $fee);
+         //   $quote->setGrandTotal($quote->getGrandTotal() + $fee);
+         //   $quote->setBaseGrandTotal($quote->getGrandTotal() + $fee);
 
             $quote->collectTotals();
         }
