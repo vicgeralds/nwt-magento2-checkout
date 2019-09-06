@@ -23,6 +23,11 @@ class Confirmation extends Update
             return $this->_redirect('*');
         }
 
+        // a helper for all people testing in localhost!
+        if ($this->getSveaCheckout()->getHelper()->isTestMode() && $this->getSveaCheckout()->getHelper()->useLocalhost()) {
+            $this->createMockCallbacks($sveaHash, $sveaOrderId);
+        }
+
         $pushRepo = $this->pushRepositoryFactory->create();
         try {
             $push = $pushRepo->get($sveaOrderId);
@@ -101,4 +106,39 @@ class Confirmation extends Update
     {
         return $this->quoteFactory->create()->loadByIdWithoutStore($quoteId);
     }
+
+
+    /**
+     * This function is only used in testmode and when the module is installed in localhost
+     * The purpose is to send mocked requests with the ValidationnURI, where the order is placed.
+     *
+     * @param $hash
+     * @param $sveaOrderId
+     */
+    protected function createMockCallbacks($hash, $sveaOrderId)
+    {
+        $helper = $this->getSveaCheckout()->getHelper();
+        $url =  $helper->getCheckoutUrl('validateOrder', ['sid'=> $sveaOrderId, 'hash' => $hash, '_escape_params' => false]);
+        $this->getSveaCheckout()->getLogger()->info(sprintf("Trying to manually call the validation URL, for svea order ID: %s.", $sveaOrderId));
+        $this->getSveaCheckout()->getLogger()->info("URL: " . $url);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        $result = curl_exec($ch);
+        $errors = curl_error($ch);
+
+        if ($errors) {
+            $this->getSveaCheckout()->getLogger()->error($errors);
+        }
+
+        curl_close($ch);
+
+        $this->getSveaCheckout()->getLogger()->info("RESULT From callback: (should not be empty): " . $result);
+
+    }
+
 }

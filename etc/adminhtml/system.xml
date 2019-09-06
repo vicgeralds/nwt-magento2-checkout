@@ -15,19 +15,29 @@
             </group>
             <group id="connection" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Connection</label>
-                <field id="enabled" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="test_mode" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="test_mode" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Testmode</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="merchant_id" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+
+                <field id="use_localhost" translate="label comment" type="select" sortOrder="39" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Localhost Development</label>
+                    <comment>If you are coding in localhost, i.e Svea won't reach your site. This will make sure you can create test orders in localhost.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="test_mode">1</field>
+                    </depends>
+                </field>
+
+                <field id="merchant_id" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="40">
                     <label>Merchant ID</label>
                     <comment>Merchant ID, you will get this from Svea.</comment>
                 </field>
-                <field id="shared_secret" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+                <field id="shared_secret" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="50">
                     <label>Shared Secret</label>
                     <comment>The shared secret, you will get this from Svea.</comment>
                 </field>
@@ -35,6 +45,13 @@
 
             <group id="settings" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Settings</label>
+
+                <field id="default_shipping_method" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+                    <label>Default Shipping Method</label>
+                    <source_model>Svea\Checkout\Model\System\Config\Source\AllowedShippingMethods</source_model>
+                    <comment>Choose a default shipping method.</comment>
+                    <can_be_empty>0</can_be_empty>
+                </field>
 
                 <field id="default_country" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="40">
                     <label>Default Country</label>

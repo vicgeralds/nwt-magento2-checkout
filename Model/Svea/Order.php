@@ -190,7 +190,13 @@ class Order
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
         $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($sveaHash));
         $merchantUrls->setPushUri($this->helper->getPushUrl($sveaHash));
-        $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($sveaHash));
+
+        if ($isTestMode && $this->helper->useLocalhost())  {
+            // when testing in localhost we don't set a validation callback uri, cuz it will always fail!
+
+        } else {
+            $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($sveaHash));
+        }
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();

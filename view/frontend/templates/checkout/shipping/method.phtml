@@ -7,15 +7,14 @@
 //id  #svea-checkout_shipping_method is mandatory
 
 ?>
-<div id="svea-checkout_shipping_method" style="display: none">
+<div id="svea-checkout_shipping_method">
     <div class="shipping-method-holder" >
 
 
         <?php if ($groups = $block->getShippingRateGroups()): ?>
             <?php $currentRate = $block->getCurrentShippingRate(); ?>
             <?php foreach ($groups as $code => $rates): ?>
-                <?php if (0): ?>
-                    <strong><?php echo $block->escapeHtml($block->getCarrierName($code)) ?></strong><?php endif; ?>
+                <?php if (0): ?><strong><?php echo $block->escapeHtml($block->getCarrierName($code)) ?></strong><?php endif; ?>
                 <?php foreach ($rates as $rate):
                     $value = $block->escapeHtml($block->renderShippingRateValue($rate));
                     $checked = $currentRate === $rate->getCode() ? 'checked' : '';

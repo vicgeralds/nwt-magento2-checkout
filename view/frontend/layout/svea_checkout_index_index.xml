@@ -114,8 +114,9 @@
                                template="Svea_Checkout::checkout/cart/coupon.phtml"
                                ifconfig="svea_checkout/layout/display_discount"/>
                         <!-- Shipping Method -->
-                        <block class="Svea\Checkout\Block\Checkout\Shipping" name="svea_checkout.shipping" as="shipping"
+                        <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.shipping" as="shipping"
                                template="Svea_Checkout::checkout/shipping.phtml">
+
                             <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.shipping_method"
                                    as="shipping_method" template="Svea_Checkout::checkout/shipping/method.phtml"/>
                             <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.shipping_address"

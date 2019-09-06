@@ -264,11 +264,6 @@ define([
 
         _changeShippingMethod: function () {
             this._ajaxFormSubmit(jQuery(this.options.shippingMethodFormSelector));
-            jQuery(this.options.iframeOverlay).css({
-                'display': 'none',
-                'visibility': 'hidden',
-                'opacity': '0'
-            })
         },
 
         _loadShippingMethod: function () {

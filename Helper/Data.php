@@ -127,6 +127,22 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
+
+    /**
+     * @param null $store
+     * @return bool
+     */
+    public function useLocalhost($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CONNECTION . 'use_localhost',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
+
+
     public function getInvoiceFeeLabel($store = null)
     {
         return __("Invoice Fee");
@@ -320,6 +336,16 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         return $this->scopeConfig->getValue(
             self::XML_PATH_SETTINGS . 'default_customer_type',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
+
+    public function getDefaultShippingMethod($store = null)
+    {
+        return $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'default_shipping_method',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );

@@ -214,20 +214,7 @@ class ValidateOrder extends Update
             throw new CheckoutException(__("Please add shipping information."));
         }
 
-        $currentPostalCode = $sveaOrder->getShippingAddress()->getPostalCode();
-        $currentCountryId = $sveaOrder->getCountryCode();
-        // check other quote stuff
-
         try {
-            $oldPostCode = $quote->getShippingAddress()->getPostcode();
-            $oldCountryId = $quote->getShippingAddress()->getCountryId();
-
-            // we do nothing
-            if (!($oldCountryId == $currentCountryId && $oldPostCode == $currentPostalCode)) {
-                $checkout->getLogger()->error("Validate Order: Consumer has no shipping address.");
-                throw new CheckoutException(__("The country or postal code doesn't match with the one you entered earlier. Please re-enter the new postal code for the shipping above."));
-            }
-
             if (!$quote->getShippingAddress()->getShippingMethod()) {
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 throw new CheckoutException(__("Please choose a shipping method."));
