@@ -440,11 +440,17 @@ class Order
             }
 
             if (!$sveaOrder->canRefund()) {
-                throw new LocalizedException(
-                    __('Could not refund order. It is not marked as refundable in Svea.')
-                );
-            }
 
+                if ($sveaOrder->canCancel()) {
+                    return $this->cancelSveaPayment($payment); // we try to cancel it instead!
+                } else {
+                    throw new LocalizedException(
+                        __('Could not refund order. It is not marked as refundable in Svea.')
+                    );
+                }
+
+
+            }
             $deliveryToRefund = null;
             if ($queueId) {
 
