@@ -441,13 +441,13 @@ class Order
 
             if (!$sveaOrder->canRefund()) {
 
-                if ($sveaOrder->canCancel()) {
-                    return $this->cancelSveaPayment($payment); // we try to cancel it instead!
-                } else {
+             //   if ($sveaOrder->canCancel()) {
+               //     return $this->cancelSveaPayment($payment); // we try to cancel it instead!
+             //   } else {
                     throw new LocalizedException(
                         __('Could not refund order. It is not marked as refundable in Svea.')
                     );
-                }
+             //   }
 
 
             }
