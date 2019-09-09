@@ -42,7 +42,7 @@ class Success extends \Svea\Checkout\Controller\Checkout
 
         // need to be BEFORE event dispach (GA need to have layout loaded, to set the orderIds on the block)
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->set(__("Order redeived"));
+        $resultPage->getConfig()->getTitle()->set(__("Order received"));
         $resultPage->getLayout()->getBlock('svea_checkout_success')->setIframeSnippet($iframeHtml);
 
         $this->_eventManager->dispatch(
