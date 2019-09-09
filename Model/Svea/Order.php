@@ -18,6 +18,7 @@ use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
+use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 
 class Order
@@ -203,7 +204,7 @@ class Order
 
         $paymentOrder->setLocale($this->getLocale()->getLocaleByCountryCode($countryCode));
         $paymentOrder->setCountryCode($countryCode);
-        $paymentOrder->setCurrency($quote->getCurrency()->getQuoteCurrencyCode());
+        $paymentOrder->setCurrency($quote->getStore()->getCurrentCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
         $paymentOrder->setMerchantData($this->generateMerchantData());
         $paymentOrder->setMerchantSettings($merchantUrls);
@@ -274,10 +275,54 @@ class Order
     {
         $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
         if ($sveaOrderId) {
-            // cancel it now!
-            $this->cancelSveaPaymentById($sveaOrderId);
+
+            try {
+                // we need order row ids, so we load the order from svea!
+                $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
+            } catch (\Exception $e) {
+                throw new LocalizedException(__('Could not load svea order'));
+            }
+
+            if ($sveaOrder->canCancel()) {
+                // cancel it now!
+                $this->cancelSveaPaymentById($sveaOrderId);
+            } else {
+
+                // NOT ALL orders are cancelable, direct payments which gets an delivery deirectly in their system must be refunded instead!
+
+
+                if ($sveaOrder->canRefund()) {
+                    $deliveryToRefund = $sveaOrder->getFirstRefundableDelivery();
+
+                    switch ($deliveryToRefund->getRefundType()) {
+                        case "rows":
+                            // if we can refund we do it instead!
+                            $paymentObj = new RefundPayment();
+                            $paymentObj->setOrderRowIds($deliveryToRefund->getCreditableRowsIds());
+
+                            // try to refund it now!
+                            $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                            break;
+                        case "amount":
+                            $paymentObj = new RefundPaymentAmount();
+                            $paymentObj->setCreditedAmount($deliveryToRefund->getDeliveryAmount());
+                            $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                            break;
+                        default:
+                            throw new LocalizedException(
+                                __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
+                            );
+                    }
+
+
+                } else {
+                    throw new LocalizedException(
+                        __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
+                    );
+                }
+            }
         } else {
-            throw new \Magento\Framework\Exception\LocalizedException(
+            throw new LocalizedException(
                 __('You need an svea payment ID to void.')
             );
         }
@@ -307,8 +352,8 @@ class Order
      */
     public function captureSveaPayment(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-        $paymentId = $payment->getAdditionalInformation('svea_order_id');
-        if ($paymentId) {
+        $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
+        if ($sveaOrderId) {
 
             /** @var Invoice $invoice */
             $invoice = $payment->getCapturedInvoice(); // we get this from Observer\PaymentCapture
@@ -318,38 +363,54 @@ class Order
 
             try {
                 // we need order row ids, so we load the order from svea!
-                $sveaOrder = $this->loadSveaOrderById($paymentId);
+                $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
             } catch (\Exception $e) {
                 throw new LocalizedException(__('Could not load svea order'));
             }
 
-            // generate items
-            $this->items->addSveaItemsByInvoice($invoice);
+            // some orders are already delivered! i.e direct payments...
+            if ($sveaOrder->canDeliver()) {
+                // generate items
+                $this->items->addSveaItemsByInvoice($invoice);
 
-            // lets att the invoice fee if it exists!
-            if ($invoiceFeeRow = $sveaOrder->getInvoiceFeeRow()) {
-                $this->items->addInvoiceFeeItem($invoiceFeeRow);
+                // lets att the invoice fee if it exists!
+                if ($invoiceFeeRow = $sveaOrder->getInvoiceFeeRow()) {
+                    $this->items->addInvoiceFeeItem($invoiceFeeRow);
+                }
+
+                // We validate the items before we send them to Svea. This might throw an exception!
+                $this->items->validateTotals($invoice->getGrandTotal());
+
+                try {
+                    // we need order row ids
+                    $rowIds = $this->items->getOrderRowNumbers($sveaOrder->getCartItems(), $this->items->getCart());
+                } catch (\Exception $e) {
+                    throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
+                }
+
+                $paymentObj = new DeliverOrder();
+                $paymentObj->setOrderRowIds($rowIds);
+
+                // capture/deliver it now!
+                $response = $this->orderManagementApi->deliverOrder($paymentObj, $sveaOrderId);
+
+                // save queue_id, we need it later! if a refund will be made
+                $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
+                $payment->setTransactionId($response->getQueueId());
+            } else {
+
+                // so we guess its a direct payment, since you cant deliver this order.
+                // we save some info if client wants to refund later!
+
+                $delivery = $sveaOrder->getFirstDeliveredDelivery();
+                if ($delivery) {
+                    // we set the id here so we can refund it later :)
+                    $payment->setAdditionalInformation('svea_delivery_id', $delivery->getId());
+                    $payment->setTransactionId($delivery->getId());
+                }
             }
 
-            // We validate the items before we send them to Svea. This might throw an exception!
-            $this->items->validateTotals($invoice->getGrandTotal());
 
-            try {
-                // we need order row ids
-                $rowIds = $this->items->getOrderRowNumbers($sveaOrder->getCartItems(), $this->items->getCart());
-            } catch (\Exception $e) {
-                throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
-            }
-
-            $paymentObj = new DeliverOrder();
-            $paymentObj->setOrderRowIds($rowIds);
-
-            // capture/deliver it now!
-            $response = $this->orderManagementApi->deliverOrder($paymentObj, $paymentId);
-
-            // save queue_id, we need it later! if a refund will be made
-            $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
-            $payment->setTransactionId($response->getQueueId());
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('You need an svea payment ID to capture.')
@@ -365,23 +426,77 @@ class Order
      */
     public function refundSveaPayment(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
+        $deliveryId = $payment->getAdditionalInformation('svea_delivery_id');
         $queueId = $payment->getAdditionalInformation('svea_queue_id');
         $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
 
-        if ($queueId && $sveaOrderId) {
-            $responseArray = $this->orderManagementApi->getTask($queueId);
-            if (isset($responseArray['Status']) && $responseArray['Status'] === "InProgress") {
-                throw new LocalizedException(__("This delivery is still in progress. Try again soon."));
+        if ($sveaOrderId && ($queueId || $deliveryId)) {
+
+            try {
+                // we need order row ids, so we load the order from svea!
+                $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
+            } catch (\Exception $e) {
+                throw new LocalizedException(__('Could not load svea order'));
             }
 
-            if (!isset($responseArray['Deliveries'][0])) {
+            if (!$sveaOrder->canRefund()) {
+                throw new LocalizedException(
+                    __('Could not refund order. It is not marked as refundable in Svea.')
+                );
+            }
+
+            $deliveryToRefund = null;
+            if ($queueId) {
+
+                // not sure if this is good, but we have the  queue_id, and can retrieve the delivery from it!
+                // or we could just loop through $sveaOrder->getDeliveries() and take the first one... that would be one less api call!
+                $responseArray = $this->orderManagementApi->getTask($queueId);
+                if (isset($responseArray['Status']) && $responseArray['Status'] === "InProgress") {
+                    throw new LocalizedException(__("This delivery is still in progress. Try again soon."));
+                }
+
+                if (!isset($responseArray['Deliveries'][0])) {
+                    throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
+                }
+
+                $deliveryArray = $responseArray['Deliveries'][0];
+                $deliveryToRefund = new GetDeliveryResponse($deliveryArray);
+            } else {
+                foreach ($sveaOrder->getDeliveries() as $delivery) {
+                    if ($delivery->getId() == $deliveryId) {
+                        $deliveryToRefund = $delivery;
+                        breaK;
+                    }
+                }
+            }
+
+            // wasn't found :/
+            if (!$deliveryToRefund) {
                 throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
             }
 
-            $deliveryArray = $responseArray['Deliveries'][0];
-            $delivery = new GetDeliveryResponse($deliveryArray);
 
-            if (!$delivery->getCanCreditOrderRows()) {
+            switch ($deliveryToRefund->getRefundType()) {
+                case "rows":
+                    // if we can refund we do it instead!
+                    $paymentObj = new RefundPayment();
+                    $paymentObj->setOrderRowIds($deliveryToRefund->getCreditableRowsIds());
+
+                    // try to refund it now!
+                    $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                    break;
+                case "amount":
+                    $paymentObj = new RefundPaymentAmount();
+                    $paymentObj->setCreditedAmount($deliveryToRefund->getDeliveryAmount());
+                    $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                    break;
+                default:
+                    throw new LocalizedException(
+                        __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
+                    );
+            }
+
+            if (!$deliveryToRefund->canRefund()) {
                 throw new LocalizedException(__("Can't refund this invoice. Please refund offline, and do the rest manually in Svea."));
             }
 
@@ -390,13 +505,13 @@ class Order
             $creditMemo = $payment->getCreditMemo();
 
             $creditMemoTotal = $creditMemo->getGrandTotal();
-            $invoiceFeeRow = $delivery->getInvoiceFeeRow();
+            $invoiceFeeRow = $deliveryToRefund->getInvoiceFeeRow();
 
             // convert credit memo to svea items!
             $this->items->addSveaItemsByCreditMemo($creditMemo);
 
             // we only refund invoice fee if its a full refund!
-            if ($this->isFullRefund($this->items->getCart(), $delivery->getCartItems())) {
+            if ($this->isFullRefund($this->items->getCart(), $deliveryToRefund->getCreditableItems())) {
 
                 // lets add the invoice fee if it exists, since its a full refund!
                 if ($invoiceFeeRow) {
@@ -418,22 +533,44 @@ class Order
             // We validate the items before we send them to Svea. This might throw an exception!
             $this->items->validateTotals($creditMemoTotal);
 
-            try {
-                // we need order row ids
-                $rowIds = $this->items->getOrderRowNumbers($delivery->getCartItems(), $this->items->getCart());
-            } catch (\Exception $e) {
-                throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
+
+            switch ($deliveryToRefund->getRefundType()) {
+                case "rows":
+                    // if we can refund we do it instead!
+
+                    try {
+                        // we need order row ids
+                        $rowIds = $this->items->getOrderRowNumbers($deliveryToRefund->getCreditableItems(), $this->items->getCart());
+                    } catch (\Exception $e) {
+                        throw new LocalizedException(__('Could not map order row numbers, so we cannot perform this action. Please do it manually'));
+                    }
+
+                    // refund request
+                    $paymentObj = new RefundPayment();
+                    $paymentObj->setOrderRowIds($rowIds);
+
+                    // try to refund it now!
+                    $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+
+                    break;
+                case "amount":
+
+                    // we calculate the amount to send to svea, according to the rows existing in the svea delivery and magento!
+                    $amountToCredit = $this->items->getSveaOrderAmountByItems($deliveryToRefund->getCreditableItems(), $this->items->getCart());
+
+                    $paymentObj = new RefundPaymentAmount();
+                    $paymentObj->setCreditedAmount($amountToCredit);
+                    $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                    break;
+                default:
+                    throw new LocalizedException(
+                        __('Could not refund invoice. This delivery is not marked as refundable in Svea.')
+                    );
             }
 
-            // refund request
-            $paymentObj = new RefundPayment();
-            $paymentObj->setOrderRowIds($rowIds);
-
-            // try to refund it now!
-            $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $delivery->getId());
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
-                __('You need an svea ID and Svea Delivery ID to refund.')
+                __('Missing Svea ID or delivery id. Please handle this manually.')
             );
         }
     }

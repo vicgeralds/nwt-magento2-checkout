@@ -247,4 +247,10 @@ class GetOrderResponse extends GetOrder
         return null;
     }
 
+    /** @return mixed */
+    public function getHttpResponse()
+    {
+        return $this->_data;
+    }
+
 }

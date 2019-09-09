@@ -107,6 +107,11 @@ class Checkout extends AbstractMethod
         return $this->_helper->canCapture($order?$order->getStore():null);
     }
 
+    public function canVoid()
+    {
+        return $this->_canVoid;
+    }
+
     public function canCapturePartial()
     {
         if (!$this->_canCapturePartial) {

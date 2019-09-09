@@ -227,7 +227,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $store->setCurrentCurrencyCode($requiredCurrency);
 
         // check if it was possible to set the currency code!
-        if ($store->getCurrentCurrency()->getCode() != $requiredCurrency) {
+        if ($store->getCurrentCurrencyCode() != $requiredCurrency) {
             $this->throwRedirectToCartException(__('This currency is not available, please use an alternative checkout.'));
         }
 

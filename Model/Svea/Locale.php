@@ -30,7 +30,7 @@ class Locale
                 "PostalCode" => "99999",
             ]
         ],
-        "NO" >= [
+        "NO" => [
             "locale" => "nn-NO",
             "currency" => "NOK",
             "test" => [
@@ -39,7 +39,7 @@ class Locale
                 "PostalCode" => "0359",
             ]
         ],
-        "DK" >= [
+        "DK" => [
             "locale" => "da-DK",
             "currency" => "DKK",
             "test" => [
@@ -48,7 +48,7 @@ class Locale
                 "PostalCode" => "2100",
             ]
         ],
-        "FI" >= [
+        "FI" => [
             "locale" => "fi-FI",
             "currency" => "EUR",
             "test" => [

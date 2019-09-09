@@ -7,12 +7,31 @@ use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\CreatePaymentChargeResponse;
-use Svea\Checkout\Model\Client\DTO\CreateRefundResponse;
+use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
+use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\OrderManagementClient;
 
 class OrderManagement extends OrderManagementClient
 {
+
+    /**
+     * @param $paymentId
+     * @return GetOrderInfoResponse
+     * @throws ClientException
+     */
+    public function getOrder($paymentId)
+    {
+        try {
+            $response = $this->get("/api/v1/orders/" . $paymentId);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+
+        return new GetOrderInfoResponse($response);
+    }
+
 
 
     /**
@@ -66,7 +85,25 @@ class OrderManagement extends OrderManagementClient
     public function refundPayment(RefundPayment $creditRow, $orderId, $deliveryId)
     {
         try {
-           $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
+            $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+    }
+
+
+    /**
+     * @param RefundPaymentAmount $creditAmount
+     * @param string $orderId
+     * @param string $deliveryId
+     * @throws ClientException
+     * @return void
+     */
+    public function refundPaymentAmount(RefundPaymentAmount $creditAmount, $orderId, $deliveryId)
+    {
+        try {
+            $this->patch("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId, $creditAmount);
         } catch (ClientException $e) {
             // handle?
             throw $e;

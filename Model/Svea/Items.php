@@ -644,7 +644,7 @@ class Items
             /** @var $magentoOrderItem OrderRow */
 
             if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
-                throw new \Exception(sprintf("could not find svea order row number for article number: %s", $magentoOrderItem->getArticleNumber()));
+                throw new \Exception(sprintf("could not find svea order row number for article: %s", $magentoOrderItem->getArticleNumber()));
             }
 
             $rowNumbers[] = $rowRef[$magentoOrderItem->getArticleNumber()];
@@ -652,6 +652,31 @@ class Items
 
         return $rowNumbers;
     }
+
+    public function getSveaOrderAmountByItems($sveaOrderItems, $magentoOrderItems)
+    {
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        $price = 0;
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                continue;
+            }
+
+            $price += $rowRef[$magentoOrderItem->getArticleNumber()]->getUnitPrice();
+        }
+
+        return $price;
+    }
+
+
 
     /**
      * @return int
