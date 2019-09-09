@@ -1252,3 +1252,57 @@ button:not(.primary).svea-primary {
   margin: 35px auto;
   text-align: center;
 }
+
+// --- Unifaun related CSS
+
+.svea-checkout-radio-row {
+    label[for^="nwtunifaun_custom"] {
+      flex-wrap: wrap;
+    }
+}
+
+#nwt_unifaun_form {
+  flex-basis: 100%;
+  padding-top: 10px;
+  .nwt_unifaun_form_agent,
+  #nwt_unifaun_form_cellphone {
+    label {
+      &:before, &:after {
+        display: none !important;
+      }
+    }
+    .nwt_unifaun_select_agent {
+      border-radius: 7px !important;
+    }
+    .nwt_unifaun_postcode {
+      @media only screen and (max-width: 500px) {
+        width: 50% !important;
+      }
+    }
+    label[for="nwt_unifaun_postcode"] {
+      width: 25% !important;
+      @media only screen and (max-width: 500px) {
+        width: 36% !important;
+      }
+    }
+    button.nwtunifaun-choose-agent {
+      margin-left: 10px;
+      @media only screen and (max-width: @screen__m) {
+        width: 90% !important;
+        margin-left: 0 !important;
+        margin-top: 5px;
+      }
+    }
+  }
+  #nwt_unifaun_form_cellphone {
+    br {
+      display: none;
+    }
+  }
+  button {
+    .svea-btn;
+    height: 50px;
+    font-size: 18px;
+    padding: 10px 50px;
+  }
+}
