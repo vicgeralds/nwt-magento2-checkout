@@ -1,6 +1,7 @@
 <?php
 // @codingStandardsIgnoreFile
 ?>
+<?php if ($block->getShippingAddress()): ?>
 <div class="svea-checkout-shipping svea-checkout-section mobile-show" id="svea-checkout-shipping">
     <div class="svea-checkout-title" data-role="title">
         <h4 id="svea-checkout-review-heading" role="heading" aria-level="2" style="border-bottom: 0px;">
@@ -19,3 +20,4 @@
         <?php endif; ?>
     </div>
 </div>
+<?php endif; ?>

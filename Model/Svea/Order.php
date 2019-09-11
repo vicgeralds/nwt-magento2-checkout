@@ -175,10 +175,14 @@ class Order
      */
     protected function createNewSveaPayment(Quote $quote)
     {
+        $countryCode = $quote->getBillingAddress()->getCountryId();
+        if (!in_array($countryCode, $this->getLocale()->getAllowedCountries())) {
+            throw new \Exception("The country is not supported.");
+        }
+
         $sveaHash = $this->getRefHelper()->getSveaHash();
 
         $isTestMode = $this->helper->isTestMode();
-        $countryCode = $quote->getShippingAddress()->getCountryId();
         $refId = $this->getRefHelper()->getClientOrderNumber();
 
         // generate items

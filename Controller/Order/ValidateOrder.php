@@ -215,7 +215,7 @@ class ValidateOrder extends Update
         }
 
         try {
-            if (!$quote->getShippingAddress()->getShippingMethod()) {
+            if (!$quote->isVirtual() && !$quote->getShippingAddress()->getShippingMethod()) {
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 throw new CheckoutException(__("Please choose a shipping method."));
             }
