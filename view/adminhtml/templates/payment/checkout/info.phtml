@@ -9,4 +9,8 @@
         <th><?php echo $block->escapeHtml(__('Svea Checkout Order ID')); ?>:</th>
         <td><?php echo $block->escapeHtml($block->getInfo()->getAdditionalInformation('svea_order_id')); ?></td>
     </tr>
+    <tr>
+        <th><?php echo $block->escapeHtml(__('Svea Payment Method')); ?>:</th>
+        <td><?php echo $block->escapeHtml($block->getInfo()->getAdditionalInformation('svea_payment_method')); ?></td>
+    </tr>
 </table>

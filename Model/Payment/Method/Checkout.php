@@ -77,6 +77,7 @@ class Checkout extends AbstractMethod
 
         $this->getInfoInstance()
             ->setAdditionalInformation('svea_order_id',$data->getSveaOrderId())
+            ->setAdditionalInformation('svea_payment_method',$data->getSveaPaymentMethod())
             ->setAdditionalInformation('country_id',$data->getCountryId());
 
         return $this;

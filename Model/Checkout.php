@@ -594,6 +594,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         $paymentData = (new DataObject())
             ->setSveaOrderId($sveaOrder->getOrderId())
+            ->setSveaPaymentMethod($sveaOrder->getPaymentType())
             ->setCountryId($shippingAddress->getCountryId());
 
         $quote->getPayment()->getMethodInstance()->assignData($paymentData);
