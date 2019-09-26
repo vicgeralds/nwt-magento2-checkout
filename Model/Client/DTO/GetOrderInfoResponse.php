@@ -45,6 +45,7 @@ class GetOrderInfoResponse
 
     const ACTION_CAN_DELIVER_ORDER = "CanDeliverOrder";
     const ACTION_CAN_CANCEL_ORDER = "CanCancelOrder";
+    const ACTION_CAN_CANCEL_ORDER_AMOUNT = "CanCancelAmount";
 
 
     private $_data;
@@ -105,6 +106,7 @@ class GetOrderInfoResponse
         $this->setPaymentCreditStatus($this->get("PaymentCreditStatus"));
         $this->setActions($actions);
 
+        $this->setCartItems([]);
         if (isset($data['OrderRows'])) {
             $items = $data['OrderRows'];
             $orderRows = [];
@@ -269,6 +271,15 @@ class GetOrderInfoResponse
     {
         return in_array(self::ACTION_CAN_CANCEL_ORDER, $this->getActions());
     }
+
+    /**
+     * @return bool
+     */
+    public function canCancelAmount()
+    {
+        return in_array(self::ACTION_CAN_CANCEL_ORDER_AMOUNT, $this->getActions());
+    }
+
 
     public function canDeliver()
     {

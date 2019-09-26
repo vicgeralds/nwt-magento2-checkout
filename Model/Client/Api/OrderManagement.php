@@ -5,6 +5,7 @@ namespace Svea\Checkout\Model\Client\Api;
 
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
+use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\CreatePaymentChargeResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
@@ -49,6 +50,23 @@ class OrderManagement extends OrderManagementClient
             throw $e;
         }
     }
+
+    /**
+     * @param CancelOrderAmount $payment
+     * @param string $paymentId
+     * @throws ClientException
+     * @return void
+     */
+    public function cancelOrderAmount(CancelOrderAmount $payment, $paymentId)
+    {
+        try {
+            $this->patch("/api/v1/orders/" . $paymentId, $payment);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+    }
+
 
     /**
      * @param DeliverOrder $payment

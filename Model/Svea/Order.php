@@ -9,6 +9,7 @@ use Magento\Sales\Model\Order\Invoice;
 use Svea\Checkout\Model\Client\Api\Checkout;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\CancelOrder;
+use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
@@ -443,18 +444,7 @@ class Order
                 throw new LocalizedException(__('Could not load svea order'));
             }
 
-            if (!$sveaOrder->canRefund()) {
 
-             //   if ($sveaOrder->canCancel()) {
-               //     return $this->cancelSveaPayment($payment); // we try to cancel it instead!
-             //   } else {
-                    throw new LocalizedException(
-                        __('Could not refund order. It is not marked as refundable in Svea.')
-                    );
-             //   }
-
-
-            }
             $deliveryToRefund = null;
             if ($queueId) {
 
@@ -485,30 +475,6 @@ class Order
                 throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
             }
 
-
-            switch ($deliveryToRefund->getRefundType()) {
-                case "rows":
-                    // if we can refund we do it instead!
-                    $paymentObj = new RefundPayment();
-                    $paymentObj->setOrderRowIds($deliveryToRefund->getCreditableRowsIds());
-
-                    // try to refund it now!
-                    $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-                    break;
-                case "amount":
-                    $paymentObj = new RefundPaymentAmount();
-                    $paymentObj->setCreditedAmount($deliveryToRefund->getDeliveryAmount());
-                    $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-                    break;
-                default:
-                    throw new LocalizedException(
-                        __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
-                    );
-            }
-
-            if (!$deliveryToRefund->canRefund()) {
-                throw new LocalizedException(__("Can't refund this invoice. Please refund offline, and do the rest manually in Svea."));
-            }
 
             // the creditmemo from the payment/invoice
             /** @var Creditmemo $creditMemo */
@@ -543,6 +509,14 @@ class Order
             // We validate the items before we send them to Svea. This might throw an exception!
             $this->items->validateTotals($creditMemoTotal);
 
+            // last validation! we do it here cuz me need amount
+            if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount()) {
+                $amountToCancel = $this->items->getSveaOrderAmountByItems($deliveryToRefund->getCartItems(), $this->items->getCart());
+                $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
+                return;
+            } else if (!$deliveryToRefund->canRefund() && !$sveaOrder->canCancelAmount()) {
+                throw new LocalizedException(__("Can't refund this invoice. Please refund offline, and do the rest manually in Svea."));
+            }
 
             switch ($deliveryToRefund->getRefundType()) {
                 case "rows":
@@ -584,6 +558,24 @@ class Order
             );
         }
     }
+
+    /**
+     * @param $sveaOrderId
+     * @param $amount
+     * @throws LocalizedException
+     */
+    public function cancelDeliveryAmount($sveaOrderId,$amount)
+    {
+        $paymentObj = new CancelOrderAmount();
+        $paymentObj->setCancelledAmount($amount);
+        try {
+
+            $this->orderManagementApi->cancelOrderAmount($paymentObj, $sveaOrderId);
+        } catch (\Exception $e) {
+            throw new LocalizedException(__("Can't cancel delivery amount. Use the Offline button and do the rest manually in Svea."));
+        }
+    }
+
 
     /**
      * @param $creditMemoItems array

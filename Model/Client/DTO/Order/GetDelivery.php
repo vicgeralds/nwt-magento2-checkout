@@ -7,6 +7,10 @@ class GetDelivery
     const ACTION_CAN_REFUND_ORDER = "CanCreditAmount";
     const ACTION_CAN_REFUND_ORDER_ROWS = "CanCreditOrderRows";
 
+
+    const ACTION_CAN_CANCEL_ORDER = 'CanCancelOrder';
+    const ACTION_CAN_CANCEL_ORDER_AMOUNT = 'CanCancelAmount';
+
     /** @var OrderRow[] $cartItems */
     protected $cartItems;
 
@@ -178,6 +182,15 @@ class GetDelivery
     public function canRefund()
     {
         return in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions()) || in_array(self::ACTION_CAN_REFUND_ORDER_ROWS, $this->getActions());
+    }
+
+
+    /**
+     * @return bool
+     */
+    public function canCancelAmount()
+    {
+        return in_array(self::ACTION_CAN_CANCEL_ORDER_AMOUNT, $this->getActions());
     }
 
     /**
