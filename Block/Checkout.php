@@ -245,6 +245,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
         return sprintf($format, $this->escapeHtml($title), $price, $renderedInclTax);
     }
 
+
     /**
      * Getter for current shipping rate
      *

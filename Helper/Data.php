@@ -308,6 +308,17 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
+
+
+    public function showCouponLayout($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LAYOUT . 'display_discount',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
     /**
      * @param null $store
      * @return array|null
