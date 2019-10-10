@@ -281,7 +281,12 @@ define([
         },
 
         _saveComment: function () {
-            this._ajaxFormSubmit(jQuery(this.options.commentFormSelector));
+            var form = jQuery(this.options.commentFormSelector);
+            this._ajaxSubmit(form.prop('action'), form.serialize(), "post", false, function() {
+                // det här kommer köras efter ajax är success,
+                // här kan du lägga till den med javascript
+                jQuery("#svea-submit").addClass('success-save');
+            });
             return false;
         },
 
