@@ -3,6 +3,7 @@
 
 namespace Svea\Checkout\Model\Svea;
 
+use Magento\Framework\Exception\LocalizedException;
 use Svea\Checkout\Model\CheckoutException;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Magento\Quote\Model\Quote;
@@ -626,34 +627,31 @@ class Items
     }
 
     /**
-     * @param $sveaOrderItems []OrderRow
-     * @param $magentoOrderItems []OrderRow
-     * @throws \Exception
+     * @param $items []OrderRow
+     * @param bool $addNegative
      * @return int[]
      */
-    public function getOrderRowNumbers($sveaOrderItems, $magentoOrderItems)
+    public function getOrderRowNumbers($items, $addNegative = true)
     {
-        $rowRef = [];
-        foreach ($sveaOrderItems as $sveaOrderItem) {
-            /** @var $sveaOrderItem OrderRow */
-            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem->getRowNumber();
-        }
-
         $rowNumbers = [];
-        foreach ($magentoOrderItems as $magentoOrderItem) {
-            /** @var $magentoOrderItem OrderRow */
-
-            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
-                throw new \Exception(sprintf("could not find svea order row number for article: %s", $magentoOrderItem->getArticleNumber()));
+        foreach ($items as $item) {
+            if (!$addNegative && $item->getUnitPrice() < 0) {
+                continue;
             }
 
-            $rowNumbers[] = $rowRef[$magentoOrderItem->getArticleNumber()];
+            $rowNumbers[] = $item->getArticleNumber();
         }
 
         return $rowNumbers;
     }
 
-    public function getSveaOrderAmountByItems($sveaOrderItems, $magentoOrderItems)
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @return array
+     * @throws LocalizedException
+     */
+    public function getMatchingRows($sveaOrderItems, $magentoOrderItems)
     {
         /** @var OrderRow[] $rowRef */
         $rowRef = [];
@@ -662,20 +660,58 @@ class Items
             $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
         }
 
-        $price = 0;
+        $matchingItems = [];
         foreach ($magentoOrderItems as $magentoOrderItem) {
             /** @var $magentoOrderItem OrderRow */
 
             if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
-                continue;
+                throw new LocalizedException(__("Could not match Magento and Svea for article: %1", $magentoOrderItem->getArticleNumber()));
             }
 
-            $price += $rowRef[$magentoOrderItem->getArticleNumber()]->getUnitPrice();
+            $matchingItems[] = $rowRef[$magentoOrderItem->getArticleNumber()];
+        }
+
+        return $matchingItems;
+    }
+
+    /**
+     * @param $items
+     * @return bool
+     */
+    public function containsDiscount($items)
+    {
+        foreach ($items as $item) {
+            /** @var $item OrderRow */
+            $amount = $item->getUnitPrice();
+            if ($amount < 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $items
+     * @param bool $addNegative
+     * @return int
+     */
+    public function getAmountByItems($items, $addNegative = true)
+    {
+        $price = 0;
+        foreach ($items as $item) {
+            if (!$addNegative && $item->getUnitPrice() < 0) {
+                continue;
+            }
+            /** @var $item OrderRow */
+
+            $amount = $item->getUnitPrice() * ($item->getQuantity() / 100); // we fix quantity, since 300 = 3, and so on
+            $price += $amount;
+
         }
 
         return $price;
     }
-
 
 
     /**

@@ -184,6 +184,11 @@ class GetDelivery
         return in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions()) || in_array(self::ACTION_CAN_REFUND_ORDER_ROWS, $this->getActions());
     }
 
+    public function canRefundAmount()
+    {
+        return in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions());
+    }
+
 
     /**
      * @return bool

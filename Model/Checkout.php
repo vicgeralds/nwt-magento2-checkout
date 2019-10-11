@@ -452,7 +452,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
             if ($this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
                 try {
-                    $this->context->getSveaOrderHandler()->cancelSveaPaymentById($sveaOrder->getOrderId());
+                    $this->context->getSveaOrderHandler()->tryToCancelSveaOrder($sveaOrder->getOrderId());
                 } catch (\Exception $e) {
                     // do nothing!
                 }
