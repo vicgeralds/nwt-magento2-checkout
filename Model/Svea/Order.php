@@ -397,6 +397,7 @@ class Order
                 throw new LocalizedException(__('Cannot capture online, no invoice set'));
             }
 
+            $isFullDelivery = $invoice->getGrandTotal() === (float)$invoice->getOrder()->getGrandTotal();
             try {
                 // we need order row ids, so we load the order from svea!
                 $sveaOrder = $this->orderManagementApi->getOrder($sveaOrderId);
@@ -404,8 +405,34 @@ class Order
                 throw new LocalizedException(__('Could not load svea order.'));
             }
 
-            // some orders are already delivered! i.e direct payments...
-            if ($sveaOrder->canDeliver()) {
+            $canDeliver = $sveaOrder->canDeliver() || $sveaOrder->canDeliverPartially();
+            if (!$canDeliver) {
+                // so we guess its a direct payment, since you cant deliver this order.
+                // we save some info if client wants to refund later!
+
+                $delivery = $sveaOrder->getFirstDeliveredDelivery();
+                if ($delivery) {
+                    // we set the id here so we can refund it later :)
+                    $payment->setAdditionalInformation('svea_delivery_id', $delivery->getId());
+                    $payment->setTransactionId($delivery->getId());
+                }
+
+                return;
+            }
+
+            if ($isFullDelivery && !$sveaOrder->canDeliver()) {
+                throw new LocalizedException(__('We can\'t do a full delivery on this particular order. Capture offline and please do it manually in Svea.'));
+            }
+
+            if (!$isFullDelivery && !$sveaOrder->canDeliverPartially()) {
+                //throw new LocalizedException(__('We can\'t do a partial delivery on this particular order. Capture offline and please do it manually in Svea.'));
+            }
+
+            $paymentObj = new DeliverOrder();
+            if ($isFullDelivery) {
+                $rowsToDeliver = [];
+
+            } else {
                 // generate items
                 $this->items->addSveaItemsByInvoice($invoice);
 
@@ -421,35 +448,78 @@ class Order
                     throw new LocalizedException(__("Total amount not matching.", $e));
                 }
 
-                $rowsToDeliver = $this->items->getMatchingRows($sveaOrder->getCartItems(), $this->items->getCart());
+                $rowsToDeliver = $this->items->getMatchingRows($sveaOrder->getCartItems(), $this->items->getCart(), false);
+                if (!$this->items->itemsMatching($rowsToDeliver, $this->items->getCart())) {
+                    // we must update/add items not matching!
+                    // since the order may contain shipping method and discount that varies depending on the grand total
+                    // we will need to update ALL items
+                    foreach ($rowsToDeliver as $key => $sveaItem) {
+                        // this should never happen... but if it does for whatever reason, we fix it
+                        if ($sveaItem->getQuantity() == 0) {
+                            unset($rowsToDeliver[$key]);
+                            continue;
+                        }
 
-                $paymentObj = new DeliverOrder();
-                $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToDeliver));
+                        try {
+                            $item = $this->items->getMagentoRowBySveaItem($sveaItem, $this->items->getCart());
 
-                // capture/deliver it now!
-                $response = $this->orderManagementApi->deliverOrder($paymentObj, $sveaOrderId);
+                            $updateRow = new OrderRow();
+                            $updateRow->setName($item->getName())
+                                ->setArticleNumber($item->getArticleNumber())
+                                ->setQuantity($item->getQuantity())
+                                ->setUnitPrice($item->getUnitPrice())
+                                ->setVatPercent($item->getVatPercent())
+                                ->setDiscountPercent($item->getDiscountPercent())
+                                ->setUnit($item->getUnit());
 
-                // save queue_id, we need it later! if a refund will be made
-                $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
-                $payment->setTransactionId($response->getQueueId());
-            } else {
+                            $this->orderManagementApi->updateOrderRow($updateRow, $sveaOrderId, $sveaItem->getRowNumber());
+                            $item->setRowNumber($sveaItem->getRowNumber());
+                            $rowsToDeliver[$key] = $item;
+                        } catch (LocalizedException $e) {
+                          throw $e;
+                        } catch (\Exception $e) {
+                            throw new LocalizedException(__("Could not to a partial delivery, couldn't update row at Svea. Please do it manually. %1", $e->getMessage()));
+                        }
+                    }
 
-                // so we guess its a direct payment, since you cant deliver this order.
-                // we save some info if client wants to refund later!
+                    // here we loop and add all missing products!
+                    $itemsToAdd = $this->items->getMissingItems($rowsToDeliver, $this->items->getCart());
+                    foreach ($itemsToAdd as $item) {
 
-                $delivery = $sveaOrder->getFirstDeliveredDelivery();
-                if ($delivery) {
-                    // we set the id here so we can refund it later :)
-                    $payment->setAdditionalInformation('svea_delivery_id', $delivery->getId());
-                    $payment->setTransactionId($delivery->getId());
+                        try {
+                            $addRow = new OrderRow();
+                            $addRow->setName($item->getName())
+                                ->setArticleNumber($item->getArticleNumber())
+                                ->setQuantity($item->getQuantity())
+                                ->setUnitPrice($item->getUnitPrice())
+                                ->setVatPercent($item->getVatPercent())
+                                ->setDiscountPercent($item->getDiscountPercent())
+                                ->setUnit($item->getUnit());
+
+                            $rowId = $this->orderManagementApi->addOrderRow($addRow, $sveaOrderId);
+                            $addRow->setRowNumber($rowId);
+
+                            $rowsToDeliver[] = $addRow;
+                        } catch (\Exception $e) {
+                            throw new LocalizedException(__("Could not to a partial delivery, couldn't add missing row at Svea. Please do it manually. Error %1", $e->getMessage()));
+                        }
+
+                    }
                 }
             }
 
 
+            // capture/deliver it now!
+            $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToDeliver));
+            $response = $this->orderManagementApi->deliverOrder($paymentObj, $sveaOrderId);
+
+            // save queue_id, we need it later! if a refund will be made
+            $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
+            $payment->setTransactionId($response->getQueueId());
+
+
         } else {
-            throw new LocalizedException(
-                __('You need an svea payment ID to capture.')
-            );
+            throw new LocalizedException(__('You need an svea payment ID to capture.'));
         }
     }
 

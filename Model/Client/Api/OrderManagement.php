@@ -9,6 +9,7 @@ use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\CreatePaymentChargeResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\OrderManagementClient;
@@ -33,6 +34,49 @@ class OrderManagement extends OrderManagementClient
         return new GetOrderInfoResponse($response);
     }
 
+    /**
+     * Used before a delivery is made, if needed.
+     *
+     * @param OrderRow $row
+     * @param $paymentId
+     * @throws ClientException
+     * @return int
+     */
+    public function addOrderRow(OrderRow $row, $paymentId)
+    {
+        try {
+            $response = $this->post("/api/v1/orders/" . $paymentId . "/rows", $row);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+
+        $data = json_encode($response, true);
+        if (is_array($data) && isset($data['OrderRowId'])) {
+            return $data['OrderRowId'];
+        } else {
+            throw new \Exception("Row ID not returned. Something went wrong.");
+        }
+    }
+
+    /**
+     * Used before a delivery is made, if needed.
+
+     *
+     * @param OrderRow $row
+     * @param $paymentId
+     * @param $rowNr
+     * @throws ClientException
+     */
+    public function updateOrderRow(OrderRow $row, $paymentId, $rowNr)
+    {
+        try {
+            $this->patch("/api/v1/orders/" . $paymentId . "/rows/" . $rowNr, $row);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+    }
 
 
     /**

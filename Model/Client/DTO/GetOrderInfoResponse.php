@@ -44,6 +44,7 @@ class GetOrderInfoResponse
     const PAYMENT_TYPE_DIRECT_BANK = "DirectBank";
 
     const ACTION_CAN_DELIVER_ORDER = "CanDeliverOrder";
+    const ACTION_CAN_DELIVER_ORDER_PARTIALLY = "“CanDeliverOrderPartially”";
     const ACTION_CAN_CANCEL_ORDER = "CanCancelOrder";
     const ACTION_CAN_CANCEL_ORDER_AMOUNT = "CanCancelAmount";
 
@@ -285,6 +286,13 @@ class GetOrderInfoResponse
     {
         return in_array(self::ACTION_CAN_DELIVER_ORDER, $this->getActions());
     }
+
+    public function canDeliverPartially()
+    {
+        return in_array(self::ACTION_CAN_DELIVER_ORDER_PARTIALLY, $this->getActions());
+    }
+
+
 
     public function canRefund()
     {

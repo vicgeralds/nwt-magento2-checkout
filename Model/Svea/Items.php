@@ -639,7 +639,7 @@ class Items
                 continue;
             }
 
-            $rowNumbers[] = $item->getArticleNumber();
+            $rowNumbers[] = $item->getRowNumber();
         }
 
         return $rowNumbers;
@@ -648,10 +648,11 @@ class Items
     /**
      * @param $sveaOrderItems
      * @param $magentoOrderItems
-     * @return array
+     * @param bool $throwException
+     * @return OrderRow[]
      * @throws LocalizedException
      */
-    public function getMatchingRows($sveaOrderItems, $magentoOrderItems)
+    public function getMatchingRows($sveaOrderItems, $magentoOrderItems, $throwException = true)
     {
         /** @var OrderRow[] $rowRef */
         $rowRef = [];
@@ -660,11 +661,15 @@ class Items
             $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
         }
 
+        /** @var OrderRow[] $matchingItems */
         $matchingItems = [];
         foreach ($magentoOrderItems as $magentoOrderItem) {
             /** @var $magentoOrderItem OrderRow */
 
             if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                if (!$throwException) {
+                    continue;
+                }
                 throw new LocalizedException(__("Could not match Magento and Svea for article: %1", $magentoOrderItem->getArticleNumber()));
             }
 
@@ -690,6 +695,88 @@ class Items
 
         return false;
     }
+
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @return bool
+     */
+    public function itemsMatching($sveaOrderItems, $magentoOrderItems)
+    {
+        // TODO we could just return count($sveaOrderItems) === count($magentoOrderItems);
+        // but not sure about if that is important. The important thing is that all magento items exists in svea items,
+        // not vice versa!
+
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                return false;
+            }
+
+            $sveaItem = $rowRef[$magentoOrderItem->getArticleNumber()];
+            if ($sveaItem->getQuantity() != $magentoOrderItem->getQuantity()) {
+                return false;
+            }
+
+        }
+
+        return true;
+    }
+
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @return array
+     */
+    public function getMissingItems($sveaOrderItems, $magentoOrderItems)
+    {
+        $missing = [];
+
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                $missing[] = $magentoOrderItem;
+            }
+
+
+        }
+
+        return $missing;
+    }
+
+    /**
+     * @param OrderRow $sveaOrderItem
+     * @param $magentoOrderItems
+     * @return mixed|OrderRow
+     * @throws LocalizedException
+     */
+    public function getMagentoRowBySveaItem(OrderRow $sveaOrderItem, $magentoOrderItems)
+    {
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+
+            if ($magentoOrderItem->getArticleNumber() === $sveaOrderItem->getArticleNumber()) {
+                return $magentoOrderItem;
+            }
+        }
+
+        throw new LocalizedException(__("Could not match Magento and Svea for article: %1", $sveaOrderItem->getArticleNumber()));
+    }
+
 
     /**
      * @param $items
