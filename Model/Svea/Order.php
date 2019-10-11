@@ -18,6 +18,7 @@ use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
+use Svea\Checkout\Model\Client\DTO\RefundNewCreditRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
@@ -332,9 +333,7 @@ class Order
                         $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
                         break;
                     case "amount":
-                        $paymentObj = new RefundPaymentAmount();
-                        $paymentObj->setCreditedAmount($deliveryToRefund->getDeliveryAmount());
-                        $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+                        $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $deliveryToRefund->getDeliveryAmount(), 0);
                         break;
                     default:
                         throw new LocalizedException(
@@ -424,14 +423,10 @@ class Order
                 throw new LocalizedException(__('We can\'t do a full delivery on this particular order. Capture offline and please do it manually in Svea.'));
             }
 
-            if (!$isFullDelivery && !$sveaOrder->canDeliverPartially()) {
-                //throw new LocalizedException(__('We can\'t do a partial delivery on this particular order. Capture offline and please do it manually in Svea.'));
-            }
 
             $paymentObj = new DeliverOrder();
             if ($isFullDelivery) {
                 $rowsToDeliver = [];
-
             } else {
                 // generate items
                 $this->items->addSveaItemsByInvoice($invoice);
@@ -619,23 +614,15 @@ class Order
             $this->items->validateTotals($creditMemoTotal);
             $rowsToRefund = $this->items->getMatchingRows($deliveryToRefund->getCartItems(), $this->items->getCart());
 
-
             // if its a partial refund, containing discount!
             if (!$isFullRefund && $this->items->containsDiscount($rowsToRefund))  {
 
                 // if we can count how much the maximum amount possible to credit in svea, then this could work, and it has the correct flags
                 $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
-                if ($amountToCredit > $deliveryToRefund->getDeliveryAmount()) {
-                    $amountToCredit = $deliveryToRefund->getDeliveryAmount();
-                }
+                if ($deliveryToRefund->canDeliveryRefundByAmount() || $sveaOrder->canCancelAmount()) {
 
-                if ($deliveryToRefund->canRefundAmount() || $sveaOrder->canCancelAmount()) {
-
-                    if ($deliveryToRefund->canRefundAmount()) {
-                        $paymentObj = new RefundPaymentAmount();
-                        $paymentObj->setCreditedAmount($amountToCredit);
-                        $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-
+                    if ($deliveryToRefund->canDeliveryRefundByAmount()) {
+                        $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
                     } else {
                         $this->cancelDeliveryAmount($sveaOrderId, $amountToCredit);
                     }
@@ -646,47 +633,103 @@ class Order
                 }
             }
 
+            // we try to refund by amount if items are not matching, i.e you want to redfund 1 quantity when you have 2.
+            // or we try to cancel by amount!
 
-            // last validation! we do it here cuz me need amount
-            if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount()) {
-                // we only cancel full amounts here
+            try {
+                $itemQuantityMatching = $this->items->itemsMatching($rowsToRefund, $this->items->getCart(), true);
 
-                $amountToCancel = $this->items->getAmountByItems($rowsToRefund, true);
-                $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
-                return;
-            } else if (!$deliveryToRefund->canRefund() && !$sveaOrder->canCancelAmount()) {
-                throw new LocalizedException(__("Can't refund this invoice. Please refund offline, and do the rest manually in Svea."));
-            }
 
-            switch ($deliveryToRefund->getRefundType()) {
-                case "rows":
-
-                    // refund request
-                    $paymentObj = new RefundPayment();
-                    $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToRefund, true));
-
-                    // try to refund it now!
-                    $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-
-                    break;
-                case "amount":
+                // if quantities are not matching, and we can refund amount, we do it!
+                if ($deliveryToRefund->canDeliveryRefundByAmount() && !$itemQuantityMatching) {
                     // we calculate the amount to send to svea, according to the rows existing in the svea delivery and magento!
-                    $amountToCredit = $this->items->getAmountByItems($rowsToRefund, true);
+                    $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
+                    $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
+                    return;
+                }
 
-                    $paymentObj = new RefundPaymentAmount();
-                    $paymentObj->setCreditedAmount($amountToCredit);
-                    $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-                    break;
-                default:
-                    throw new LocalizedException(
-                        __('Could not refund invoice. This delivery is not marked as refundable in Svea.')
-                    );
+                // if quantities not matching and we can cancel order amount, we do it!
+                if ($sveaOrder->canCancelAmount() && !$itemQuantityMatching) {
+                    $amountToCancel = $this->items->getAmountByItems($rowsToRefund);
+                    $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
+                    return;
+                }
+
+                // if we cant do a refund at all, but we can cancel amount, we do it!
+                if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount())  {
+                    $amountToCancel = $this->items->getAmountByItems($rowsToRefund);
+                    $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
+                    return;
+                }
+
+                if (!$deliveryToRefund->canRefund() && !$sveaOrder->canCancelAmount()) {
+                    throw new \Exception(__("Can't refund this invoice, found o refund or cancel flag. Please refund offline, and do the rest manually in Svea."));
+                }
+
+                if (!$itemQuantityMatching && !$deliveryToRefund->canDeliveryRefundByAmount()) {
+                    throw new \Exception(__("Can't do a partial refund for this invoice."));
+                }
+
+            } catch (\Exception $e) {
+                throw new LocalizedException(__($e->getMessage()));
             }
+
+
+            if ($deliveryToRefund->canDeliveryRefundByAmount()) {
+                // we should refound amount
+
+                $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
+                $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
+
+            } else if (!$deliveryToRefund->canDeliveryRefundByAmount() && $deliveryToRefund->canRefund()) {
+                // we should refund rows;
+                $paymentObj = new RefundPayment();
+                $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToRefund));
+
+                // try to refund it now!
+                $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
+
+            } else {
+                throw new LocalizedException(
+                    __('Could not refund invoice. This delivery is not marked as refundable in Svea.')
+                );
+            }
+
 
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('Missing Svea ID or delivery id. Please handle this manually.')
             );
+        }
+    }
+
+    /**
+     * @param $sveaOrderId
+     * @param GetDeliveryResponse $delivery
+     * @param $amountToCredit
+     * @throws ClientException
+     */
+    protected function tryToRefundByAmount($sveaOrderId, GetDeliveryResponse $delivery, $amountToCredit, $maxVat)
+    {
+        if ($amountToCredit > $delivery->getDeliveryAmount()) {
+            $amountToCredit = $delivery->getDeliveryAmount();
+        }
+
+        if ($delivery->canRefundAmount()) {
+            $paymentObj = new RefundPaymentAmount();
+            $paymentObj->setCreditedAmount($amountToCredit);
+            $this->orderManagementApi->refundPaymentAmount($paymentObj, $sveaOrderId, $delivery->getId());
+            return;
+        }
+
+        if ($delivery->canRefundNewRow()) {
+            $paymentObj = new RefundNewCreditRow();
+            $paymentObj->setName(__("Refund"));
+            $paymentObj->setUnitPrice($amountToCredit);
+            $paymentObj->setVatPercent($maxVat * 100);
+
+            $this->orderManagementApi->refundNewCreditRow($paymentObj, $sveaOrderId, $delivery->getId());
+            return;
         }
     }
 
@@ -715,18 +758,29 @@ class Order
      */
     protected function isFullRefund($creditMemoItems, $deliveryItems)
     {
-        $countMemoItems = count($creditMemoItems);
-        $countDeliveryItems = 0;
+        $refs = [];
+        foreach ($creditMemoItems as $creditMemoItem) {
+            $refs[$creditMemoItem->getArticleNumber()] = $creditMemoItem;
+        }
+
         foreach ($deliveryItems as $item) {
             /** @var $item OrderRow */
             if ($item->getName() === "InvoiceFee") {
                 continue;
             }
 
-            $countDeliveryItems++;
+            if (!array_key_exists($item->getArticleNumber(), $refs)) {
+                return false;
+            }
+            /** @var $creditMemo OrderRow */
+            $creditMemo = $refs[$item->getArticleNumber()];
+            if ($creditMemo->getQuantity() != $item->getQuantity()) {
+                return false;
+            }
+
         }
 
-        return $countMemoItems >= $countDeliveryItems;
+        return true;
     }
 
     /**

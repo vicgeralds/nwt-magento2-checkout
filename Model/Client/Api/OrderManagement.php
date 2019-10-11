@@ -10,6 +10,7 @@ use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\CreatePaymentChargeResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\RefundNewCreditRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\OrderManagementClient;
@@ -145,6 +146,23 @@ class OrderManagement extends OrderManagementClient
      * @return void
      */
     public function refundPayment(RefundPayment $creditRow, $orderId, $deliveryId)
+    {
+        try {
+            $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);
+        } catch (ClientException $e) {
+            // handle?
+            throw $e;
+        }
+    }
+
+    /**
+     * @param RefundNewCreditRow $creditRow
+     * @param string $orderId
+     * @param string $deliveryId
+     * @throws ClientException
+     * @return void
+     */
+    public function refundNewCreditRow(RefundNewCreditRow $creditRow, $orderId, $deliveryId)
     {
         try {
             $this->post("/api/v1/orders/" . $orderId . "/deliveries/" . $deliveryId . "/credits", $creditRow);

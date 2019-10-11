@@ -4,8 +4,8 @@ namespace Svea\Checkout\Model\Client\DTO\Order;
 class GetDelivery
 {
 
-    const ACTION_CAN_REFUND_ORDER = "CanCreditAmount";
-    const ACTION_CAN_REFUND_ORDER_ROWS = "CanCreditOrderRows";
+    const ACTION_CAN_REFUND_AMOUNT = "CanCreditAmount";
+    const ACTION_CAN_REFUND_ROWS = "CanCreditOrderRows";
 
 
     const ACTION_CAN_CANCEL_ORDER = 'CanCancelOrder';
@@ -181,13 +181,34 @@ class GetDelivery
      */
     public function canRefund()
     {
-        return in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions()) || in_array(self::ACTION_CAN_REFUND_ORDER_ROWS, $this->getActions());
+        return $this->canRefundAmount() || $this->canRefundRows() || $this->canRefundAmount();
+    }
+
+    public function canRefundRows()
+    {
+        return in_array(self::ACTION_CAN_REFUND_ROWS, $this->getActions());
     }
 
     public function canRefundAmount()
     {
-        return in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions());
+        return in_array(self::ACTION_CAN_REFUND_AMOUNT, $this->getActions());
     }
+
+    /**
+     * This should be used same way as canRefundAmount() but using another endpoint and request data...
+     *
+     * @return bool
+     */
+    public function canRefundNewRow()
+    {
+        return in_array("CanCreditNewRow", $this->getActions());
+    }
+    
+    public function canDeliveryRefundByAmount()
+    {
+        return $this->canRefundAmount() || $this->canRefundNewRow();
+    }
+
 
 
     /**
@@ -203,14 +224,13 @@ class GetDelivery
      */
     public function getRefundType()
     {
-        if (in_array(self::ACTION_CAN_REFUND_ORDER_ROWS, $this->getActions())) {
-            return "rows";
-        }
-
-        if (in_array(self::ACTION_CAN_REFUND_ORDER, $this->getActions())) {
+        if ($this->canDeliveryRefundByAmount()) {
             return "amount";
         }
 
+        if ($this->canRefundRows()) {
+            return "rows";
+        }
         return null;
     }
 

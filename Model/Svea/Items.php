@@ -699,9 +699,10 @@ class Items
     /**
      * @param $sveaOrderItems
      * @param $magentoOrderItems
+     * @param $quantityOnly bool
      * @return bool
      */
-    public function itemsMatching($sveaOrderItems, $magentoOrderItems)
+    public function itemsMatching($sveaOrderItems, $magentoOrderItems,$quantityOnly = false)
     {
         // TODO we could just return count($sveaOrderItems) === count($magentoOrderItems);
         // but not sure about if that is important. The important thing is that all magento items exists in svea items,
@@ -717,6 +718,9 @@ class Items
         foreach ($magentoOrderItems as $magentoOrderItem) {
             /** @var $magentoOrderItem OrderRow */
             if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                if ($quantityOnly) {
+                    continue;
+                }
                 return false;
             }
 
