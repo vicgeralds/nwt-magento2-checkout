@@ -281,7 +281,11 @@ define([
         },
 
         _saveComment: function () {
-            this._ajaxFormSubmit(jQuery(this.options.commentFormSelector));
+            var form = jQuery(this.options.commentFormSelector);
+            this._ajaxSubmit(form.prop('action'), form.serialize(), "post", false, function() {
+                
+                jQuery("#svea-submit").addClass('success-save');
+            });
             return false;
         },
 

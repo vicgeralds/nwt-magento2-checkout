@@ -42,12 +42,16 @@
     </table>
     <div id="svea_cart_extra">
         <div id="svea_coupon_toggle">
-            <div class="fieldset comment">
+            <?php if($block->showCouponCode()): ?>
+
+                <div class="fieldset comment">
                 <input type="checkbox" name="coupon-toggle" value="1" id="coupon-toggle"
                        title="<?php echo __('Use coupon'); ?>" class="checkbox">
                 <label for="coupon-toggle"><?php echo __('Do you have a coupon code?'); ?>
                     <span><?= __('Click here to enter code')?> </span></label>
             </div>
+            <?php endif;?>
+
         </div>
         <?php echo $block->getChildHtml('newsletter'); ?>
     </div>
