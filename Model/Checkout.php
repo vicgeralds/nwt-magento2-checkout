@@ -599,7 +599,7 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         ]);
 
 
-        $quote->getPayment()->getMethodInstance()->assignData($paymentData);
+        $payment->getMethodInstance()->assignData($paymentData);
         $quote->setSveaOrderId($sveaOrder->getOrderId()); //this is used by pushAction
 
         // we need to add invoice fee here to order if its enabled
