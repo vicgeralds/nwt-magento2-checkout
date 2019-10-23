@@ -592,10 +592,12 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $payment->unsMethodInstance()->setMethod($this->_paymentMethod);
         }
 
-        $paymentData = (new DataObject())
-            ->setSveaOrderId($sveaOrder->getOrderId())
-            ->setSveaPaymentMethod($sveaOrder->getPaymentType())
-            ->setCountryId($shippingAddress->getCountryId());
+        $paymentData = new DataObject([
+            'svea_order_id' => $sveaOrder->getOrderId(),
+            'svea_payment_method' => $sveaOrder->getPaymentType(),
+            'country_id' => $shippingAddress->getCountryId(),
+        ]);
+
 
         $quote->getPayment()->getMethodInstance()->assignData($paymentData);
         $quote->setSveaOrderId($sveaOrder->getOrderId()); //this is used by pushAction

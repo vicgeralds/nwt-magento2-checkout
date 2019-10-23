@@ -75,10 +75,10 @@ class Checkout extends AbstractMethod
     public function assignData(\Magento\Framework\DataObject $data)
     {
 
-        $this->getInfoInstance()
-            ->setAdditionalInformation('svea_order_id',$data->getSveaOrderId())
-            ->setAdditionalInformation('svea_payment_method',$data->getSveaPaymentMethod())
-            ->setAdditionalInformation('country_id',$data->getCountryId());
+        $assocData = $data->getData();
+        foreach ($assocData as $key => $val) {
+            $this->getInfoInstance()->setAdditionalInformation($key, $val);
+        }
 
         return $this;
     }

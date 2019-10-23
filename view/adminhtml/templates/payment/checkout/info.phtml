@@ -7,10 +7,10 @@
 <table class="data-table admin__table-secondary">
     <tr>
         <th><?php echo $block->escapeHtml(__('Svea Checkout Order ID')); ?>:</th>
-        <td><?php echo $block->escapeHtml($block->getInfo()->getAdditionalInformation('svea_order_id')); ?></td>
+        <td><?php echo $block->escapeHtml($block->getSveaCheckoutId()); ?></td>
     </tr>
     <tr>
         <th><?php echo $block->escapeHtml(__('Svea Payment Method')); ?>:</th>
-        <td><?php echo $block->escapeHtml($block->getInfo()->getAdditionalInformation('svea_payment_method')); ?></td>
+        <td><?php echo $block->escapeHtml($block->getSveaPaymentMethod()); ?></td>
     </tr>
 </table>
