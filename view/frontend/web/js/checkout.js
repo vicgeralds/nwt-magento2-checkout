@@ -460,25 +460,22 @@ define([
                 toggler = this.options.commentTextAreaToggler,
                 togglerLess = this.options.commentTextAreaTogglerLess;
 
-                // #svea-checkout-comment .svea-btn.show-more
 
             jQuery(toggler).on('click', function () {
                 jQuery(target).slideDown(function(){
+                    jQuery(toggler).hide();
+                    jQuery(togglerLess).show();
+                });
+           });
 
-                    jQuery(toggler).addClass("show-less");
-                    jQuery(toggler).removeClass("show-more");
+            jQuery(togglerLess).on('click', function () {
+                jQuery(target).slideUp(function() {
+                    jQuery(togglerLess).hide();
+                    jQuery(toggler).show();
 
-                    jQuery(togglerLess).on('click', function () {
-                        jQuery(target).slideUp(function() {
-                            jQuery(togglerLess).addClass("show-more");
-                            jQuery(togglerLess).removeClass("show-less");
-
-                        });
-
-                    });
                 });
 
-           });
+            });
 
 
         }
