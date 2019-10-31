@@ -29,6 +29,7 @@ define([
             commentFormSelector: '#svea-checkout-comment',
             commentTextAreaSelector: '#svea-checkout-comment .fieldset.comment',
             commentTextAreaToggler: '#svea-checkout-comment .svea-btn.show-more',
+            commentTextAreaTogglerLess: '#svea-checkout-comment .svea-btn.show-less',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -456,10 +457,30 @@ define([
 
         toggleOrderCommentTextArea: function () {
             var target = this.options.commentTextAreaSelector,
-                toggler = this.options.commentTextAreaToggler;
+                toggler = this.options.commentTextAreaToggler,
+                togglerLess = this.options.commentTextAreaTogglerLess;
+
+                // #svea-checkout-comment .svea-btn.show-more
+
             jQuery(toggler).on('click', function () {
-                jQuery(target).slideDown();
-            })
+                jQuery(target).slideDown(function(){
+
+                    jQuery(toggler).addClass("show-less");
+                    jQuery(toggler).removeClass("show-more");
+
+                    jQuery(togglerLess).on('click', function () {
+                        jQuery(target).slideUp(function() {
+                            jQuery(togglerLess).addClass("show-more");
+                            jQuery(togglerLess).removeClass("show-less");
+
+                        });
+
+                    });
+                });
+
+           });
+
+
         }
     });
 
