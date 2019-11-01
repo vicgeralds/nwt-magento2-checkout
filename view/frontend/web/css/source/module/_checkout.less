@@ -182,7 +182,7 @@
         content: url("../images/check.svg");
         padding-top: 1px;
         left: 0;
-        top: 50%;
+        top: 0vw;
       }
 
       &:checked + label:before {
@@ -631,9 +631,10 @@ table {
       label {
         font-size: 16px;
         color: @svea-color-blue;
-        display: flex;
+        display: inline;
         cursor: pointer;
         padding-left: 40px;
+        vertical-align:middle;
 
         &:after {
           background: transparent;
