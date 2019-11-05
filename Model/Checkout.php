@@ -592,14 +592,16 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
             $payment->unsMethodInstance()->setMethod($this->_paymentMethod);
         }
 
+
         $paymentData = new DataObject([
             'svea_order_id' => $sveaOrder->getOrderId(),
-            'svea_payment_method' => $sveaOrder->getPaymentType(),
             'country_id' => $shippingAddress->getCountryId(),
         ]);
 
 
-        $payment->getMethodInstance()->assignData($paymentData);
+        /** @var \Svea\Checkout\Model\Payment\Method\Checkout $method */
+        $method = $payment->getMethodInstance();
+        $method->assignData($paymentData);
         $quote->setSveaOrderId($sveaOrder->getOrderId()); //this is used by pushAction
 
         // we need to add invoice fee here to order if its enabled

@@ -92,7 +92,15 @@ abstract class BaseClient
             $content = $result->getBody()->getContents();
             if ($this->testMode) {
                 $this->getLogger()->info("Got response from Svea: Get $endpoint");
-                $this->getLogger()->info($content);
+
+                $decoded = json_decode($content, true);
+                if (is_array($decoded) && isset($decoded['Gui']['Snippet'])) { // Easier to debug without this
+                    $decoded['Gui']['Snippet'] = "Removed.";
+                    $logContent = json_encode($decoded);
+                } else {
+                    $logContent = $content;
+                }
+                $this->getLogger()->info($logContent);
             }
 
             return $content;
@@ -178,7 +186,17 @@ abstract class BaseClient
                 $this->getLogger()->info("Response Headers from Svea:");
                 $this->getLogger()->info(json_encode($result->getHeaders()));
                 $this->getLogger()->info("Response Body from Svea:");
-                $this->getLogger()->info($content);
+
+
+
+                $decoded = json_decode($content, true);
+                if (is_array($decoded) && isset($decoded['Gui']['Snippet'])) { // Easier to debug without this
+                    $decoded['Gui']['Snippet'] = "Removed.";
+                    $logContent = json_encode($decoded);
+                } else {
+                    $logContent = $content;
+                }
+                $this->getLogger()->info($logContent);
             }
 
             return $content;

@@ -41,6 +41,8 @@ class ValidateOrder extends Update
             return $result;
         }
 
+        $this->getSveaCheckout()->getLogger()->info(sprintf("Validate Order: Loaded Svea order. ID: %d Status: %s Payment Type: %s ", $sveaOrder->getOrderId(), $sveaOrder->getStatus(), $sveaOrder->getPaymentType()));
+
         // check if there is a push! we will save the mapping in database, svea order id and magento order id
         $pushRepo = $this->pushRepositoryFactory->create();
         $push = null;
