@@ -148,7 +148,7 @@ class Order
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
-        $payment->setMerchantData($this->generateMerchantData());
+        $payment->setMerchantData($this->generateMerchantData($quote));
 
         $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
 
@@ -159,11 +159,12 @@ class Order
      * @param Quote $quote
      * @return string
      */
-    protected function generateMerchantData()
+    protected function generateMerchantData(Quote $quote)
     {
         return json_encode([
             "quote_id" => $this->getRefHelper()->getQuoteId(),
             "client_order_number" => $this->getRefHelper()->getClientOrderNumber(),
+            "total" => $quote->getGrandTotal(),
         ]);
     }
 
@@ -200,6 +201,7 @@ class Order
         $pushUri = $this->helper->getPushUrl($sveaHash);
         $validationUri = $this->helper->getValidationUrl($sveaHash);
 
+
         $merchantUrls->setConfirmationUri($confirmationUrl);
         $merchantUrls->setPushUri($pushUri);
 
@@ -218,7 +220,7 @@ class Order
         $paymentOrder->setCountryCode($countryCode);
         $paymentOrder->setCurrency($quote->getStore()->getCurrentCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
-        $paymentOrder->setMerchantData($this->generateMerchantData());
+        $paymentOrder->setMerchantData($this->generateMerchantData($quote));
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 

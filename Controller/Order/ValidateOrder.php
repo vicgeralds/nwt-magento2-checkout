@@ -226,6 +226,12 @@ class ValidateOrder extends Update
             $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             throw new CheckoutException(__("Something went wrong... Contact site admin."));
         }
+
+        $sveaLastTotal = $sveaOrder->getMerchantData()->getTotal();
+        if ((float) $quote->getGrandTotal() !== $sveaLastTotal) {
+            $checkout->getLogger()->error("Validate Order: Totals not matching. Expected ". $sveaLastTotal. ", has ". $quote->getGrandTotal() ." Svea Order ID: " . $sveaOrder->getOrderId());
+            throw new CheckoutException(__("Totals not matching."));
+        }
     }
 
     /**
