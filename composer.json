@@ -11,6 +11,9 @@
       "Svea\\Checkout\\": ""
     }
   },
+  "require": {
+    "php": ">=7.1"
+  },
   "repositories": [
     {
       "type": "composer",

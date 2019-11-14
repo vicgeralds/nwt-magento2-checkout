@@ -148,7 +148,7 @@ class Order
 
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
-        $payment->setMerchantData($this->generateMerchantData());
+        $payment->setMerchantData($this->generateMerchantData($quote));
 
         $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
 
@@ -159,11 +159,12 @@ class Order
      * @param Quote $quote
      * @return string
      */
-    protected function generateMerchantData()
+    protected function generateMerchantData(Quote $quote)
     {
         return json_encode([
             "quote_id" => $this->getRefHelper()->getQuoteId(),
             "client_order_number" => $this->getRefHelper()->getClientOrderNumber(),
+            "total" => $quote->getGrandTotal(),
         ]);
     }
 
@@ -195,14 +196,21 @@ class Order
         $merchantUrls = new MerchantSettings();
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
-        $merchantUrls->setConfirmationUri($this->helper->getConfirmationUrl($sveaHash));
-        $merchantUrls->setPushUri($this->helper->getPushUrl($sveaHash));
 
+        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash);
+        $pushUri = $this->helper->getPushUrl($sveaHash);
+        $validationUri = $this->helper->getValidationUrl($sveaHash);
+
+
+        $merchantUrls->setConfirmationUri($confirmationUrl);
+        $merchantUrls->setPushUri($pushUri);
+
+        // todo use ngrok or something instead when coding locally!
         if ($isTestMode && $this->helper->useLocalhost())  {
             // when testing in localhost we don't set a validation callback uri, cuz it will always fail!
 
         } else {
-            $merchantUrls->setCheckoutValidationCallBackUri($this->helper->getValidationUrl($sveaHash));
+            $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
         }
 
         // TODO remove
@@ -223,7 +231,7 @@ class Order
         $paymentOrder->setCountryCode($countryCode);
         $paymentOrder->setCurrency($quote->getStore()->getCurrentCurrencyCode());
         $paymentOrder->setClientOrderNumber($refId);
-        $paymentOrder->setMerchantData($this->generateMerchantData());
+        $paymentOrder->setMerchantData($this->generateMerchantData($quote));
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 

@@ -15,6 +15,9 @@ class MerchantDataResponse
     /** @var $clientOrderNumber string */
     protected $clientOrderNumber;
 
+    /** @var $total float */
+    protected $total;
+
     /**
      * We try to parse the JSON response according to \Svea\Checkout\Model\Svea\Order::generateMerchantData()
      *
@@ -42,6 +45,12 @@ class MerchantDataResponse
         if (isset($merchantArray['client_order_number'])) {
             $this->setClientOrderNumber($merchantArray['client_order_number']);
         }
+
+        if (isset($merchantArray['total'])) {
+            $this->setTotal((float)$merchantArray['total']);
+        }
+
+
     }
 
     /**
@@ -80,6 +89,25 @@ class MerchantDataResponse
         $this->quoteId = $quoteId;
         return $this;
     }
+
+    /**
+     * @return float
+     */
+    public function getTotal()
+    {
+        return $this->total;
+    }
+
+    /**
+     * @param float $total
+     */
+    public function setTotal($total)
+    {
+        $this->total = $total;
+        return $this;
+    }
+
+
 
     /**
      * @return string

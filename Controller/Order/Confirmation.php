@@ -2,10 +2,13 @@
 
 namespace Svea\Checkout\Controller\Order;
 
+use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Model\Quote;
 
-class Confirmation extends Update
+class Confirmation extends Update implements CsrfAwareActionInterface
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
@@ -112,6 +115,8 @@ class Confirmation extends Update
      * This function is only used in testmode and when the module is installed in localhost
      * The purpose is to send mocked requests with the ValidationnURI, where the order is placed.
      *
+     * Would be better to use ngrok or other tunnel to setup callback urls locally.
+     *
      * @param $hash
      * @param $sveaOrderId
      */
@@ -141,4 +146,13 @@ class Confirmation extends Update
 
     }
 
+    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
+    {
+        return null;
+    }
+
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
+    }
 }
