@@ -351,6 +351,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function initSveaCheckout()
     {
         $quote       = $this->getQuote();
+
+        // we need a reserved order id, since we need to send the order id to svea in validateOrder.
+        if (!$quote->getReservedOrderId()) {
+            $quote->reserveOrderId();
+        }
         $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote); // this will also validate the quote!
 
         // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values

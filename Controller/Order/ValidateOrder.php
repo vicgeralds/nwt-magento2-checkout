@@ -89,6 +89,7 @@ class ValidateOrder extends Update
             return $result;
         }
 
+        /*
         // we save the push now after the validation!
         if ($push === null) {
             try {
@@ -125,9 +126,10 @@ class ValidateOrder extends Update
         } catch (\Exception $e) {
             $checkout->getLogger()->critical("Validate Order: Could not save Push, error: " . $e->getMessage());
         }
+        */
 
         // we log this as well!
-        $responseData = ['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()];
+        $responseData = ['Valid' => true, 'ClientOrderNumber' => $quote->getReservedOrderId()];
 
         $checkout->getLogger()->info("Validate Order: Successfully created order and push:");
         $checkout->getLogger()->info(json_encode($responseData));
