@@ -213,17 +213,6 @@ class Order
             $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
         }
 
-        // TODO remove
-
-        $proxyUrl = "https://91a72f9d.ngrok.io/sveacheckout/order/";
-        $validationUrl = $proxyUrl . "validateOrder/hash/" . $sveaHash . "/sid/{checkout.order.uri}";
-        $pushUrl = $proxyUrl . "push/hash/" . $sveaHash . "/sid/{checkout.order.uri}";
-        $confUrl = $proxyUrl . "confirmation/hash/" . $sveaHash;
-
-        $merchantUrls->setCheckoutValidationCallBackUri($validationUrl);
-        $merchantUrls->setConfirmationUri($confUrl);
-        $merchantUrls->setPushUri($pushUrl);
-
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
 

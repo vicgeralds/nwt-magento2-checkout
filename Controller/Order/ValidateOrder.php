@@ -14,7 +14,7 @@ class ValidateOrder extends Update
 {
     public function execute()
     {
-        $orderId = $this->getRequest()->getParam('sid');
+        $sveaOrderId = $this->getRequest()->getParam('sid');
         $sveaHash = $this->getRequest()->getParam('hash'); // for security!
 
         $checkout = $this->getSveaCheckout();
@@ -25,10 +25,10 @@ class ValidateOrder extends Update
         // one step at the time, all exceptions will be caught
         try {
             // check if svea order id is correct
-            $this->validateSveaOrderId($orderId);
+            $this->validateSveaOrderId($sveaOrderId);
 
             // load svea order if it exists
-            $sveaOrder = $this->loadSveaOrder($orderId);
+            $sveaOrder = $this->loadSveaOrder($sveaOrderId);
         } catch (CheckoutException $e) {
             $result->setHttpResponseCode(400);
             $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
@@ -37,7 +37,7 @@ class ValidateOrder extends Update
             $checkout->getLogger()->error("Validate Order Error: " . $e->getMessage());
 
             $result->setHttpResponseCode(400);
-            $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
+            $result->setData(['errorMessage' => "Could not load svea order", 'Valid' => false]);
             return $result;
         }
 
@@ -47,17 +47,17 @@ class ValidateOrder extends Update
         $pushRepo = $this->pushRepositoryFactory->create();
         $push = null;
         try {
-            $p = $pushRepo->get($orderId);
-            if ($p->getOrderId()) {
+            $push = $pushRepo->get($sveaOrderId);
+            if ($push->getOrderId()) {
 
                 try {
-                    $order = $this->loadOrder($p->getOrderId());
+                    $order = $this->loadOrder($push->getOrderId());
                     if ($order->getIncrementId()) {
-                        $checkout->getLogger()->error(sprintf("Validate Order: A push already exists for svea order id (%s). Respond with Valid=true and ClientOrderNumber=%s", $orderId, $order->getIncrementId()));
+                        $checkout->getLogger()->error(sprintf("Validate Order: A push already exists for svea order id (%s). Respond with Valid=true and ClientOrderNumber=%s", $sveaOrderId, $order->getIncrementId()));
                         return $result->setData(['Valid' => true, 'ClientOrderNumber' => $order->getIncrementId()]);
                     }
                 } catch (\Exception $e2) {
-                    $push = $p;
+                    // do nothing
                 }
 
             }
@@ -73,7 +73,7 @@ class ValidateOrder extends Update
 
             // compare the hashes, so no one tries to create an order without our permission
             if ($quote->getSveaHash() !== $sveaHash) {
-                $checkout->getLogger()->error("Validate Order: The quote hash (%s) does not match the request hash (%s)." . $quote->getSveaHash(), $sveaHash);
+                $checkout->getLogger()->error(sprintf("Validate Order: The quote hash (%s) does not match the request hash (%s).", $quote->getSveaHash(), $sveaHash));
                 throw new CheckoutException(__("Invalid Quote hash"));
             }
 
@@ -91,11 +91,11 @@ class ValidateOrder extends Update
             return $result;
         }
 
-        /*
+
         // we save the push now after the validation!
         if ($push === null) {
             try {
-                $pushRepo->save($this->createNewPushObject($orderId));
+                $pushRepo->save($this->createNewPushObject($sveaOrderId));
             } catch (CouldNotSaveException $e2) {
                 $checkout->getLogger()->error("Validate Order Error, save Push: " . $e2->getMessage());
 
@@ -104,31 +104,6 @@ class ValidateOrder extends Update
                 return $result;
             }
         }
-
-
-        // here we create the magento order
-        try {
-            // we try to create the order now ;)
-            $order = $this->placeOrder($sveaOrder, $quote);
-        } catch (CheckoutException $e) {
-            $result->setHttpResponseCode(400);
-            $result->setData(['errorMessage' => $e->getMessage(), 'Valid' => false]);
-
-            // TODO shall we delete the push? set it as error or something?
-
-            return $result;
-        }
-
-        // we are almost done!
-        // save order id to push that we are done!
-        try {
-            $push = $pushRepo->get($orderId);
-            $push->setOrderId($order->getId());
-            $pushRepo->save($push);
-        } catch (\Exception $e) {
-            $checkout->getLogger()->critical("Validate Order: Could not save Push, error: " . $e->getMessage());
-        }
-        */
 
         // we log this as well!
         $responseData = ['Valid' => true, 'ClientOrderNumber' => $quote->getReservedOrderId()];
@@ -234,25 +209,6 @@ class ValidateOrder extends Update
             $checkout->getLogger()->error("Validate Order: Totals not matching. Expected ". $sveaLastTotal. ", has ". $quote->getGrandTotal() ." Svea Order ID: " . $sveaOrder->getOrderId());
             throw new CheckoutException(__("Totals not matching."));
         }
-    }
-
-    /**
-     * @param GetOrderResponse $sveaOrder
-     * @param Quote $quote
-     * @return Order
-     * @throws CheckoutException
-     */
-    public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
-    {
-        try {
-            /** @var $order Order */
-            $order = $this->getSveaCheckout()->placeOrder($sveaOrder, $quote);
-        } catch (\Exception $e) {
-            $this->getSveaCheckout()->getLogger()->error("Validate Order: Could not place order. Svea Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
-            throw new CheckoutException(__("Could not place the order."));
-        }
-
-        return $order;
     }
 
     /**

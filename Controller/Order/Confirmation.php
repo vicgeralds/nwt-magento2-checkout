@@ -8,7 +8,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Model\Quote;
 
-class Confirmation extends Update implements CsrfAwareActionInterface
+class Confirmation extends Push implements CsrfAwareActionInterface
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
@@ -32,19 +32,49 @@ class Confirmation extends Update implements CsrfAwareActionInterface
         }
 
         $pushRepo = $this->pushRepositoryFactory->create();
-        try {
-            $push = $pushRepo->get($sveaOrderId);
-            if (!$push->getOrderId()) {
-                throw new NoSuchEntityException(__("Order id missing"));
+        $push = null;
+        for ($i = 0; $i<4;$i++) {
+            try {
+                $push = $pushRepo->get($sveaOrderId);
+                if ($push->getOrderId()) {
+                   break;
+                }
+            } catch (NoSuchEntityException $e) {
+                // do nothing
+                $push = null;
             }
-        } catch (NoSuchEntityException $e) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Push missing, i.e order has not been placed, svea id: %s.", $sveaOrderId));
-            $this->messageManager->addErrorMessage(sprintf("An error occured. Could not fetch the new order. Please contact the website admin with this svea id: %s.", $sveaOrderId));
+
+            // sleep for 5 seconds, we wait for the push!
+            sleep(5);
+        }
+
+        // the push should have been created in validateOrder, should be long before we are here...
+        if (!$push ) {
+            $checkout->getLogger()->error(sprintf("Confirmation Error: Could not create order. No push found.Svea order id: %s.", $sveaOrderId));
+            $this->messageManager->addErrorMessage(sprintf("Could not create order. Please contact the website admin. Svea Order ID: %s.", $sveaOrderId));
             return $this->_redirect('*');
         }
 
+        // if the push hasn't created an order yet, (we have waited 20 seconds), we will try to create the order here!
+        if (!$push->getOrderId()) {
+            try {
+                $lastOrderId = $this->tryToCreateOrder($sveaOrderId, $sveaHash);
+
+                if (is_bool($lastOrderId) || !$lastOrderId) {
+                    throw new \Exception("Could not create order.");
+                }
+            } catch (\Exception $e) {
+                $checkout->getLogger()->error(sprintf("Confirmation Error: Could not create order, push id: %s svea order id: %s. Error: %s", $push->getId(), $sveaOrderId, $e->getMessage()));
+                $this->messageManager->addErrorMessage(sprintf("Could not create order. Please contact the website admin, with this push id: %s and this order id: %s.", $push->getId(), $sveaOrderId));
+                return $this->_redirect('*');
+            }
+        } else {
+            $lastOrderId = $push->getOrderId();
+        }
+
+
+
         // try load order by id
-        $lastOrderId = $push->getOrderId();
         try {
             $order = $this->loadOrder($lastOrderId);
         } catch (\Exception $e) {
@@ -55,20 +85,6 @@ class Confirmation extends Update implements CsrfAwareActionInterface
             return $this->_redirect('*');
         }
 
-        try {
-            $quote = $this->loadQuoteById($order->getQuoteId());
-        } catch (\Exception $e) {
-            $this->getSveaCheckout()->getLogger()->error("Confirmation Order: We found no quote for this Svea order.");
-            $this->messageManager->addErrorMessage((__("Found no quote object for this Svea order ID.")));
-            return $this->_redirect('*');
-        }
-
-        // compare the hashes, no one should access this without permissions
-        if ($quote->getSveaHash() !== $sveaHash) {
-            $checkout->getLogger()->error(sprintf("Confirmation Order: The quote hash (%s) does not match the request hash (%s) for order id (%s).", $quote->getSveaHash(), $sveaHash, $push->getOrderId()));
-            $this->messageManager->addErrorMessage(__("An error occurred..."));
-            return $this->_redirect('*');
-        }
 
         // unset our checkout sessions
         $this->getSveaCheckout()->getRefHelper()->unsetSessions(true, true);
@@ -91,25 +107,6 @@ class Confirmation extends Update implements CsrfAwareActionInterface
 
         return $this->_redirect('*/*/success');
     }
-
-    /**
-     * @param $orderId
-     * @return \Magento\Sales\Api\Data\OrderInterface
-     */
-    protected function loadOrder($orderId)
-    {
-        return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
-    }
-
-    /**
-     * @param $quoteId
-     * @return Quote
-     */
-    protected function loadQuoteById($quoteId)
-    {
-        return $this->quoteFactory->create()->loadByIdWithoutStore($quoteId);
-    }
-
 
     /**
      * This function is only used in testmode and when the module is installed in localhost
