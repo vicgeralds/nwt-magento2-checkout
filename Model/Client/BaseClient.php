@@ -48,13 +48,10 @@ abstract class BaseClient
     ) {
         $this->apiContext = $apiContext;
 
-        $this->sharedSecret = $apiContext->getHelper()->getSharedSecret();
-        $this->merchantId = $apiContext->getHelper()->getMerchantId();
-        $this->testMode = $apiContext->getHelper()->isTestMode();
-
-        // init curl!
-        $this->setGuzzleHttpClient($this->getHelper());
+        // this will set base store view
+        $this->resetCredentials();
     }
+
 
 
     /**
@@ -272,6 +269,21 @@ abstract class BaseClient
     }
 
     /**
+     * @param null $store
+     */
+    public function resetCredentials($store = null)
+    {
+        $this->sharedSecret = $this->apiContext->getHelper()->getSharedSecret($store);
+        $this->merchantId = $this->apiContext->getHelper()->getMerchantId($store);
+        $this->testMode = $this->apiContext->getHelper()->isTestMode($store);
+
+        // the guzzlehttp client, we set base URL here as well.
+        // base url could be test or prod, so we need $store, to get if its Testmode!
+        $this->setGuzzleHttpClient($this->getHelper(), $store);
+    }
+
+
+    /**
      * @return \Svea\Checkout\Logger\Logger
      */
     public function getLogger()
@@ -294,8 +306,9 @@ abstract class BaseClient
 
     /**
      * @param \Svea\Checkout\Helper\Data $helper
+     * @param $storeView null
      */
-    protected abstract function setGuzzleHttpClient(\Svea\Checkout\Helper\Data $helper);
+    protected abstract function setGuzzleHttpClient(\Svea\Checkout\Helper\Data $helper, $storeView = null);
 }
 
 

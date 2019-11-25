@@ -239,6 +239,11 @@ class Order
             }
         }
 
+        // we reload the credentials using the right store view
+        // this is not needed, magento automatically calculates the store id.
+        // but since we might want to use this function in other places as well, we set the store view.
+        $this->checkoutApi->resetCredentials($quote->getStoreId());
+
         // now call the api
         return $this->checkoutApi->createNewOrder($paymentOrder);
     }
@@ -289,6 +294,10 @@ class Order
     {
         $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
         if ($sveaOrderId) {
+
+            // we reload the credentials using the right store view
+            $this->orderManagementApi->resetCredentials($payment->getOrder()->getStoreId());
+
             $this->tryToCancelSveaOrder($sveaOrderId);
         } else {
             throw new LocalizedException(
@@ -403,6 +412,9 @@ class Order
             if (!$invoice) {
                 throw new LocalizedException(__('Cannot capture online, no invoice set'));
             }
+
+            // we reload the credentials using the right store view
+            $this->orderManagementApi->resetCredentials($invoice->getOrder()->getStoreId());
 
             $isFullDelivery = $invoice->getGrandTotal() === (float)$invoice->getOrder()->getGrandTotal();
             try {
@@ -539,6 +551,9 @@ class Order
         $sveaOrderId = $payment->getAdditionalInformation('svea_order_id');
 
         if ($sveaOrderId && ($queueId || $deliveryId)) {
+
+            // we reload the credentials using the right store view
+            $this->orderManagementApi->resetCredentials($payment->getCreditMemo()->getStoreId());
 
             try {
                 // we need order row ids, so we load the order from svea!
