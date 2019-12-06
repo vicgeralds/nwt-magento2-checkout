@@ -10,8 +10,9 @@ define([
     "jquery/ui",
     "mage/translate",
     "mage/mage",
-    "mage/validation"
-], function (jQuery, alert) {
+    "mage/validation",
+    "Magento_Customer/js/customer-data"
+], function (jQuery, alert, customerData) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -129,7 +130,8 @@ define([
                             success: function (data) {
                                 if (!data.success) {
                                     if (data.error_message) {
-                                        confirm(data.error_message);
+                                        var errHtml = '<div class="message-error error message"><div>' + data.error_message + '</div></div>';
+                                        jQuery('.page.messages').append(errHtml);
                                     }
                                 }
                                 _this._ajaxSubmit(data_refresh_url);
@@ -167,7 +169,8 @@ define([
                         success: function (data) {
                             if (!data.success) {
                                 if (data.error_message) {
-                                    confirm(data.error_message);
+                                    var errHtml = '<div class="message-error error message"><div>' + data.error_message + '</div></div>';
+                                    jQuery('.page.messages').append(errHtml);
                                 }
                             }
                             _this._ajaxSubmit(data_refresh_url);
@@ -283,8 +286,8 @@ define([
 
         _saveComment: function () {
             var form = jQuery(this.options.commentFormSelector);
-            this._ajaxSubmit(form.prop('action'), form.serialize(), "post", false, function() {
-                
+            this._ajaxSubmit(form.prop('action'), form.serialize(), "post", false, function () {
+
                 jQuery("#svea-submit").addClass('success-save');
             });
             return false;
@@ -462,14 +465,14 @@ define([
 
 
             jQuery(toggler).on('click', function () {
-                jQuery(target).slideDown(function(){
+                jQuery(target).slideDown(function () {
                     jQuery(toggler).hide();
                     jQuery(togglerLess).show();
                 });
-           });
+            });
 
             jQuery(togglerLess).on('click', function () {
-                jQuery(target).slideUp(function() {
+                jQuery(target).slideUp(function () {
                     jQuery(togglerLess).hide();
                     jQuery(toggler).show();
 
