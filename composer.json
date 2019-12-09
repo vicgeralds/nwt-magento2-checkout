@@ -1,0 +1,23 @@
+{
+  "name": "svea/checkout",
+  "description": "Svea Checkout",
+  "type": "magento2-module",
+  "version": "1.0.0",
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Svea\\Checkout\\": ""
+    }
+  },
+  "require": {
+    "php": ">=7.1"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://repo.magento.com/"
+    }
+  ]
+}
