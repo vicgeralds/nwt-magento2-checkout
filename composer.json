@@ -1,5 +1,5 @@
 {
-  "name": "svea/checkout",
+  "name": "sveawebpay/nwt-magento2-checkout",
   "description": "Svea Checkout",
   "type": "magento2-module",
   "version": "1.0.0",
