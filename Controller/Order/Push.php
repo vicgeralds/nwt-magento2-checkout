@@ -2,9 +2,6 @@
 
 namespace Svea\Checkout\Controller\Order;
 
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 use Svea\Checkout\Controller\Checkout;
@@ -13,7 +10,7 @@ use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\PushRepository;
 
-class Push extends Checkout implements CsrfAwareActionInterface
+class Push extends Checkout
 {
 
     /**
@@ -219,6 +216,8 @@ class Push extends Checkout implements CsrfAwareActionInterface
         return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
     }
 
+    /**
+     * Only works for >= 2.3.0
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
         return null;
@@ -228,4 +227,5 @@ class Push extends Checkout implements CsrfAwareActionInterface
     {
         return true;
     }
+    */
 }

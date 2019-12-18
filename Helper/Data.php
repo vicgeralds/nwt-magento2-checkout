@@ -128,21 +128,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
 
-    /**
-     * @param null $store
-     * @return bool
-     */
-    public function useLocalhost($store = null)
-    {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CONNECTION . 'use_localhost',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-    }
-
-
-
     public function getInvoiceFeeLabel($store = null)
     {
         return __("Invoice Fee");

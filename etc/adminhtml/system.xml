@@ -24,15 +24,6 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
 
-                <field id="use_localhost" translate="label comment" type="select" sortOrder="39" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Localhost Development</label>
-                    <comment>If you are coding in localhost, i.e Svea won't reach your site. This will make sure you can create test orders in localhost.</comment>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <depends>
-                        <field id="test_mode">1</field>
-                    </depends>
-                </field>
-
                 <field id="merchant_id" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="40">
                     <label>Merchant ID</label>
                     <comment>Merchant ID, you will get this from Svea.</comment>
