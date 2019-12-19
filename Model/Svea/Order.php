@@ -108,7 +108,7 @@ class Order
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
     {
-        $paymentResponse = $this->createNewSveaPayment($quote);
+        $paymentResponse = $this->createNewSveaPayment($quote, true);
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
         return $paymentResponse;
     }
@@ -173,10 +173,11 @@ class Order
      * The payment ID which is returned in the response will be added to the SVEA javascript API, to load the payment iframe.
      *
      * @param Quote $quote
-     * @throws ClientException|\Exception
+     * @param bool $reloadCredentials
      * @return GetOrderResponse
+     * @throws ClientException
      */
-    protected function createNewSveaPayment(Quote $quote)
+    protected function createNewSveaPayment(Quote $quote, $reloadCredentials = false)
     {
         $countryCode = $quote->getBillingAddress()->getCountryId();
         if (!in_array($countryCode, $this->getLocale()->getAllowedCountries())) {
@@ -201,17 +202,16 @@ class Order
         $pushUri = $this->helper->getPushUrl($sveaHash);
         $validationUri = $this->helper->getValidationUrl($sveaHash);
 
+        // When developing in localhost, use a tunnel to redirect callbacks to your localhost magento server
+        //$baseTunnel = "https://a163997e.ngrok.io/sveacheckout/order";
+        //$pushUri = $baseTunnel . "/push/sid/{checkout.order.uri}/hash/" . $sveaHash;
+        //$validationUri = $baseTunnel . "/validateOrder/sid/{checkout.order.uri}/hash/" . $sveaHash;
 
+
+        // set callback urls and confirmation url
         $merchantUrls->setConfirmationUri($confirmationUrl);
         $merchantUrls->setPushUri($pushUri);
-
-        // todo use ngrok or something instead when coding locally!
-        if ($isTestMode && $this->helper->useLocalhost())  {
-            // when testing in localhost we don't set a validation callback uri, cuz it will always fail!
-
-        } else {
-            $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
-        }
+        $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
 
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
@@ -239,10 +239,9 @@ class Order
             }
         }
 
-        // we reload the credentials using the right store view
-        // this is not needed, magento automatically calculates the store id.
-        // but since we might want to use this function in other places as well, we set the store view.
-        $this->checkoutApi->resetCredentials($quote->getStoreId());
+        if ($reloadCredentials) {
+            $this->checkoutApi->resetCredentials($quote->getStoreId());
+        }
 
         // now call the api
         return $this->checkoutApi->createNewOrder($paymentOrder);

@@ -2,13 +2,9 @@
 
 namespace Svea\Checkout\Controller\Order;
 
-use Magento\Framework\App\CsrfAwareActionInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\Quote;
 
-class Confirmation extends Push implements CsrfAwareActionInterface
+class Confirmation extends Push
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
@@ -19,6 +15,10 @@ class Confirmation extends Push implements CsrfAwareActionInterface
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
         $sveaHash = $this->getRequest()->getParam('hash'); // for security!
 
+        // needed by extended class (Push)
+        $this->pushRepo = $this->pushRepositoryFactory->create();
+
+
         // it seems like we dont have quote information here, so we try to load everything with the svea_order_id instead!
         if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
             $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Svea Order ID %s.", $sveaOrderId));
@@ -26,10 +26,6 @@ class Confirmation extends Push implements CsrfAwareActionInterface
             return $this->_redirect('*');
         }
 
-        // a helper for all people testing in localhost!
-        if ($this->getSveaCheckout()->getHelper()->isTestMode() && $this->getSveaCheckout()->getHelper()->useLocalhost()) {
-            $this->createMockCallbacks($sveaHash, $sveaOrderId);
-        }
 
         $pushRepo = $this->pushRepositoryFactory->create();
         $push = null;
@@ -109,40 +105,7 @@ class Confirmation extends Push implements CsrfAwareActionInterface
     }
 
     /**
-     * This function is only used in testmode and when the module is installed in localhost
-     * The purpose is to send mocked requests with the ValidationnURI, where the order is placed.
-     *
-     * Would be better to use ngrok or other tunnel to setup callback urls locally.
-     *
-     * @param $hash
-     * @param $sveaOrderId
-     */
-    protected function createMockCallbacks($hash, $sveaOrderId)
-    {
-        $helper = $this->getSveaCheckout()->getHelper();
-        $url =  $helper->getCheckoutUrl('validateOrder', ['sid'=> $sveaOrderId, 'hash' => $hash, '_escape_params' => false]);
-        $this->getSveaCheckout()->getLogger()->info(sprintf("Trying to manually call the validation URL, for svea order ID: %s.", $sveaOrderId));
-        $this->getSveaCheckout()->getLogger()->info("URL: " . $url);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        $result = curl_exec($ch);
-        $errors = curl_error($ch);
-
-        if ($errors) {
-            $this->getSveaCheckout()->getLogger()->error($errors);
-        }
-
-        curl_close($ch);
-
-        $this->getSveaCheckout()->getLogger()->info("RESULT From callback: (should not be empty): " . $result);
-
-    }
-
+     * Only works for >= 2.3.0
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
         return null;
@@ -152,4 +115,5 @@ class Confirmation extends Push implements CsrfAwareActionInterface
     {
         return true;
     }
+    */
 }
