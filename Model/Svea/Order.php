@@ -265,7 +265,9 @@ class Order
         } else {
             $streets[] = $address->getStreetAddress();
         }
-
+	if (!empty($address->getCoAddress())) {
+		$streets[] = $address->getCoAddress();
+	}
         $data = [
             'firstname' => $address->getFirstName(),
             'lastname' => $address->getLastName(),
