@@ -359,6 +359,36 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
+     * @param null $store
+     * @return int
+     */
+    public function getMaximumAmountDiff($store = null)
+    {
+        $allowDiff = $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LAYOUT . 'allow_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$allowDiff) {
+            return 0;
+        }
+
+        $diff = $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'maximum_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$diff) {
+            return 0;
+        }
+
+        return (int) $diff;
+    }
+
+
+    /**
      * This function returns a hash, we will use it to check for changes in the quote!
      * @param Quote $quote
      * @return string
