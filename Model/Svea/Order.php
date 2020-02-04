@@ -260,12 +260,14 @@ class Order
         }
 
         $streets = [];
-        if (is_array($address->getAddressLines())) {
+        if (is_array($address->getAddressLines()) && !empty($address->getAddressLines())) {
             $streets = $address->getAddressLines();
         } else {
             $streets[] = $address->getStreetAddress();
         }
-
+	if (!empty($address->getCoAddress())) {
+		$streets[] = $address->getCoAddress();
+	}
         $data = [
             'firstname' => $address->getFirstName(),
             'lastname' => $address->getLastName(),
