@@ -49,6 +49,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const API_ADMIN_BASE_URL_TEST = 'https://paymentadminapistage.svea.com';
 
+   /**
+     * Svea Partner key
+     */
+    const PARTNER_KEY = "2E999136-F4CC-465B-B5CB-873C28E93EEC";
+
     /**
      * Store manager
      *
@@ -359,6 +364,36 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
+     * @param null $store
+     * @return int
+     */
+    public function getMaximumAmountDiff($store = null)
+    {
+        $allowDiff = $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SETTINGS . 'allow_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$allowDiff) {
+            return 0;
+        }
+
+        $diff = $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'maximum_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$diff) {
+            return 0;
+        }
+
+        return (int) $diff;
+    }
+
+
+    /**
      * This function returns a hash, we will use it to check for changes in the quote!
      * @param Quote $quote
      * @return string
@@ -436,5 +471,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected function splitStringToArray($values)
     {
         return preg_split("#\s*[ ,;]\s*#", $values, null, PREG_SPLIT_NO_EMPTY);
+    }
+
+    public function getPartnerKey(): string
+    {
+	return self::PARTNER_KEY;
     }
 }

@@ -444,9 +444,22 @@ class Items
         $grandTotal = $this->addZeroes($grandTotal);
         $difference    = $grandTotal-$calculatedTotal;
 
+
+        // from our settings
+        $allowedDifference = $this->_helper->getMaximumAmountDiff();
+
         //no correction required
-        if($difference == 0) {
+        if($difference == 0 && $allowedDifference === 0) {
             return $this;
+        }
+
+        if ($allowedDifference > 0) {
+
+            // 50 * 10 = 500 (i.e 0.5 cent allowed)
+            // 5 * 10 = 50 (i.e 0.05 difference)
+            if (($allowedDifference * 10) >= $difference) {
+                return $this;
+            }
         }
 
         throw new CheckoutException(__("The grand total price does not match the price being sent to Svea. Please contact an admin or use another checkout method."), 'checkout/cart');

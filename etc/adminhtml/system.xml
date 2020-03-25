@@ -86,6 +86,24 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>If Yes, the "Go to Checkout" button in the minicart and cart will point to Svea checkout.</comment>
                 </field>
+
+                <field id="allow_decimal_diff" translate="label comment" type="select" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Allow Decimal Difference</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>
+                        If Yes, the module will allow some decimal differences between magento and svea. This may sometimes happen due to conversion of prices with more than 3 decimals.
+                        Most of the times when this occurs, it's about 1 or 2 cents (öre) difference. Caution! If you have other integrations please consider how this affects them.
+                    </comment>
+                </field>
+
+                <field id="maximum_decimal_diff" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="150">
+                    <label>Maximum decimal difference</label>
+                    <comment>Specify how many decimals is accepted maximum. E.g: 50, for maximum 0.50 in difference, or 5 for 0.05 in difference.</comment>
+                    <depends>
+                        <field id="allow_decimal_diff">1</field>
+                    </depends>
+                </field>
+
             </group>
 
             <group id="layout" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">

@@ -188,7 +188,7 @@ define([
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
             }
             if (!block || block == 'shipping_method') {
-                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
+                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').live('change', jQuery.proxy(this._changeShippingMethod, this));
             }
             if (!block || block == 'newsletter') {
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change', jQuery.proxy(this._changeSubscriptionStatus, this));

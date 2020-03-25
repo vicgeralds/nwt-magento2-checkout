@@ -2,6 +2,7 @@ var config = {
     map: {
         '*': {
             sveaCheckout: 'Svea_Checkout/js/checkout',
+            sveaShippingMethod: 'Svea_Checkout/js/sveashippingmethod',
         }
     },
     paths: {

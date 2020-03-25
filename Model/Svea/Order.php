@@ -213,6 +213,9 @@ class Order
         $merchantUrls->setPushUri($pushUri);
         $merchantUrls->setCheckoutValidationCallBackUri($validationUri);
 
+	// get partner key
+	$partnerKey = $this->helper->getPartnerKey();
+
         // we generate the order here, amount and items
         $paymentOrder = new CreateOrder();
 
@@ -223,6 +226,9 @@ class Order
         $paymentOrder->setMerchantData($this->generateMerchantData($quote));
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
+	if($partnerKey && !empty($partnerKey)){
+		$paymentOrder->setPartnerKey($partnerKey);
+	}
 
         // set preset values if test mode! we could also set values if customer is logged in
         if ($isTestMode) {
@@ -260,12 +266,14 @@ class Order
         }
 
         $streets = [];
-        if (is_array($address->getAddressLines())) {
+        if (is_array($address->getAddressLines()) && !empty($address->getAddressLines())) {
             $streets = $address->getAddressLines();
         } else {
             $streets[] = $address->getStreetAddress();
         }
-
+	if (!empty($address->getCoAddress())) {
+		$streets[] = $address->getCoAddress();
+	}
         $data = [
             'firstname' => $address->getFirstName(),
             'lastname' => $address->getLastName(),
