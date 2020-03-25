@@ -18,7 +18,7 @@ To find the settings follow these steps: Store->Configuration or on the left sid
 ![Navigation](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst2.png "Navigation")
 
 **Step 2:**
-![Conf2](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveaaa mna kan srivainst3.png "Conf2")
+![Conf2](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst3.png "Conf2")
 
 *Enabled*:  Yes/No, If you want to enable the checkout choose "Yes", if not choose "No".
 
