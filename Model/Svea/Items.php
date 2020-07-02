@@ -3,8 +3,9 @@
 
 namespace Svea\Checkout\Model\Svea;
 
+use Magento\Framework\Exception\LocalizedException;
 use Svea\Checkout\Model\CheckoutException;
-use Svea\Checkout\Model\Client\DTO\Payment\OrderItem;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 
@@ -32,7 +33,9 @@ class Items
      */
     protected $_productConfig;
 
+    /** @var []OrderRow $_cart */
     protected $_cart     = array();
+
     protected $_discounts = array();
     protected $_maxvat = 0;
     protected $_inclTAX = false;
@@ -41,6 +44,12 @@ class Items
     protected $_itemsArray = [];
 
 
+    /**
+     * Items constructor.
+     * @param \Svea\Checkout\Helper\Data $helper
+     * @param \Magento\Catalog\Helper\Product\Configuration $productConfig
+     * @param \Magento\Tax\Model\Calculation $calculationTool
+     */
     public function __construct(
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Catalog\Helper\Product\Configuration $productConfig,
@@ -55,6 +64,10 @@ class Items
     }
 
 
+    /**
+     * @param null $store
+     * @return $this
+     */
     public function init($store = null)
     {
         $this->_store = $store;
@@ -232,21 +245,18 @@ class Items
                     $sku = $sku.'-'.$item->getId();
                 }
 
-                $unitPrice = $addPrices ? $this->addZeroes($item->getPriceInclTax()) : 0;
+                $unitPriceInclTaxes = $addPrices ? $this->addZeroes($item->getPriceInclTax()) : 0;
                 $unitPriceExclTax = $addPrices ? $this->addZeroes($item->getPrice()) : 0;
 
                 //
-                $orderItem = new OrderItem();
+                $orderItem = new OrderRow();
                 $orderItem
-                    ->setReference($sku)
+                    ->setArticleNumber($sku)
                     ->setName($item->getName()." ".($comment?"({$comment})":""))
                     ->setUnit("st") // TODO! We need to map these somehow!
-                    ->setQuantity(round($qty,0))
-                    ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-                    ->setTaxAmount($this->getTotalTaxAmount($unitPrice * $qty, $vat, false)) // total tax amount
-                    ->setUnitPrice($unitPriceExclTax) // excl. tax price per item
-                    ->setNetTotalAmount($unitPriceExclTax * $qty) // excl. tax
-                    ->setGrossTotalAmount($unitPrice * $qty); // incl. tax
+                    ->setQuantity($this->addZeroes(round($qty,0)))
+                    ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+                    ->setUnitPrice($unitPriceInclTaxes); // incl. tax price per item
 
                 // add to array
                 $this->_cart[$sku] = $orderItem;
@@ -292,7 +302,10 @@ class Items
     }
 
 
-
+    /**
+     * @param $address
+     * @return $this
+     */
     public function addShipping($address) {
 
         if($this->_toInvoice && $address->getBaseShippingAmount() <= $address->getBaseShippingInvoiced()) {
@@ -318,17 +331,14 @@ class Items
 
 
         //
-        $orderItem = new OrderItem();
+        $orderItem = new OrderRow();
         $orderItem
-            ->setReference('shipping_fee')
+            ->setArticleNumber('shipping_fee')
             ->setName((string)__('Shipping Fee (%1)',$address->getShippingDescription()))
             ->setUnit("st") // TODO! We need to map these somehow!
-            ->setQuantity(1)
-            ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-            ->setTaxAmount($this->addZeroes($taxAmount)) // total tax amount
-            ->setUnitPrice($this->addZeroes($exclTax)) // excl. tax price per item
-            ->setNetTotalAmount($this->addZeroes($exclTax)) // excl. tax
-            ->setGrossTotalAmount($this->addZeroes($inclTax)); // incl. tax
+            ->setQuantity($this->addZeroes(1))
+            ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+            ->setUnitPrice($this->addZeroes($inclTax)); // incl. tax price per item
 
 
         // add to array!
@@ -365,71 +375,20 @@ class Items
     }
 
     /**
-     * @param $invoiceLabel
+     * @param $invoiceFeeRow OrderROw
      * @param $invoiceFee
      * @param $vatIncluded
      */
-    public function addInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
+    public function addInvoiceFeeItem($invoiceFeeRow)
     {
-        $item = $this->generateInvoiceFeeItem($invoiceLabel,$invoiceFee, $vatIncluded);
-        $this->_cart[$item->getReference()] = $item;
+        $this->_cart[$invoiceFeeRow->getArticleNumber()] = $invoiceFeeRow;
     }
+
 
     /**
-     * @param $invoiceLabel
-     * @param $invoiceFee
-     * @param $vatIncluded
-     * @return OrderItem
+     * @param $couponCode
+     * @return $this
      */
-    public function generateInvoiceFeeItem($invoiceLabel, $invoiceFee, $vatIncluded)
-    {
-        $feeItem = new OrderItem();
-        $taxRate = $this->getMaxVat();
-
-        // basic values if taxes is 0
-        $invoiceFeeExclTax = $invoiceFee;
-        $invoiceFeeInclTax = $invoiceFee;
-        $taxAmount = 0;
-
-        // here we calculate if there are taxes!
-        if ($taxRate > 0) {
-
-            if (!$vatIncluded) {
-                $invoiceFeeExclTax = $invoiceFee;
-                // i.e: 20 * ((100 + 25) / 100) =
-                // 20 * 125/100 =
-                // 20 * 1.25 = 25
-                $invoiceFeeInclTax = $invoiceFee * ((100 + $taxRate) / 100);
-
-            } else {
-                // with taxes!
-                $invoiceFeeInclTax = $invoiceFee;
-
-                // i.e: 25 * ((100 + 25) / 100) =
-                // 25 * 125/100 =
-                // 25 / 1.25 = 20
-                $invoiceFeeExclTax = $invoiceFeeInclTax / ((100 + $taxRate) / 100);
-            }
-
-            // count the tax amount
-            $taxAmount = $invoiceFeeInclTax - $invoiceFeeExclTax;
-        }
-
-        $feeItem
-            ->setName($invoiceLabel)
-            ->setReference(strtolower(str_replace(" ", "_", $invoiceLabel)))
-            ->setTaxRate($this->addZeroes($taxRate))
-            ->setGrossTotalAmount($this->addZeroes($invoiceFeeInclTax)) // incl tax
-            ->setNetTotalAmount($this->addZeroes($invoiceFeeExclTax)) // // excl. tax
-            ->setUnit("st")
-            ->setQuantity(1)
-            ->setUnitPrice($this->addZeroes($invoiceFeeExclTax)) // // excl. tax
-            ->setTaxAmount($this->addZeroes($taxAmount)); // tax amount
-
-        return $feeItem;
-    }
-
-    // TODO!!
     public function addDiscounts($couponCode)
     {
 
@@ -443,25 +402,19 @@ class Items
                 $reference = 'discount-toinvoice';
             }
 
-           // var_dump($vat);
-            //var_dump($amount);
-            //die;
 
             $taxAmount = $this->getTotalTaxAmount($amountInclTax, $vat);
             $amountInclTax = $this->addZeroes($amountInclTax);
             $amountExclTax = $amountInclTax - $taxAmount;
 
-            $orderItem = new OrderItem();
+            $orderItem = new OrderRow();
             $orderItem
-                ->setReference($reference)
+                ->setArticleNumber($reference)
                 ->setName($couponCode?(string)__('Discount (%1)',$couponCode):(string)__('Discount'))
                 ->setUnit("st")
-                ->setQuantity(1)
-                ->setTaxRate($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-                ->setTaxAmount($taxAmount) // total tax amount
-                ->setUnitPrice(0) // excl. tax price per item
-                ->setNetTotalAmount(-$amountExclTax) // excl. tax
-                ->setGrossTotalAmount(-$amountInclTax); // incl. tax
+                ->setQuantity($this->addZeroes(1))
+                ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
+                ->setUnitPrice(-$amountInclTax); // incl. tax price per item
 
 
             $this->_cart[$reference] = $orderItem;
@@ -471,29 +424,19 @@ class Items
 
     }
 
+    /**
+     * @param $grandTotal
+     * @return $this
+     * @throws CheckoutException
+     */
     public function validateTotals($grandTotal)
     {
-        //calculate Svea total
-        //WARNING:   The tax must to be applied AFTER discount and to the custom price (not original)
-        //           else... the svea tax total will differ
 
         $calculatedTotal = 0;
-        $calculatedTax   = 0;
         foreach($this->_cart as $item) {
-            /** @var $item OrderItem */
+            /** @var $item OrderRow */
 
-            //the algorithm used by Svea seems to be (need to confirm with Svea)
-            //total_price_including_tax = unit_price*quantity; //no round because svea doesn't have decimals; all numbers are * 100
-            //total_price_excluding_tax = total_price_including_tax / (1+taxrate/100000) //is 10000 because taxrate is already multiplied by 100
-            //total_tax_amount = total_price_including_tax - total_price_excluding_tax
-            $total_price_including_tax = $item->getGrossTotalAmount();
-            if($item->getTaxRate() != 0) {
-                $total_price_excluding_tax = $item->getNetTotalAmount();
-            } else {
-                $total_price_excluding_tax = $total_price_including_tax;
-            }
-            $total_tax_amount = round($total_price_including_tax - $total_price_excluding_tax,0); //round is not required, alreay int
-            $calculatedTax   += $total_tax_amount;
+            $total_price_including_tax = $item->getUnitPrice() * ($item->getQuantity() / 100);
             $calculatedTotal += $total_price_including_tax;
         }
 
@@ -501,9 +444,22 @@ class Items
         $grandTotal = $this->addZeroes($grandTotal);
         $difference    = $grandTotal-$calculatedTotal;
 
+
+        // from our settings
+        $allowedDifference = $this->_helper->getMaximumAmountDiff();
+
         //no correction required
-        if($difference == 0) {
+        if($difference == 0 && $allowedDifference === 0) {
             return $this;
+        }
+
+        if ($allowedDifference > 0) {
+
+            // 50 * 10 = 500 (i.e 0.5 cent allowed)
+            // 5 * 10 = 50 (i.e 0.05 difference)
+            if (($allowedDifference * 10) >= $difference) {
+                return $this;
+            }
         }
 
         throw new CheckoutException(__("The grand total price does not match the price being sent to Svea. Please contact an admin or use another checkout method."), 'checkout/cart');
@@ -594,7 +550,6 @@ class Items
         try {
             $this->validateTotals($quote->getGrandTotal());
         } catch (\Exception $e) {
-            //!! todo handle somehow!
             throw $e;
         }
 
@@ -605,6 +560,12 @@ class Items
 
 
     //generate Svea items from Magento Order
+
+    /**
+     * @param Order $order
+     * @return array
+     * @throws CheckoutException
+     */
     public function fromOrder(Order $order) {
         $this->init($order->getStore());
 
@@ -678,17 +639,208 @@ class Items
         $this->addDiscounts($order->getCouponCode()); //coupon code is not copied to invoice
     }
 
+    /**
+     * @param $items []OrderRow
+     * @param bool $addNegative
+     * @return int[]
+     */
+    public function getOrderRowNumbers($items, $addNegative = true)
+    {
+        $rowNumbers = [];
+        foreach ($items as $item) {
+            if (!$addNegative && $item->getUnitPrice() < 0) {
+                continue;
+            }
+
+            $rowNumbers[] = $item->getRowNumber();
+        }
+
+        return $rowNumbers;
+    }
+
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @param bool $throwException
+     * @return OrderRow[]
+     * @throws LocalizedException
+     */
+    public function getMatchingRows($sveaOrderItems, $magentoOrderItems, $throwException = true)
+    {
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        /** @var OrderRow[] $matchingItems */
+        $matchingItems = [];
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                if (!$throwException) {
+                    continue;
+                }
+                throw new LocalizedException(__("Could not match Magento and Svea for article: %1", $magentoOrderItem->getArticleNumber()));
+            }
+
+            $matchingItems[] = $rowRef[$magentoOrderItem->getArticleNumber()];
+        }
+
+        return $matchingItems;
+    }
+
+    /**
+     * @param $items
+     * @return bool
+     */
+    public function containsDiscount($items)
+    {
+        foreach ($items as $item) {
+            /** @var $item OrderRow */
+            $amount = $item->getUnitPrice();
+            if ($amount < 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @param $quantityOnly bool
+     * @return bool
+     */
+    public function itemsMatching($sveaOrderItems, $magentoOrderItems,$quantityOnly = false)
+    {
+        // TODO we could just return count($sveaOrderItems) === count($magentoOrderItems);
+        // but not sure about if that is important. The important thing is that all magento items exists in svea items,
+        // not vice versa!
+
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                if ($quantityOnly) {
+                    continue;
+                }
+                return false;
+            }
+
+            $sveaItem = $rowRef[$magentoOrderItem->getArticleNumber()];
+            if ($sveaItem->getQuantity() != $magentoOrderItem->getQuantity()) {
+                return false;
+            }
+
+        }
+
+        return true;
+    }
+
+    /**
+     * @param $sveaOrderItems
+     * @param $magentoOrderItems
+     * @return array
+     */
+    public function getMissingItems($sveaOrderItems, $magentoOrderItems)
+    {
+        $missing = [];
+
+        /** @var OrderRow[] $rowRef */
+        $rowRef = [];
+        foreach ($sveaOrderItems as $sveaOrderItem) {
+            /** @var $sveaOrderItem OrderRow */
+            $rowRef[$sveaOrderItem->getArticleNumber()] = $sveaOrderItem;
+        }
+
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+            if (!array_key_exists($magentoOrderItem->getArticleNumber(), $rowRef)) {
+                $missing[] = $magentoOrderItem;
+            }
+
+
+        }
+
+        return $missing;
+    }
+
+    /**
+     * @param OrderRow $sveaOrderItem
+     * @param $magentoOrderItems
+     * @return mixed|OrderRow
+     * @throws LocalizedException
+     */
+    public function getMagentoRowBySveaItem(OrderRow $sveaOrderItem, $magentoOrderItems)
+    {
+        foreach ($magentoOrderItems as $magentoOrderItem) {
+            /** @var $magentoOrderItem OrderRow */
+
+            if ($magentoOrderItem->getArticleNumber() === $sveaOrderItem->getArticleNumber()) {
+                return $magentoOrderItem;
+            }
+        }
+
+        throw new LocalizedException(__("Could not match Magento and Svea for article: %1", $sveaOrderItem->getArticleNumber()));
+    }
+
+
+    /**
+     * @param $items
+     * @param bool $addNegative
+     * @return int
+     */
+    public function getAmountByItems($items, $addNegative = true)
+    {
+        $price = 0;
+        foreach ($items as $item) {
+            if (!$addNegative && $item->getUnitPrice() < 0) {
+                continue;
+            }
+            /** @var $item OrderRow */
+
+            $amount = $item->getUnitPrice() * ($item->getQuantity() / 100); // we fix quantity, since 300 = 3, and so on
+            $price += $amount;
+
+        }
+
+        return $price;
+    }
+
+
+    /**
+     * @return int
+     */
     public function getMaxVat()
     {
         return $this->_maxvat;
     }
 
+    /**
+     * @return array
+     */
     public function getCart()
     {
         return $this->_cart;
     }
 
-    public function getTotalTaxAmount($price,$vat, $addZeroes = true)
+    /**
+     * @param $price
+     * @param $vat
+     * @param bool $addZeroes
+     * @return float
+     */
+    public function getTotalTaxAmount($price, $vat, $addZeroes = true)
     {
         if ($addZeroes) {
             return $this->addZeroes($this->calculationTool->calcTaxAmount($price, $vat, true));
@@ -697,10 +849,32 @@ class Items
         }
     }
 
+    /**
+     * @param $amount
+     * @return float
+     */
     public function addZeroes($amount)
     {
         return round($amount * 100,0);
     }
 
 
+    /**
+     * Name may only be 40 characters long, we truncate it here to pass API.
+     *
+     * @param $cartItems
+     * @return array
+     */
+    public function fixCartItems($cartItems)
+    {
+        $cart = [];
+        foreach ($cartItems as $item) {
+
+            /** @var $item OrderRow */
+            $item->setName(substr($item->getName(),0,40));
+            $cart[] = $item;
+        }
+
+        return $cart;
+    }
 }

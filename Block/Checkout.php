@@ -31,7 +31,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
      *
      * @var string
      */
-    protected $_controllerPath = 'checkout/order';
+    protected $_controllerPath = 'sveacheckout/order';
 
     /**
      * @var \Magento\Tax\Helper\Data
@@ -61,7 +61,9 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
     protected $getCurrentQuoteService;
 
-    protected $getCurrentSveaPaymentIdService;
+    protected $getCurrentSveaOrderIdService;
+
+    protected $iframeSnippet;
 
     /**
      * @param \Magento\Framework\View\Element\Template\Context $context
@@ -71,7 +73,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
      * @param \Magento\Cms\Model\Template\FilterProvider
      * @param \Svea\Checkout\Helper\Data $helper
      * @param \Svea\Checkout\Service\GetCurrentQuote $getCurrentQuoteService
-     * @param \Svea\Checkout\Service\GetCurrentSveaPaymentId $getCurrentSveaPaymentIdService,
+     * @param \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
      * @param array $data
      */
 
@@ -83,7 +85,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
         \Magento\Cms\Model\Template\FilterProvider $filterProvider,
         \Svea\Checkout\Helper\Data $helper,
         \Svea\Checkout\Service\GetCurrentQuote $getCurrentQuoteService,
-        \Svea\Checkout\Service\GetCurrentSveaPaymentId $getCurrentSveaPaymentIdService,
+        \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
         array $data = []
     )
     {
@@ -92,7 +94,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
         $this->_addressConfig = $addressConfig;
         $this->filterProvider = $filterProvider;
         $this->helper = $helper;
-        $this->getCurrentSveaPaymentIdService = $getCurrentSveaPaymentIdService;
+        $this->getCurrentSveaOrderIdService = $getCurrentSveaOrderIdService;
         $this->getCurrentQuoteService = $getCurrentQuoteService;
         parent::__construct($context, $data);
     }
@@ -175,20 +177,14 @@ class Checkout extends \Magento\Framework\View\Element\Template
         return $this->getQuote()->getShippingAddress();
     }
 
-    public function getSveaLocale()
-    {
-        // Todo remove hardcode
-        return "sv-SE";
-    }
-
     public function getSveaCheckoutKey()
     {
         return $this->helper->getMerchantId();
     }
 
-    public function getSveaPaymentId()
+    public function getSveaOrderId()
     {
-        return $this->getCurrentSveaPaymentIdService->getSveaPaymentId();
+        return $this->getCurrentSveaOrderIdService->getSveaOrderId();
     }
 
     /**
@@ -249,6 +245,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
         return sprintf($format, $this->escapeHtml($title), $price, $renderedInclTax);
     }
 
+
     /**
      * Getter for current shipping rate
      *
@@ -256,10 +253,12 @@ class Checkout extends \Magento\Framework\View\Element\Template
      */
     public function getCurrentShippingRate()
     {
-        return $this->_currentShippingRate;
+        if ($this->_currentShippingRate) {
+            return $this->_currentShippingRate->getCode();
+        }
+
+        return "";
     }
-
-
 
 
     /**
@@ -301,6 +300,16 @@ class Checkout extends \Magento\Framework\View\Element\Template
         );
     }
 
+
+    public function getIframeSnippet()
+    {
+        return $this->iframeSnippet;
+    }
+
+    public function setIframeSnippet($snippet)
+    {
+        $this->iframeSnippet = $snippet;
+    }
 
 
 

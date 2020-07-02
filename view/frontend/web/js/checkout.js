@@ -7,11 +7,13 @@
 define([
     "jquery",
     'Magento_Ui/js/modal/alert',
+    "uiRegistry",
     "jquery/ui",
     "mage/translate",
     "mage/mage",
-    "mage/validation"
-], function (jQuery, alert) {
+    "mage/validation",
+    "Magento_Customer/js/customer-data"
+], function (jQuery, alert, uiRegistry) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -24,6 +26,12 @@ define([
             couponFormSelector: '#discount-coupon-form',
             cartContainerSelector: '#details-table',
             waitLoadingContainer: '#review-please-wait',
+            couponToggler: '#svea_coupon_toggle input',
+            couponFormContainer: '#svea-checkout_coupon',
+            commentFormSelector: '#svea-checkout-comment',
+            commentTextAreaSelector: '#svea-checkout-comment .fieldset.comment',
+            commentTextAreaToggler: '#svea-checkout-comment .svea-btn.show-more',
+            commentTextAreaTogglerLess: '#svea-checkout-comment .svea-btn.show-less',
             ctrlkey: null,
             ctrlcookie: 'svea-checkoutCartCtrlKey',
             ctrkeyCheck: true,
@@ -31,17 +39,16 @@ define([
             sveaShippingChange: false,
             hasInitFlag: false,
             shippingAjaxInProgress: false,
-            scrollTrigger: '.go-to.svea-btn',
-            scrollTarget: '#sveaOrder'
+            iframeOverlay: '#iframe-overlay'
         },
         _create: function () {
             jQuery.mage.cookies.set(this.options.ctrlcookie, this.options.ctrlkey);
             this._checkIfCartWasUpdated();
-            this.hidePaymentAndIframe();
             this._bindEvents();
             this.uiManipulate();
-            this.scrollToPayment();
-            this.checkShippingMethod();
+            this.toggleCouponContainer();
+            this.toggleOrderCommentTextArea();
+            uiRegistry.set('sveaCheckout', this);
         },
 
         _checkIfCartWasUpdated: function () {
@@ -75,7 +82,7 @@ define([
                 var data_remove_url = inputQty.data('cart-url-remove');
                 var increment = inputQty.siblings('.input-number-increment');
                 var decrement = inputQty.siblings('.input-number-decrement');
-                var remove = inputQty.parent().siblings('.remove-product');
+                var remove = inputQty.closest('tr').find('td.subtotal .remove-product');
                 var prevVal = false;
 
                 if (increment.data('binded')) return;
@@ -125,7 +132,8 @@ define([
                             success: function (data) {
                                 if (!data.success) {
                                     if (data.error_message) {
-                                        confirm(data.error_message);
+                                        var errHtml = '<div class="message-error error message"><div>' + data.error_message + '</div></div>';
+                                        jQuery('.page.messages').append(errHtml);
                                     }
                                 }
                                 _this._ajaxSubmit(data_refresh_url);
@@ -163,7 +171,8 @@ define([
                         success: function (data) {
                             if (!data.success) {
                                 if (data.error_message) {
-                                    confirm(data.error_message);
+                                    var errHtml = '<div class="message-error error message"><div>' + data.error_message + '</div></div>';
+                                    jQuery('.page.messages').append(errHtml);
                                 }
                             }
                             _this._ajaxSubmit(data_refresh_url);
@@ -179,10 +188,9 @@ define([
             block = block ? block : null;
             if (!block || block == 'shipping') {
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
-                this.checkShippingMethod();
             }
             if (!block || block == 'shipping_method') {
-                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
+                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').live('change', jQuery.proxy(this._changeShippingMethod, this));
             }
             if (!block || block == 'newsletter') {
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change', jQuery.proxy(this._changeSubscriptionStatus, this));
@@ -193,6 +201,10 @@ define([
             if (!block || block == 'coupon') {
                 jQuery(this.options.couponFormSelector).on('submit', jQuery.proxy(this._applyCoupon, this));
                 this.checkValueOfInputs(jQuery(this.options.couponFormSelector));
+            }
+            if (!block || block == 'comment') {
+                jQuery(this.options.commentFormSelector).on('submit', jQuery.proxy(this._saveComment, this));
+                this.checkValueOfInputs(jQuery(this.options.commentFormSelector));
             }
 
             if (!block || block == 'svea') {
@@ -232,25 +244,25 @@ define([
          * hide ajax loader
          */
         _ajaxComplete: function (dontHidePayment) {
-            this._showSveaCheckout()
+            this._showSveaCheckout();
             jQuery(this.options.waitLoadingContainer).hide();
-            this.checkShippingMethod();
             this.sveaApiChanges();
+            this.toggleCouponContainer();
         },
 
-        _showSveaCheckout: function() {
-            if (window._sveaCheckout) {
+        _showSveaCheckout: function () {
+            if (window.scoApi) {
                 try {
-                    window._sveaCheckout.thawCheckout();
+                    window.scoApi.setCheckoutEnabled(true);
                 } catch (err) {
                 }
             }
         },
 
-        _hideSveaCheckout: function() {
-            if (window._sveaCheckout) {
+        _hideSveaCheckout: function () {
+            if (window.scoApi) {
                 try {
-                    window._sveaCheckout.freezeCheckout();
+                    window.scoApi.setCheckoutEnabled(false);
                 } catch (err) {
                 }
             }
@@ -258,7 +270,6 @@ define([
 
         _changeShippingMethod: function () {
             this._ajaxFormSubmit(jQuery(this.options.shippingMethodFormSelector));
-            jQuery(this.options.scrollTrigger).show();
         },
 
         _loadShippingMethod: function () {
@@ -275,6 +286,14 @@ define([
             return false;
         },
 
+        _saveComment: function () {
+            var form = jQuery(this.options.commentFormSelector);
+            this._ajaxSubmit(form.prop('action'), form.serialize(), "post", false, function () {
+
+                jQuery("#svea-submit").addClass('success-save');
+            });
+            return false;
+        },
 
         _ajaxFormSubmit: function (form) {
             return this._ajaxSubmit(form.prop('action'), form.serialize());
@@ -386,119 +405,16 @@ define([
         },
 
         sveaApiChanges: function () {
-            if (!window._sveaCheckout) {
+            if (!window.scoApi) {
                 return
             }
 
             var self = this;
-            window._sveaCheckout.on('payment-completed', function (response) {
-
-                jQuery.ajax({
-                    url: BASE_URL + "checkout/order/SaveOrder/pid/" + response.paymentId,
-                    type: "POST",
-                    context: this,
-                    data: "",
-                    dataType: 'json',
-                    beforeSend: function () {
-                        self._hideSveaCheckout();
-                    },
-                    complete: function () {
-                        self._showSveaCheckout();
-                    },
-                    success: function (response) {
-
-                        if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
-
-                            if (response.chooseShippingMethod) {
-                                self.checkShippingMethod();
-                                self._hideSveaCheckout();
-                            }
-
-                            if (response.messages) {
-                                alert({
-                                    content: jQuery.mage.__(response.messages)
-                                });
-                            }
-
-                            if (response.redirectTo) {
-                                window.location.href = response.redirectTo;
-                            }
-
-                        } else {
-                            alert({
-                                content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                            });
-                        }
-                    },
-                    error: function(data) {
-                        alert({
-                            content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                        });
-
-                    }
-
-                });
-
+            window.scoApi.observeEvent("identity.postalCode", function (data) {
+                console.log("postalCode changed to %s.", data.value);
             });
 
-            window._sveaCheckout.on('pay-initialized', function (response) {
 
-                jQuery.ajax({
-                    url: BASE_URL + "checkout/order/ValidateOrder",
-                    type: "POST",
-                    context: this,
-                    data: "",
-                    dataType: 'json',
-                    beforeSend: function () {
-                        self._hideSveaCheckout();
-                    },
-                    complete: function () {
-                        self._showSveaCheckout();
-                    },
-                    success: function (response) {
-
-                        if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
-
-                            if (response.error) {
-                                window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-                            } else {
-                                window._sveaCheckout.sendPaymentOrderFinalizedEvent(true);
-                            }
-
-                            if (response.chooseShippingMethod) {
-                                self.checkShippingMethod();
-                                self._hideSveaCheckout();
-                            }
-
-                            if (response.messages) {
-                                alert({
-                                    content: jQuery.mage.__(response.messages)
-                                });
-                            }
-                        } else {
-
-                            // tell svea not to finish order!
-                            window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-
-                            alert({
-                                content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                            });
-                        }
-                    },
-                    error: function(data) {
-                        // tell svea not to finish order!
-                        window._sveaCheckout.sendPaymentOrderFinalizedEvent(false);
-
-                        alert({
-                            content: jQuery.mage.__('Sorry, something went wrong. Please try again later.')
-                        });
-
-                    }
-
-                });
-
-
-            });
         },
 
         /**
@@ -531,40 +447,42 @@ define([
                 t.fiddleSidebar();
             });
         },
-        hidePaymentAndIframe: function () {
-            var trigger = this.options.getShippingMethodButton;
-            var pay = this.options.scrollTrigger;
-            jQuery(trigger).click(function () {
-                jQuery(pay).css({
-                    'display': 'none'
-                });
-            })
-        },
-        scrollToPayment: function () {
-            var trigger = this.options.scrollTrigger;
-            var target = this.options.scrollTarget;
-            var self = this;
-            jQuery(trigger).click(function () {
-                jQuery(target).css({
-                    'visibility': 'visible',
-                    'height': 'auto',
-                });
-                jQuery('html, body').animate({
-                    scrollTop: jQuery(target).offset().top
-                }, 500);
-            })
+
+        toggleCouponContainer: function () {
+            var target = this.options.couponFormContainer,
+                toggler = this.options.couponToggler;
+
+            jQuery(toggler).change(function () {
+                if (this.checked)
+                    jQuery(target).addClass('visible');
+                else
+                    jQuery(target).removeClass('visible');
+            });
         },
 
-        checkShippingMethod: function () {
-            var holder = this.options.shippingMethodCheckBoxHolder;
-            jQuery(holder).click(function () {
-                var $checks = jQuery(this).find('input:radio[name=shipping_method]');
-                $checks.prop("checked", !$checks.is(":checked")).trigger('change');
-                if ($checks.is(":checked")) {
-                    jQuery(this).css('opacity', '1');
-                    jQuery(this).parent().find('.svea-checkout-radio-row').not(this).css('opacity', '.5');
-                }
-            })
+        toggleOrderCommentTextArea: function () {
+            var target = this.options.commentTextAreaSelector,
+                toggler = this.options.commentTextAreaToggler,
+                togglerLess = this.options.commentTextAreaTogglerLess;
+
+
+            jQuery(toggler).on('click', function () {
+                jQuery(target).slideDown(function () {
+                    jQuery(toggler).hide();
+                    jQuery(togglerLess).show();
+                });
+            });
+
+            jQuery(togglerLess).on('click', function () {
+                jQuery(target).slideUp(function () {
+                    jQuery(togglerLess).hide();
+                    jQuery(toggler).show();
+
+                });
+
+            });
+
+
         }
     });
 

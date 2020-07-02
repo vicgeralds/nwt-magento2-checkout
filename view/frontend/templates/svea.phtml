@@ -4,15 +4,6 @@
 
 /** @var $block Svea\Checkout\Block\Checkout */
 ?>
-<div id="sveaOrderJS">
-    <script>
-
-        var checkoutOptions = {
-            checkoutKey: "<?php echo $block->getSveaCheckoutKey(); ?>", //[Required] Test or Live GUID with dashes
-            paymentId: "<?php echo $block->getSveaPaymentId(); ?>", //[required] GUID without dashes
-            containerId: "sveaOrderJS",
-            language: "<?php echo $block->getSveaLocale(); ?>",
-        };
-        var _sveaCheckout = new Svea.Checkout(checkoutOptions);
-    </script>
+<div id="sveaIframeSnippet">
+    <?php echo $block->getIframeSnippet(); ?>
 </div>

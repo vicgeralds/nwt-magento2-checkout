@@ -1,7 +1,6 @@
 <?php
 namespace Svea\Checkout\Helper;
 
-
 use Magento\Quote\Model\Quote;
 
 /**
@@ -15,7 +14,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const COOKIE_CART_CTRL_KEY = 'SveaCartCtrlKey';
 
-
     /**
      * Svea System Settings, Connection group
      */
@@ -25,8 +23,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * Svea System Settings, settings group
      */
     const XML_PATH_SETTINGS = 'svea_checkout/settings/';
-
-    const XML_PATH_SETTINGS_INVOICE = 'svea_checkout/invoice/';
 
     /**
      * Svea System Settings, layout group
@@ -53,6 +49,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const API_ADMIN_BASE_URL_TEST = 'https://paymentadminapistage.svea.com';
 
+   /**
+     * Svea Partner key
+     */
+    const PARTNER_KEY = "2E999136-F4CC-465B-B5CB-873C28E93EEC";
+
     /**
      * Store manager
      *
@@ -62,7 +63,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     /** @var \Svea\Checkout\Model\Svea\Locale $sveaLocale */
     protected $sveaLocale;
-
 
     /**
      * Data constructor.
@@ -80,87 +80,70 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         parent::__construct($context);
     }
 
+    /**
+     * @param null $store
+     * @return mixed
+     */
+    public function getSharedSecret($store = null)
+    {
+        return $this->scopeConfig->getValue(
+            self::XML_PATH_CONNECTION . 'shared_secret',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
 
     /**
      * @param null $store
      * @return mixed
      */
-    public function getSharedSecret($store = null) {
+    public function getMerchantId($store = null)
+    {
         return $this->scopeConfig->getValue(
-            self::XML_PATH_CONNECTION.'shared_secret',
+            self::XML_PATH_CONNECTION . 'merchant_id',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
-
-    /**
-     * @param null $store
-     * @return mixed
-     */
-    public function getMerchantId($store = null) {
-        return $this->scopeConfig->getValue(
-            self::XML_PATH_CONNECTION.'merchant_id',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-    }
-
 
     /**
      * @param null $store
      * @return bool
      */
-    public function isEnabled($store = null) {
+    public function isEnabled($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CONNECTION.'enabled',
+            self::XML_PATH_CONNECTION . 'enabled',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
-
 
     /**
      * @param null $store
      * @return bool
      */
-    public function isTestMode($store = null) {
+    public function isTestMode($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CONNECTION.'test_mode',
+            self::XML_PATH_CONNECTION . 'test_mode',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
     }
 
 
-    public function useInvoiceFee($store = null) {
-       return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_SETTINGS_INVOICE.'use_invoice_fee',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-   }
-
-    public function getInvoiceFeeLabel($store = null) {
-        return $this->scopeConfig->getValue(
-           self::XML_PATH_SETTINGS_INVOICE.'invoice_fee_label',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-    }
-
-    public function getInvoiceFee($store = null) {
-        return $this->scopeConfig->getValue(
-           self::XML_PATH_SETTINGS_INVOICE.'invoice_fee',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
+    public function getInvoiceFeeLabel($store = null)
+    {
+        return __("Invoice Fee");
     }
 
     /**
      * @param null $store
      * @return string
      */
-    public function getApiUrl($store = null){
+    public function getApiUrl($store = null)
+    {
         if ($this->isTestMode($store)) {
             return self::API_BASE_URL_TEST;
         } else {
@@ -177,14 +160,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
-
     /**
      * @param null $store
      * @return bool
      */
-    protected function _replaceCheckout($store = null) {
+    protected function _replaceCheckout($store = null)
+    {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_SETTINGS.'replace_checkout',
+            self::XML_PATH_SETTINGS . 'replace_checkout',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -207,7 +190,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         return $this->getStoreConfigFlag(self::XML_PATH_SETTINGS . 'register_customer', $store);
     }
-
 
     /**
      * @param null $store
@@ -242,9 +224,27 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getSuccessPageUrl()
     {
-        return $this->_getUrl( 'sveacheckout/order/success');
+        return $this->getCheckoutUrl('success');
     }
 
+    public function getConfirmationUrl($hash)
+    {
+        return $this->getCheckoutUrl('confirmation', ['hash' => $hash, '_escape_params' => false]);
+    }
+
+    public function getValidationUrl($hash)
+    {
+        return $this->getCheckoutUrl('validateOrder', ['sid'=>'{checkout.order.uri}', 'hash' => $hash, '_escape_params' => false]);
+    }
+
+    /**
+     * @param $hash
+     * @return string
+     */
+    public function getPushUrl($hash)
+    {
+        return $this->getCheckoutUrl('push', ['sid'=>'{checkout.order.uri}','hash' => $hash, '_escape_params' => false]);
+    }
 
     /**
      * @param null $path
@@ -269,7 +269,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $url = explode('|', (string)$this->getStoreConfig(self::XML_PATH_SETTINGS . 'terms_url', $store));
         return $this->_getUrl($url[0]);
     }
-
 
     /**
      * @return string
@@ -299,6 +298,17 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
+
+
+    public function showCouponLayout($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_LAYOUT . 'display_discount',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
     /**
      * @param null $store
      * @return array|null
@@ -306,31 +316,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getCountries($store = null)
     {
         $values = $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'allowed_countries',
+            self::XML_PATH_SETTINGS . 'allowed_countries',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
 
         return $this->splitStringToArray($values);
     }
-
-    /*
-    public function getShippingCountries($store = null)
-    {
-        $values = $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'allowed_shipping_countries',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $store
-        );
-
-        return $this->splitStringToArray($values);
-    }
-    */
 
     public function getDefaultCountry($store = null)
     {
         return $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'default_country',
+            self::XML_PATH_SETTINGS . 'default_country',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -338,9 +335,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function getDefaultConsumerType($store = null)
     {
-
         return $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'default_customer_type',
+            self::XML_PATH_SETTINGS . 'default_customer_type',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
+
+    public function getDefaultShippingMethod($store = null)
+    {
+        return $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'default_shipping_method',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -348,15 +354,44 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function getConsumerTypes($store = null)
     {
-
         $values =  $this->scopeConfig->getValue(
-            self::XML_PATH_SETTINGS.'customer_types',
+            self::XML_PATH_SETTINGS . 'customer_types',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
 
         return $this->splitStringToArray($values);
     }
+
+    /**
+     * @param null $store
+     * @return int
+     */
+    public function getMaximumAmountDiff($store = null)
+    {
+        $allowDiff = $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SETTINGS . 'allow_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$allowDiff) {
+            return 0;
+        }
+
+        $diff = $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'maximum_decimal_diff',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+
+        if (!$diff) {
+            return 0;
+        }
+
+        return (int) $diff;
+    }
+
 
     /**
      * This function returns a hash, we will use it to check for changes in the quote!
@@ -393,19 +428,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
-     * @return string
-     */
-    public function getHeaderText()
-    {
-        return ""; // todo translate or get from settings =)
-    }
-
-    /**
      * @param $path
      * @param null $store
      * @return mixed
      */
-    public function getStoreConfig($path, $store = null) {
+    public function getStoreConfig($path, $store = null)
+    {
         return $this->scopeConfig->getValue(
             $path,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
@@ -418,7 +446,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param null $store
      * @return bool
      */
-    public function getStoreConfigFlag($path, $store = null) {
+    public function getStoreConfigFlag($path, $store = null)
+    {
         return $this->scopeConfig->isSetFlag(
             $path,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
@@ -442,5 +471,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected function splitStringToArray($values)
     {
         return preg_split("#\s*[ ,;]\s*#", $values, null, PREG_SPLIT_NO_EMPTY);
+    }
+
+    public function getPartnerKey(): string
+    {
+	return self::PARTNER_KEY;
     }
 }

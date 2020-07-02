@@ -4,6 +4,9 @@ namespace Svea\Checkout\Block\Checkout\Cart;
 
 use Svea\Checkout\Helper\Cart as SveaCartHelper;
 use Magento\CatalogInventory\Helper\Stock as StockHelper;
+use Magento\Framework\App\ActionInterface;
+use Magento\Framework\Url\Helper\Data;
+use Magento\Catalog\Model\Product;
 
 class Crosssell extends \Magento\Checkout\Block\Cart\Crosssell
 {
@@ -13,6 +16,11 @@ class Crosssell extends \Magento\Checkout\Block\Cart\Crosssell
      * @var SveaCartHelper
      */
     protected $sveaCartHelper;
+
+    /**
+     * @var Data
+     */
+    protected $urlHelper;
 
     /**
      * Crosssell constructor.
@@ -33,6 +41,7 @@ class Crosssell extends \Magento\Checkout\Block\Cart\Crosssell
         \Magento\Quote\Model\Quote\Item\RelatedProducts $itemRelationsList,
         StockHelper $stockHelper,
         SveaCartHelper $sveaCartHelper,
+        Data $urlHelper,
         array $data = []
     )
     {
@@ -47,6 +56,7 @@ class Crosssell extends \Magento\Checkout\Block\Cart\Crosssell
         );
         $this->sveaCartHelper = $sveaCartHelper;
         $this->_maxItemCount = $sveaCartHelper->getNumberOfCrosssellProducts();
+        $this->urlHelper = $urlHelper;
     }
 
     /**
@@ -63,5 +73,23 @@ class Crosssell extends \Magento\Checkout\Block\Cart\Crosssell
     public function isEnable()
     {
         return $this->getSveaCartHelper()->isDisplayCrosssell();
+    }
+
+    /**
+     * Get post parameters
+     *
+     * @param Product $product
+     * @return array
+     */
+    public function getAddToCartPostParams(Product $product)
+    {
+        $url = $this->getAddToCartUrl($product);
+        return [
+            'action' => $url,
+            'data' => [
+                'product' => $product->getEntityId(),
+                ActionInterface::PARAM_NAME_URL_ENCODED => $this->urlHelper->getEncodedUrl($url),
+            ]
+        ];
     }
 }

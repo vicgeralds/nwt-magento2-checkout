@@ -75,9 +75,10 @@ class Checkout extends AbstractMethod
     public function assignData(\Magento\Framework\DataObject $data)
     {
 
-        $this->getInfoInstance()
-            ->setAdditionalInformation('svea_order_id',$data->getSveaPaymentId())
-            ->setAdditionalInformation('country_id',$data->getCountryId());
+        $assocData = $data->getData();
+        foreach ($assocData as $key => $val) {
+            $this->getInfoInstance()->setAdditionalInformation($key, $val);
+        }
 
         return $this;
     }
@@ -105,6 +106,11 @@ class Checkout extends AbstractMethod
 
         // same settings for canCapture adn canRefund!
         return $this->_helper->canCapture($order?$order->getStore():null);
+    }
+
+    public function canVoid()
+    {
+        return $this->_canVoid;
     }
 
     public function canCapturePartial()
@@ -159,7 +165,7 @@ class Checkout extends AbstractMethod
      */
     public function canUseForCurrency($currencyCode)    
     {
-        return in_array(strtoupper($currencyCode), ['SEK','NOK','DKK']);
+        return in_array(strtoupper($currencyCode), $this->sveaHandler->getLocale()->getAllowedCurrencies());
     }
 
 
@@ -197,7 +203,7 @@ class Checkout extends AbstractMethod
         $order   = $payment->getOrder();
 
         //import quote data
-        $order->setSveaPaymentId($payment->getAdditionalInformation('svea_order_id'));
+        $order->setSveaOrderId($payment->getAdditionalInformation('svea_order_id'));
 
 
         $orderState = \Magento\Sales\Model\Order::STATE_NEW;

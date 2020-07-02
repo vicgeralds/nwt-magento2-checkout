@@ -6,24 +6,20 @@ class CreatePaymentChargeResponse
 {
 
 
-    /** @var string $chargeId */
-    protected $chargeId;
-
-    /** @var string $invoiceNumber */
-    protected $invoiceNumber;
+    /** @var string $queueId */
+    protected $queueId;
 
     /**
      * CreatePaymentChargeResponse constructor.
-     * @param $response string
+     * @param $location string
      */
-    public function __construct($response = "")
+    public function __construct($location = "")
     {
-        if ($response !== "") {
-            $data = json_decode($response, true);
-            $this->setChargeId($data['chargeId']);
-
-            if (isset($data['invoice']['invoiceNumber'])) {
-                $this->setInvoiceNumber($data['invoice']['invoiceNumber']);
+        if ($location !== "") {
+            preg_match("/queue\/\d.*/", $location, $matches);
+            if (isset($matches[0])) {
+                $queueId = str_replace("queue/","", $matches[0]);
+                $this->setQueueId($queueId);
             }
         }
     }
@@ -31,39 +27,20 @@ class CreatePaymentChargeResponse
     /**
      * @return string
      */
-    public function getChargeId()
+    public function getQueueId()
     {
-        return $this->chargeId;
+        return $this->queueId;
     }
 
     /**
-     * @param string $chargeId
+     * @param string $queueId
      * @return CreatePaymentChargeResponse
      */
-    public function setChargeId($chargeId)
+    public function setQueueId($queueId)
     {
-        $this->chargeId = $chargeId;
+        $this->queueId = $queueId;
         return $this;
     }
-
-    /**
-     * @return string
-     */
-    public function getInvoiceNumber()
-    {
-        return $this->invoiceNumber;
-    }
-
-    /**
-     * @param string $invoiceNumber
-     * @return CreatePaymentChargeResponse
-     */
-    public function setInvoiceNumber($invoiceNumber)
-    {
-        $this->invoiceNumber = $invoiceNumber;
-        return $this;
-    }
-
 
 
 }
