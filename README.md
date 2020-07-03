@@ -1,8 +1,8 @@
 # Svea checkout settings and instructions
 ### How to install:
 Install it to via composer in your magento site:   
-``composer config repositories.svea_checkout vcs git@github.com:sveawebpay/nwt-magento2-checkout.git``   
-`` composer require --prefer-source 'svea/checkout:*'``   
+``composer config repositories.svea_checkout vcs git@bitbucket.org:nordicwebteam/svea-checkout-m2.git``   
+`` composer require --prefer-source 'sveawebpay/nwt-magento2-checkout:*'``   
 
 If you don't want to use composer, install it manually:download and copy all files into app/code/Svea/Checkout/ directory.   
 ### Enable it in Magento:
@@ -71,4 +71,3 @@ To find the settings follow these steps: Store->Configuration or on the left sid
 *Display Crossell Products:* Simple "Yes/No", Yes to show crossell products.
 
 *Number of products:* The amount of products shown in the slider.
-

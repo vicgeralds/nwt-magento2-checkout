@@ -2,15 +2,18 @@
 
 namespace Svea\Checkout\Model;
 
+use Magento\Checkout\Model\Type\Onepage;
 use Magento\Customer\Api\Data\GroupInterface;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\QuoteRepository\LoadHandler;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 
-class Checkout extends \Magento\Checkout\Model\Type\Onepage
+class Checkout extends Onepage
 {
     protected $_paymentMethod = 'sveacheckout';
 
@@ -129,6 +132,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         $this->totalsCollector->collectAddressTotals($quote, $shippingAddress);
         $this->totalsCollector->collectQuoteTotals($quote);
+
+        /**
+         * We need to reset shipping assignments before saving quote
+         * since they were changes
+         */
+        $repositoryLoadHandler = $this->getRepositoryLoadHandler();
+        $repositoryLoadHandler->load($quote);
 
         $quote->collectTotals();
         $this->quoteRepository->save($quote);
@@ -276,8 +286,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         }
 
         //this is needed by shipping method with minimum amount
-        $quote->collectTotals();
-
         $shipping = $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates();
         $allRates = $shipping->getAllShippingRates();
 
@@ -490,15 +498,15 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         $this->getRefHelper()->setQuoteSignature($newSignature);
     }
 
-    //Checkout ajax updates
-
     /**
      * Set shipping method to quote, if needed
      *
      * @param string $methodCode
+     * @param $postcode
+     *
      * @return void
      */
-    public function updateShippingMethod($methodCode)
+    public function updateShippingMethod($methodCode, $postcode = null)
     {
         $quote = $this->getQuote();
         if ($quote->isVirtual()) {
@@ -508,6 +516,11 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
         if ($methodCode != $shippingAddress->getShippingMethod()) {
             $this->ignoreAddressValidation();
             $shippingAddress->setShippingMethod($methodCode)->setCollectShippingRates(true);
+
+            if (null !== $postcode) {
+                $shippingAddress->setPostcode($postcode);
+            }
+
             $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
         }
     }
@@ -534,7 +547,6 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
      */
     public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
-
         //prevent observer to mark quote dirty, we will check here if quote was changed and, if yes, will redirect to checkout
         $this->setDoNotMarkCartDirty(true);
 
@@ -543,6 +555,16 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
 
         // we convert the addresses
         $shipping = $this->getSveaPaymentHandler()->convertSveaAddressToMagentoAddress($sveaOrder, $sveaOrder->getShippingAddress());
+
+        // We should fetch postcode from quote address, not from svea shipping data
+        // Handled here, since we cannot generate plugin NWT_Unifaun plugin of SVEA module is not used
+        if ($quote->getShippingAddress() &&
+            $quote->getShippingAddress()->getShippingMethod() == 'nwtunifaun_udc' &&
+            isset($shipping['postcode'])
+        ) {
+            unset($shipping['postcode']);
+        }
+
         $billing = $this->getSveaPaymentHandler()->convertSveaAddressToMagentoAddress($sveaOrder, $sveaOrder->getBillingAddress());
 
         // we set the addresses
@@ -759,5 +781,13 @@ class Checkout extends \Magento\Checkout\Model\Type\Onepage
     public function getDoNotMarkCartDirty()
     {
         return $this->_doNotMarkCartDirty;
+    }
+
+    /**
+     * @return LoadHandler
+     */
+    private function getRepositoryLoadHandler() : LoadHandler
+    {
+        return ObjectManager::getInstance()->create(LoadHandler::class);
     }
 }

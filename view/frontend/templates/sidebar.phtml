@@ -26,17 +26,19 @@
 </span>
 <script type="text/x-magento-init">
     {
-        "#svea-checkout-review": {
-            "sveaCheckout": {
-                "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
-                "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
-                "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
+        "*": {
+            "Magento_Ui/js/core/app": {
+                "components": {
+                    "sveaCheckout": {
+                        "component": "sveaCheckout",
+                        "config": {
+                            "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
+                            "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
+                            "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
+                        }
+                    }
+                }
             }
         }
     }
-
-
-
-
-
 </script>

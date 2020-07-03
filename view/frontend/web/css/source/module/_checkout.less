@@ -446,6 +446,16 @@ table {
           .svea-heading;
         }
       }
+
+      .product-item-details {
+        .product-item-info {
+          a {
+            &:hover {
+              text-decoration: none;
+            }
+          }
+        }
+      }
     }
 
     .col.price {
@@ -840,8 +850,16 @@ button:not(.primary).svea-primary {
         padding-top: 10px;
         padding-bottom: 10px;
 
-        &.subtotal {
+        &.subtotal,
+        &.price {
           text-align: right !important;
+        }
+        .price {
+          font-weight: 500;
+          font-size: 20px;
+          cursor: pointer;
+          flex-grow: 1;
+          color: @svea-color-blue;
         }
       }
 
@@ -953,7 +971,7 @@ button:not(.primary).svea-primary {
 //  _____________________________________________
 
 @media only screen and (max-width: @screen__m) {
-  
+
   .columns {
     display: block;
   }
@@ -1044,7 +1062,7 @@ button:not(.primary).svea-primary {
         }
 
         .remove-product {
-            top: 0;
+          top: 0;
         }
 
         &.item-desc {
@@ -1274,9 +1292,9 @@ button:not(.primary).svea-primary {
 // --- Unifaun related CSS
 
 .svea-checkout-radio-row {
-    label[for^="nwtunifaun_custom"] {
-      flex-wrap: wrap;
-    }
+  label[for^="nwtunifaun_custom"] {
+    flex-wrap: wrap;
+  }
 }
 
 #nwt_unifaun_form {

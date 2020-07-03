@@ -7,12 +7,13 @@
 define([
     "jquery",
     'Magento_Ui/js/modal/alert',
+    "uiRegistry",
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, customerData) {
+], function (jQuery, alert, uiRegistry) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -47,6 +48,7 @@ define([
             this.uiManipulate();
             this.toggleCouponContainer();
             this.toggleOrderCommentTextArea();
+            uiRegistry.set('sveaCheckout', this);
         },
 
         _checkIfCartWasUpdated: function () {

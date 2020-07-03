@@ -11,13 +11,21 @@ $helper = $this->helper('\Svea\Checkout\Helper\Cart');
 <tr>
     <td class="svea-checkout-col item-img">
         <div class="product-item-image">
-            <?= $block->getImage($block->getProductForThumbnail(), 'cart_page_product_thumbnail')->toHtml() ?>
+            <?php if ($block->hasProductUrl()):?>
+                <a href="<?= /* @escapeNotVerified */ $block->getProductUrl() ?>"> <?= $block->getImage($block->getProductForThumbnail(), 'cart_page_product_thumbnail')->toHtml() ?></a>
+            <?php else: ?>
+                <?= $block->getImage($block->getProductForThumbnail(), 'cart_page_product_thumbnail')->toHtml() ?>
+            <?php endif; ?>
         </div>
     </td>
     <td class="svea-checkout-col item-desc" data-th="<?php echo $block->escapeHtml(__('Product Name')); ?>">
         <div class="product-item-details">
             <div class="product-item-info">
-                <strong class="product name product-item-name"><?php echo $block->escapeHtml($block->getProductName()) ?></strong>
+                <?php if ($block->hasProductUrl()):?>
+                    <a href="<?= /* @escapeNotVerified */ $block->getProductUrl() ?>"><strong class="product name product-item-name"><?php echo $block->escapeHtml($block->getProductName()) ?></strong></a>
+                <?php else: ?>
+                    <?= $block->escapeHtml($block->getProductName()) ?>
+                <?php endif; ?>
                 <?php if ($product->getShortDescription()): ?>
                     <span class="product description product-item-description">
                         <?= /* @escapeNotVerified */
@@ -96,6 +104,12 @@ $helper = $this->helper('\Svea\Checkout\Helper\Cart');
                 <span class="input-number-increment">+</span>
             </span>
         </div>
+    </td>
+
+    <td class="svea-checkout-col price" data-th="<?php echo $block->escapeHtml(__('Price')); ?>">
+        <span class="price-including-tax" data-label="<?php echo $block->escapeHtml(__('Price')); ?>">
+                    <?php echo $block->getUnitPriceHtml($_item); ?>
+                </span>
     </td>
 
     <td class="svea-checkout-col subtotal" data-th="<?php echo $block->escapeHtml(__('Subtotal')); ?>">

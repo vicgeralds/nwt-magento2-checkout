@@ -17,6 +17,8 @@ class SaveShippingMethod extends \Svea\Checkout\Controller\Order\Update
         }
 
         $shippingMethod = $this->getRequest()->getPost('shipping_method', '');
+        $postCode       = $this->getRequest()->getPost('postcode', '');
+
         if (!$shippingMethod) {
             $this->getResponse()->setBody(json_encode(array('messages' => 'Please choose a valid shipping method.')));
             return;
@@ -26,7 +28,7 @@ class SaveShippingMethod extends \Svea\Checkout\Controller\Order\Update
         if ($shippingMethod) {
             try {
                 $checkout = $this->getSveaCheckout();
-                $checkout->updateShippingMethod($shippingMethod);
+                $checkout->updateShippingMethod($shippingMethod, $postCode);
             } catch (\Magento\Framework\Exception\LocalizedException $e) {
                 $this->messageManager->addExceptionMessage(
                     $e,

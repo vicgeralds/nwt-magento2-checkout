@@ -17,11 +17,11 @@ use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
-use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 use Svea\Checkout\Model\Client\DTO\RefundNewCreditRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
+use Svea\Checkout\Model\Svea\Data\PresetValues\Factory as PresetValuesFactory;
 
 class Order
 {
@@ -61,12 +61,30 @@ class Order
 
     protected $iframeSnippet = null;
 
+    /**
+     * @var PresetValuesFactory
+     */
+    private $presetValuesProviderFactory;
+
+    /**
+     * Order constructor.
+     *
+     * @param \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi
+     * @param Checkout $checkoutApi
+     * @param \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper
+     * @param \Svea\Checkout\Helper\Data $helper
+     * @param \Magento\Directory\Model\CountryFactory $countryFactory
+     * @param PresetValuesFactory $presetValuesProviderFactory
+     * @param Items $itemsHandler
+     * @param Locale $locale
+     */
     public function __construct(
         \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi,
         \Svea\Checkout\Model\Client\Api\Checkout $checkoutApi,
         \Svea\Checkout\Model\CheckoutOrderNumberReference $sveaCheckoutReferenceHelper,
         \Svea\Checkout\Helper\Data $helper,
         \Magento\Directory\Model\CountryFactory $countryFactory,
+        PresetValuesFactory $presetValuesProviderFactory,
         Items $itemsHandler,
         Locale $locale
     ) {
@@ -77,6 +95,7 @@ class Order
         $this->orderManagementApi = $orderManagementApi;
         $this->_countryFactory  = $countryFactory;
         $this->_locale = $locale;
+        $this->presetValuesProviderFactory = $presetValuesProviderFactory;
     }
 
     /** @var $_quote Quote */
@@ -196,6 +215,7 @@ class Order
         // set merchant settings, urls
         $merchantUrls = new MerchantSettings();
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
+
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
 
         $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash);
@@ -230,20 +250,9 @@ class Order
 		$paymentOrder->setPartnerKey($partnerKey);
 	}
 
-        // set preset values if test mode! we could also set values if customer is logged in
-        if ($isTestMode) {
-            $presetValues = [];
-            $testValues = $this->getLocale()->getTestPresetValuesByCountryCode($countryCode);
-            foreach ($testValues as $key => $val) {
-                $presetValue = new PresetValue();
-                $presetValue->setTypeName($key)->setValue($val);
-                $presetValues[] = $presetValue;
-            }
+        $presetValuesProvider = $this->presetValuesProviderFactory->getProvider($isTestMode);
+        $paymentOrder->setPresetValues($presetValuesProvider->getData());
 
-            if (!empty($presetValues)) {
-                $paymentOrder->setPresetValues($presetValues);
-            }
-        }
 
         if ($reloadCredentials) {
             $this->checkoutApi->resetCredentials($quote->getStoreId());
