@@ -62,7 +62,7 @@ class Checkout extends Onepage
      * @throws CheckoutException
      * @throws LocalizedException
      */
-    public function initCheckout($reloadIfCurrencyChanged = true)
+    public function initCheckout($reloadIfCurrencyChanged = true, $reloadIfCountryChanged = true)
     {
         if (!($this->context instanceof CheckoutContext)) {
             throw new \Exception("Svea Context must be set first!");
@@ -79,7 +79,6 @@ class Checkout extends Onepage
         }
 
         $allowedCountries = $this->getAllowedCountries(); //this is not null (it is checked in $this->checkCart())
-        $defaultCountry = $this->getHelper()->getDefaultCountry();
 
         $billingAddress  = $quote->getBillingAddress();
         if ($quote->isVirtual()) {
@@ -88,20 +87,25 @@ class Checkout extends Onepage
             $shippingAddress = $quote->getShippingAddress();
         }
 
+        $defaultCountry = $this->getHelper()->getDefaultCountry();
+        $countryChanged = false;
         if (!$shippingAddress->getCountryId()) {
             $this->_logger->info(__("No country set, change to %1", $defaultCountry));
             $this->changeCountry($defaultCountry, $save = false);
+            $countryChanged = true;
         } elseif (!in_array($shippingAddress->getCountryId(), $allowedCountries)) {
             $this->_logger->info(__("Wrong country set %1, change to %2", $shippingAddress->getCountryId(), $defaultCountry));
             $this->messageManager->addNoticeMessage(__("Svea checkout is not available for %1, country was changed to %2.", $shippingAddress->getCountryId(), $defaultCountry));
             $this->changeCountry($defaultCountry, $save = false);
+            $countryChanged = true;
         }
 
         if (!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
             $this->changeCountry($shippingAddress->getCountryId(), $save = false);
+            $countryChanged = true;
         }
 
-        $currencyChanged = $this->checkAndChangeCurrency();
+        $currencyChanged = false;
         $payment = $quote->getPayment();
 
         //force payment method  to our payment method
@@ -143,7 +147,7 @@ class Checkout extends Onepage
         $quote->collectTotals();
         $this->quoteRepository->save($quote);
 
-        if ($currencyChanged && $reloadIfCurrencyChanged) {
+        if (($reloadIfCurrencyChanged && $currencyChanged) || ($reloadIfCountryChanged && $countryChanged)) {
             //not needed
             $this->throwReloadException(__('Checkout was reloaded.'));
         }
@@ -236,10 +240,10 @@ class Checkout extends Onepage
         // this will try to change currency only if currency is available
         $store->setCurrentCurrencyCode($requiredCurrency);
 
-        // check if it was possible to set the currency code!
-        if ($store->getCurrentCurrencyCode() != $requiredCurrency) {
-            $this->throwRedirectToCartException(__('This currency is not available, please use an alternative checkout.'));
-        }
+//        // check if it was possible to set the currency code!
+//        if ($store->getCurrentCurrencyCode() != $requiredCurrency) {
+//            $this->throwRedirectToCartException(__('This currency is not available, please use an alternative checkout.'));
+//        }
 
         $quote->setTotalsCollectedFlag(false);
         if (!$quote->isVirtual() && $quote->getShippingAddress()) {
@@ -670,14 +674,14 @@ class Checkout extends Onepage
         if ($createCustomer) {
             //@see Magento\Checkout\Controller\Account\Create
             try {
-                $this->context->getOrderCustomerManagement()->create($order->getId());
+                $this->createCustomer($order->getId(), $shipping, $billing);
             } catch (\Exception $e) {
                 $this->_logger->error(__("Order %1, cannot create customer [%2]: %3", $order->getIncrementId(), $order->getCustomerEmail(), $e->getMessage()));
                 $this->_logger->critical($e);
             }
         }
 
-        if ($order->getCustomerEmail() && $this->getHelper()->subscribeNewsletter($this->getQuote())) {
+        if ($order->getCustomerEmail() && $this->getHelper()->subscribeNewsletter($payment)) {
             try {
                 //subscribe to newsletter
                 $this->orderSubscribeToNewsLetter($order);
@@ -759,6 +763,49 @@ class Checkout extends Onepage
     public function getCheckoutSession()
     {
         return $this->_checkoutSession; //@see Onepage::__construct
+    }
+
+    /**
+     * @param $orderId
+     * @param $shippingAddress
+     * @param $billingAddress
+     *
+     * @return \Magento\Customer\Api\Data\CustomerInterface
+     * @throws LocalizedException
+     * @throws \Magento\Framework\Exception\AlreadyExistsException
+     */
+    public function createCustomer($orderId, $shipping = [], $billing = []) : \Magento\Customer\Api\Data\CustomerInterface
+    {
+        $addressFactory = $this->context->getAddressInterfaceFactory();
+        $addressRepository = $this->context->getAddressRepository();
+        $customer = $this->context->getOrderCustomerManagement()->create($orderId);
+
+        $shippingAddress = $addressFactory->create();
+        $shippingAddress->setFirstname($shipping['firstname'] ?? null);
+        $shippingAddress->setLastname($shipping['lastname'] ?? null);
+        $shippingAddress->setTelephone($shipping['telephone'] ?? null);
+        $shippingAddress->setStreet($shipping['street'] ?? null);
+        $shippingAddress->setCity($shipping['city'] ?? null);
+        $shippingAddress->setPostcode($shipping['postcode'] ?? null);
+        $shippingAddress->setCountryId($shipping['country_id'] ?? null);
+        $shippingAddress->setCustomerId($customer->getId());
+        $shippingAddress->setIsDefaultShipping(true);
+        $addressRepository->save($shippingAddress);
+
+        $billingAddress = $addressFactory->create();
+        $billingAddress->setFirstname($billing['firstname'] ?? null);
+        $billingAddress->setLastname($billing['lastname'] ?? null);
+        $billingAddress->setTelephone($billing['telephone'] ?? null);
+        $billingAddress->setStreet($billing['street'] ?? null);
+        $billingAddress->setCity($billing['city'] ?? null);
+        $billingAddress->setPostcode($billing['postcode'] ?? null);
+        $billingAddress->setCountryId($billing['country_id'] ?? null);
+        $billingAddress->setCustomerId($customer->getId());
+        $billingAddress->setIsDefaultBilling(true);
+        $addressRepository->save($billingAddress);
+        $customer->setAddresses([$shippingAddress, $billingAddress]);
+
+        return $customer;
     }
 
     /** @return \Svea\Checkout\Model\Svea\Order */

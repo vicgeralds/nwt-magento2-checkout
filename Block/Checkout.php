@@ -112,7 +112,7 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
     public function subscribeNewsletter()
     {
-        return $this->helper->subscribeNewsletter($this->getQuote());
+        return $this->helper->subscribeNewsletter($this->getQuote()->getPayment());
     }
 
 
