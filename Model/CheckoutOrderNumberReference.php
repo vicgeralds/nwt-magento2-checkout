@@ -93,7 +93,7 @@ class CheckoutOrderNumberReference
     /**
      * @return void
      */
-    private function generateClientOrderNumberToQuote()
+    public function generateClientOrderNumberToQuote()
     {
         $this->getQuote()->setSveaClientOrderNumber($this->generateClientOrderNumber());
         $this->quoteRepository->save($this->getQuote());
@@ -129,6 +129,16 @@ class CheckoutOrderNumberReference
         }
 
         return $this->getQuote()->getSveaHash();
+    }
+
+    /**
+     * @return string
+     */
+    public function resetSveaHash()
+    {
+        $hash = hash("sha1", $this->generateClientOrderNumber());
+        $this->getQuote()->setSveaHash($hash);
+        $this->quoteRepository->save($this->getQuote());
     }
 
     /**

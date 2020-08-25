@@ -71,18 +71,30 @@ class ChangeCountry extends \Svea\Checkout\Controller\Order\Update
     private function createNewSveaOrder(Quote $quote)
     {
         $checkout = $this->getSveaCheckout();
+        $checkout->setCheckoutContext($this->sveaCheckoutContext);
+        $refHandler = $checkout->getRefHelper();
 
+        // Genereta new quote signature
         $newSignature = $this->sveaCheckoutContext->getHelper()->generateHashSignatureByQuote($quote);
 
-        $checkout->setCheckoutContext($this->sveaCheckoutContext);
+        if ($newSignature == $refHandler->getQuoteSignature()) {
+            return;
+        }
+
+        // Init checkout
         $checkout = $checkout->initCheckout(false, false);
 
+        // Generate new response
         $paymentHandler = $checkout->getSveaPaymentHandler();
         $paymentResponse = $paymentHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
         $orderId = $paymentResponse->getOrderId();
-        $checkout->getRefHelper()->setSveaOrderId($orderId);
-        $checkout->getRefHelper()->setQuoteSignature($newSignature);
+        $refHandler->setSveaOrderId($orderId);
+        $refHandler->setQuoteSignature($newSignature);
+        $refHandler->generateClientOrderNumberToQuote();
+
+        // Generate new svea hash
+        // $refHandler->resetSveaHash();
     }
 
     /**
@@ -129,7 +141,7 @@ class ChangeCountry extends \Svea\Checkout\Controller\Order\Update
 
         $checkout = $this->getSveaCheckout();
         $response = [
-            'ctrlkey' => $checkout->getQuoteSignature(),
+            'ctrlkey' => $checkout->getCheckoutSession()->getSveaQuoteSignature(),
             'ok' => true
         ];
 

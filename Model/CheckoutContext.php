@@ -50,6 +50,11 @@ class CheckoutContext
     private $addressInterfaceFactory;
 
     /**
+     * @var \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
+     */
+    private $orderCollectionFactory;
+
+    /**
      * Constructor
      *
      * @param \Svea\Checkout\Helper\Data $helper
@@ -72,7 +77,8 @@ class CheckoutContext
         \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,
         \Magento\Newsletter\Model\Subscriber $subscriber,
         \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
-        AddressInterfaceFactory $addressInterfaceFactory
+        AddressInterfaceFactory $addressInterfaceFactory,
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory
     ) {
         $this->helper        = $helper;
         $this->logger = $logger;
@@ -82,6 +88,7 @@ class CheckoutContext
         $this->orderCustomerManagement = $orderCustomerManagement;
         $this->subscriber = $subscriber;
         $this->orderRepository = $orderRepository;
+        $this->orderCollectionFactory = $orderCollectionFactory;
         $this->addressRepository = $addressRepository;
         $this->addressInterfaceFactory = $addressInterfaceFactory;
     }
@@ -162,6 +169,13 @@ class CheckoutContext
     public function getAddressInterfaceFactory(): AddressInterfaceFactory
     {
         return $this->addressInterfaceFactory;
+    }
+    /**
+     * @return \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
+     */
+    public function getOrderCollectionFactory(): \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
+    {
+        return $this->orderCollectionFactory;
     }
 
 }
