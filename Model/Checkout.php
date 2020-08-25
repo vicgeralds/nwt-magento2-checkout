@@ -58,11 +58,13 @@ class Checkout extends Onepage
 
     /**
      * @param bool $reloadIfCurrencyChanged
+     * @param bool $reloadIfCountryChanged
+     *
      * @return $this
      * @throws CheckoutException
      * @throws LocalizedException
      */
-    public function initCheckout($reloadIfCurrencyChanged = true, $reloadIfCountryChanged = true)
+    public function initCheckout($reloadIfCurrencyChanged = true, $reloadIfCountryChanged = false)
     {
         if (!($this->context instanceof CheckoutContext)) {
             throw new \Exception("Svea Context must be set first!");

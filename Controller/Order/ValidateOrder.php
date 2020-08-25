@@ -49,7 +49,6 @@ class ValidateOrder extends Update
         try {
             $push = $pushRepo->get($sveaOrderId);
             if ($push->getOrderId()) {
-
                 try {
                     $order = $this->loadOrder($push->getOrderId());
                     if ($order->getIncrementId()) {
@@ -59,10 +58,7 @@ class ValidateOrder extends Update
                 } catch (\Exception $e2) {
                     // do nothing
                 }
-
             }
-
-
         } catch (NoSuchEntityException $e) {
             // ignore we will create a new push entity below after validation!
         }
@@ -90,7 +86,6 @@ class ValidateOrder extends Update
             $result->setData(['errorMessage' => "Could not place order", 'Valid' => false]);
             return $result;
         }
-
 
         // we save the push now after the validation!
         if ($push === null) {
@@ -198,7 +193,6 @@ class ValidateOrder extends Update
                 $checkout->getLogger()->error("Validate Order: Consumer has not chosen a shipping method.");
                 throw new CheckoutException(__("Please choose a shipping method."));
             }
-
         } catch (\Exception $e) {
             $checkout->getLogger()->error("Validate Order: Something went wrong... Order ID: " . $sveaOrder->getOrderId() . "... Error message:" . $e->getMessage());
             throw new CheckoutException(__("Something went wrong... Contact site admin."));
@@ -247,5 +241,4 @@ class ValidateOrder extends Update
     {
         return $this->sveaCheckoutContext->getOrderRepository()->get($orderId);
     }
-
 }

@@ -17,33 +17,65 @@ class Push extends Checkout
      * @var $pushRepo PushRepository
      */
     protected $pushRepo;
-    
+
+    /**
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
+        $result = $this->jsonResultFactory->create();
+
         $orderId = $this->getRequest()->getParam('sid');
         $sveaHash = $this->getRequest()->getParam('hash');
 
-        $result = $this->jsonResultFactory->create();
+        if ($this->checkoutSession->getOrderPushInProgress() || $this->checkMagentoOrderBySveaId($orderId)) {
+            $result->setHttpResponseCode(200);
+            return $result;
+        }
+
         $this->pushRepo = $this->pushRepositoryFactory->create();
 
         $checkout = $this->getSveaCheckout();
         $checkout->setCheckoutContext($this->sveaCheckoutContext);
 
         try {
+            $this->checkoutSession->setOrderPushInProgress(true);
             $orderId = $this->tryToCreateOrder($orderId, $sveaHash);
-            if ($orderId) {
-                $result->setHttpResponseCode(200);
-                return $result;
-            } else {
-                $result->setHttpResponseCode(404);
-                return $result;
-            }
+
+            $result->setHttpResponseCode($orderId ? 200 : 400);
+            $this->checkoutSession->setOrderPushInProgress(false);
+            return $result;
         } catch (\Exception $e) {
+            echo $e->getMessage();
+            $this->checkoutSession->setOrderPushInProgress(false);
             $result->setHttpResponseCode(404);
             return $result;
         }
     }
 
+    /**
+     * @param $sveaOrderId
+     *
+     * @return bool
+     */
+    private function checkMagentoOrderBySveaId($sveaOrderId)
+    {
+        $orderCollection = $this->sveaCheckoutContext->getOrderCollectionFactory()->create();
+        $ordersCount = $orderCollection
+            ->addFieldToFilter('svea_order_id', ['eq' => $sveaOrderId])
+            ->load()
+            ->count();
+
+        return $ordersCount > 0;
+    }
+
+    /**
+     * @param $orderId
+     * @param $sveaHash
+     *
+     * @return bool|mixed
+     * @throws \Exception
+     */
     public function tryToCreateOrder($orderId, $sveaHash)
     {
         try {
@@ -92,7 +124,12 @@ class Push extends Checkout
         return false;
     }
 
-
+    /**
+     * @param $sveaOrderId
+     *
+     * @return GetOrderResponse
+     * @throws CheckoutException
+     */
     protected function loadSveaOrder($sveaOrderId)
     {
         $checkout = $this->getSveaCheckout();
