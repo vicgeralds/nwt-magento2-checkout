@@ -123,7 +123,6 @@ class Checkout extends Onepage
             $shippingAddress->setPaymentMethod($payment->getMethod())->setCollectShippingRates(true);
         }
 
-
         // Set shipping method. It's required!
         $selectedShippingMethod = $this->checkAndChangeShippingMethod();
 
@@ -154,7 +153,7 @@ class Checkout extends Onepage
             $this->throwReloadException(__('Checkout was reloaded.'));
         }
 
-        if($selectedShippingMethod === false) {
+        if ($selectedShippingMethod === false) {
             throw new LocalizedException(__('Missing shipping method.'));
         }
 
@@ -300,20 +299,20 @@ class Checkout extends Onepage
         }
 
         $rates = [];
-        foreach($allRates as $rate) {
+        foreach ($allRates as $rate) {
             /** @var $rate Quote\Address\Rate  **/
             $rates[$rate->getCode()] = $rate->getCode();
         }
 
         // check if selected shipping method exists
         $method = $shipping->getShippingMethod();
-        if($method && isset($rates[$method])) {
+        if ($method && isset($rates[$method])) {
             return $method;
         }
 
         // check if default shipping method exists, use it then!
         $method = $this->getHelper()->getDefaultShippingMethod();
-        if($method && isset($rates[$method])) {
+        if ($method && isset($rates[$method])) {
             $shipping->setShippingMethod($method);
             return $method;
         }
@@ -323,9 +322,7 @@ class Checkout extends Onepage
         $method = $rate->getCode();
         $shipping->setShippingMethod($method);
         return $method;
-
     }
-
 
     /**
      * @param $country
@@ -360,105 +357,130 @@ class Checkout extends Onepage
 
     /**
      * @return $this
+     * @throws CheckoutException
      * @throws LocalizedException
      */
     public function initSveaCheckout()
     {
-        $quote       = $this->getQuote();
+        $quote = $this->getQuote();
 
         // we need a reserved order id, since we need to send the order id to svea in validateOrder.
         if (!$quote->getReservedOrderId()) {
             $quote->reserveOrderId();
         }
-        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote); // this will also validate the quote!
 
-        // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values
-        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
-
-        //check session for Svea Order Id
+        // Check session for Svea Order Id
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
-        // check if we already have started a payment flow with svea
-        if ($sveaOrderId) {
-            try {
-
-                // here we should check if we need to update the svea order!
-                if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getRefHelper()->getQuoteSignature())) {
-                    // try to update svea order data
-                    $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
-
-                    // Update new svea quote signature!
-                    $this->getRefHelper()->setQuoteSignature($newSignature);
-                } else {
-
-                    // if we should update the order, we also set the svea iframe here
-                    $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
-
-                    // do some validations!
-                    // if the svea order status is final, and the client order number matches with the current quote
-                    // we will cancel this svea order and throw an exception ( a new svea order will be created),
-                    $this->validateCheckoutSveaOrder($sveaOrder);
-                }
-            } catch (\Exception $e) {
-
-                // We log this!
-                $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
-                $this->getLogger()->error($e);
-                // If we couldn't update the svea order flow for any reason, we try to create an new one...
-
-                // remove sessions, remove client order number
-                $this->getRefHelper()->unsetSessions();
-
-                // will help us reassure client order number will be unique
-                $this->getRefHelper()->addToSequence();
-
-                try {
-                    // this will create an api call to svea and initiaze an new payment
-                    $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
-                    $sveaOrderId = $sveaOrder->getOrderId();
-
-                    //save the payment id and quote signature in checkout/session
-                    $this->getRefHelper()->setSveaOrderId($sveaOrderId);
-                    $this->getRefHelper()->setQuoteSignature($newSignature);
-                } catch (\Exception $e2) {
-                    $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
-                    $this->getLogger()->error($e2);
-
-                    $this->throwRedirectToCartException("An error occurred, try again.", $e2);
-                }
-            }
+        // Check if we already have started a payment flow with svea
+        if (!$sveaOrderId) {
+            $this->updateSveaOrder($sveaOrderId);
         } else {
-            // when a customer visits checkout first time
+            $this->createSveaOrder();
+        }
 
-            try {
-                // this will create an api call to svea and initiaze a new payment
-                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+        return $this;
+    }
+
+    /**
+     * @throws CheckoutException
+     * @throws LocalizedException
+     */
+    private function createSveaOrder()
+    {
+        $quote = $this->getQuote();
+        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote);
+
+        // A signature is a md5 hashed value of the customer quote.
+        // Using this we can store the hash in session and compare the values
+        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
+
+        try {
+            // this will create an api call to svea and initiaze a new payment
+            $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+
+            // do some validations!
+            // if the svea order status is final, and the client order number matches with the current quote
+            // we will cancel this svea order and throw an exception ( a new svea order will be created),
+            $this->validateCheckoutSveaOrder($sveaOrder);
+
+            //Save svea uri in checkout/session
+            $sveaOrderId = $sveaOrder->getOrderId();
+            $this->getRefHelper()->setSveaOrderId($sveaOrderId);
+            $this->getRefHelper()->setQuoteSignature($newSignature);
+        } catch (\Exception $e) {
+            $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
+            $this->getLogger()->error($e);
+
+            // remove sessions, remove client order number
+            $this->getRefHelper()->unsetSessions();
+
+            // will help us reassure client order number will be unique
+            $this->getRefHelper()->addToSequence();
+
+            $this->throwRedirectToCartException("An error occurred, try again.", $e);
+        }
+    }
+
+    /**
+     * @param $sveaOrderId
+     *
+     * @throws CheckoutException
+     * @throws LocalizedException
+     */
+    private function updateSveaOrder($sveaOrderId)
+    {
+        $quote = $this->getQuote();
+        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote);
+
+        // A signature is a md5 hashed value of the customer quote.
+        // Using this we can store the hash in session and compare the values
+        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
+
+        try {
+            // here we should check if we need to update the svea order!
+            if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getRefHelper()->getQuoteSignature())) {
+                // try to update svea order data
+                $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
+
+                // Update new svea quote signature!
+                $this->getRefHelper()->setQuoteSignature($newSignature);
+            } else {
+                // if we should update the order, we also set the svea iframe here
+                $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
 
                 // do some validations!
                 // if the svea order status is final, and the client order number matches with the current quote
                 // we will cancel this svea order and throw an exception ( a new svea order will be created),
                 $this->validateCheckoutSveaOrder($sveaOrder);
+            }
+        } catch (\Exception $e) {
+            // We log this!
+            $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
+            $this->getLogger()->error($e);
+            // If we couldn't update the svea order flow for any reason, we try to create an new one...
 
+            // remove sessions, remove client order number
+            $this->getRefHelper()->unsetSessions();
 
-                //save svea uri in checkout/session
+            // will help us reassure client order number will be unique
+            $this->getRefHelper()->addToSequence();
+
+            try {
+                // this will create an api call to svea and initiaze an new payment
+                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
                 $sveaOrderId = $sveaOrder->getOrderId();
+
+                //save the payment id and quote signature in checkout/session
                 $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                 $this->getRefHelper()->setQuoteSignature($newSignature);
-            } catch (\Exception $e) {
-                $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
-                $this->getLogger()->error($e);
+            } catch (\Exception $e2) {
+                $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
+                $this->getLogger()->error($e2);
 
-                // remove sessions, remove client order number
-                $this->getRefHelper()->unsetSessions();
-
-                // will help us reassure client order number will be unique
-                $this->getRefHelper()->addToSequence();
-
-                $this->throwRedirectToCartException("An error occurred, try again.", $e);
+                $this->throwRedirectToCartException("An error occurred, try again.", $e2);
             }
         }
-
-        return $this;
     }
 
     /**
@@ -468,7 +490,6 @@ class Checkout extends Onepage
     private function validateCheckoutSveaOrder($sveaOrder)
     {
         if ($sveaOrder->getStatus() === 'Final') {
-
             if ($this->getRefHelper()->clientIdIsMatching($sveaOrder->getClientOrderNumber())) {
                 try {
                     $this->context->getSveaOrderHandler()->tryToCancelSveaOrder($sveaOrder->getOrderId());
@@ -519,7 +540,7 @@ class Checkout extends Onepage
             return;
         }
         $shippingAddress = $quote->getShippingAddress();
-        if ($methodCode != $shippingAddress->getShippingMethod()) {
+        if ($methodCode != $shippingAddress->getShippingMethod() || ($postcode != $shippingAddress->getPostcode())) {
             $this->ignoreAddressValidation();
             $shippingAddress->setShippingMethod($methodCode)->setCollectShippingRates(true);
 
@@ -625,12 +646,10 @@ class Checkout extends Onepage
             $payment->unsMethodInstance()->setMethod($this->_paymentMethod);
         }
 
-
         $paymentData = new DataObject([
             'svea_order_id' => $sveaOrder->getOrderId(),
             'country_id' => $shippingAddress->getCountryId(),
         ]);
-
 
         /** @var \Svea\Checkout\Model\Payment\Method\Checkout $method */
         $method = $payment->getMethodInstance();

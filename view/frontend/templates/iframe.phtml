@@ -6,7 +6,7 @@
 $quote = $block->getQuote();
 
 ?>
-<?php if (($quote->getShippingAddress() === null) || !$quote->getShippingAddress()->getShippingMethod()) : ?>
+<?php if (($quote->getShippingAddress() === null) || !$quote->getShippingAddress()->getShippingMethod() && !$quote->getIsVirtual()) : ?>
     <div id="iframe-overlay" class="iframe-overlay"></div>
 <?php endif; ?>
 <div id="svea-checkout_svea">

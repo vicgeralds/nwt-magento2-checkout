@@ -291,19 +291,29 @@ class Order
         } else {
             $streets[] = $address->getStreetAddress();
         }
-	if (!empty($address->getCoAddress())) {
-		$streets[] = $address->getCoAddress();
-	}
+
+        if (!empty($address->getCoAddress())) {
+            $streets[] = $address->getCoAddress();
+        }
+
+        if ($fullname = $payment->getShippingAddress()->getFullName() ?: []) {
+            $fullname = explode(' ', $fullname);
+        }
+
         $data = [
-            'firstname' => $address->getFirstName(),
-            'lastname' => $address->getLastName(),
+            'firstname' => $address->getFirstName() ?: ($fullname[0] ?? null),
+            'lastname' => $address->getLastName() ?: ($fullname[1] ?? null),
             'telephone' => $payment->getPhoneNumber(),
             'email' => $payment->getEmailAddress(),
-            'street' =>$streets,
+            'street' => $streets,
             'city' => $address->getCity(),
             'postcode' => $address->getPostalCode(),
             'country_id' => $payment->getCountryCode(),
         ];
+
+        if ($address->getPostalCode()) {
+            $data['postcode'] = $address->getPostalCode();
+        }
 
         if ($payment->getCustomer()->getIsCompany()) {
             $data['company'] = $payment->getBillingAddress()->getFullName();

@@ -1,9 +1,19 @@
 <?php
 namespace Svea\Checkout\Controller\Order;
 
-class Cart extends \Svea\Checkout\Controller\Order\Update
+class Cart extends Update
 {
-    public function execute(){
-        return $this->_sendResponse(['cart','coupon','shipping','messages','svea'],$updateCheckout = true);
+    /**
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
+     */
+    public function execute()
+    {
+        return $this->_sendResponse([
+            'cart',
+            'coupon',
+            'shipping',
+            'messages',
+            'svea'
+        ], true);
     }
 }

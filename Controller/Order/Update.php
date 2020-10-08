@@ -47,6 +47,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
                 if ($shouldUpdateSvea) {
                     //update svea iframe
                     $sveaPaymentId = $this->getCheckoutSession()->getSveaOrderId();
+
                     $checkout->updateSveaPayment($sveaPaymentId);
                     $response['ctrlkey'] = $checkout->getQuoteSignature();
                 }
@@ -99,6 +100,7 @@ abstract class Update extends \Svea\Checkout\Controller\Checkout
             return;
         }
 
+        $response['ok'] = true;
         if ($blocks) {
             $this->_view->loadLayout('svea_checkout_order_update');
             foreach ($blocks as $id) {
