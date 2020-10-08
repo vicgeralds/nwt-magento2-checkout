@@ -57,6 +57,21 @@
                     <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.sidebar" as="sidebar"
                            template="Svea_Checkout::sidebar.phtml" cacheable="false">
 
+                        <block class="Magento\Reward\Block\Tooltip\Checkout" name="reward.tooltip.checkout.salesrule" template="Magento_Reward::tooltip.phtml">
+                            <arguments>
+                                <argument name="reward_type" xsi:type="string">Magento\Reward\Model\Action\Salesrule</argument>
+                            </arguments>
+                            <action method="setWrapperClass">
+                                <argument name="class" xsi:type="string">reward-checkout</argument>
+                            </action>
+                            <action method="setRewardMessage">
+                                <argument translate="true" name="message" xsi:type="string">Check out now and earn %1 for this order.</argument>
+                            </action>
+                            <action method="setIsGuestNote">
+                                <argument name="value" xsi:type="string">1</argument>
+                            </action>
+                        </block>
+
                         <!-- Shopping Cart -->
                         <block class="Svea\Checkout\Block\Checkout\Cart" name="svea_checkout.cart" as="cart"
                                template="Svea_Checkout::checkout/cart.phtml">

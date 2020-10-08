@@ -3,4 +3,13 @@
     <type name="Magento\Quote\Model\Quote\Item\Processor">
         <plugin name="sveacheckout_checkout_quantity_fix" type="Svea\Checkout\Plugin\Quote\Model\Quote\Item\Processor" sortOrder="10" disabled="false"/>
     </type>
+
+    <type name="\Magento\Reward\Controller\Cart\Remove">
+        <plugin name="svea_redirect_back" type="\Svea\Checkout\Plugin\Reward\Controller\Cart\Remove\RedirectBack" />
+    </type>
+
+    <type name="Svea\Checkout\Controller\Index\Index">
+        <plugin name="svea_redirect_on_zero_cart" type="Svea\Checkout\Plugin\Controller\AroundIndex" />
+    </type>
+
 </config>

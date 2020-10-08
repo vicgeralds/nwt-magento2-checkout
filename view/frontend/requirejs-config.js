@@ -3,6 +3,7 @@ var config = {
         '*': {
             sveaCheckout: 'Svea_Checkout/js/checkout',
             sveaShippingMethod: 'Svea_Checkout/js/sveashippingmethod',
+            'Magento_Reward/js/action/set-use-reward-points': 'Svea_Checkout/js/action/set-use-reward-points'
         }
     },
     paths: {

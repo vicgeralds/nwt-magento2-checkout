@@ -1,6 +1,7 @@
 <?php
 namespace Svea\Checkout\Block;
 
+use Svea\Checkout\Model\Svea\Context;
 
 class Checkout extends \Magento\Framework\View\Element\Template
 {
@@ -66,6 +67,12 @@ class Checkout extends \Magento\Framework\View\Element\Template
     protected $iframeSnippet;
 
     /**
+     * @var Context
+     */
+    private $checkoutContext;
+
+
+    /**
      * @param \Magento\Framework\View\Element\Template\Context $context
      * @param \Magento\Tax\Helper\Data $taxHelper
      * @param \Magento\Customer\Model\Address\Config $addressConfig
@@ -76,7 +83,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
      * @param \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
      * @param array $data
      */
-
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Magento\Tax\Helper\Data $taxHelper,
@@ -86,9 +92,9 @@ class Checkout extends \Magento\Framework\View\Element\Template
         \Svea\Checkout\Helper\Data $helper,
         \Svea\Checkout\Service\GetCurrentQuote $getCurrentQuoteService,
         \Svea\Checkout\Service\GetCurrentSveaOrderId $getCurrentSveaOrderIdService,
+        \Svea\Checkout\Model\Svea\Context $checkoutContext,
         array $data = []
-    )
-    {
+    ) {
         $this->priceCurrency = $priceCurrency;
         $this->_taxHelper = $taxHelper;
         $this->_addressConfig = $addressConfig;
@@ -96,9 +102,9 @@ class Checkout extends \Magento\Framework\View\Element\Template
         $this->helper = $helper;
         $this->getCurrentSveaOrderIdService = $getCurrentSveaOrderIdService;
         $this->getCurrentQuoteService = $getCurrentQuoteService;
+        $this->checkoutContext = $checkoutContext;
         parent::__construct($context, $data);
     }
-
 
     public function getCartCtrlKeyCookieName()
     {
@@ -115,27 +121,27 @@ class Checkout extends \Magento\Framework\View\Element\Template
         return $this->helper->subscribeNewsletter($this->getQuote()->getPayment());
     }
 
-
-    public function helper() {
+    public function helper()
+    {
         return $this->helper;
     }
 
-
     public function getQuote()
     {
-        if(!$this->_quote) {
+        if (!$this->_quote) {
             $this->_quote = $this->getCurrentQuoteService->getQuote();
         }
         return $this->_quote;
     }
 
-    public function getBlockFilter() {
+    public function getBlockFilter()
+    {
         return $this->filterProvider->getBlockFilter();
     }
-    public function filter($text) {
+    public function filter($text)
+    {
         return $this->filterProvider->getBlockFilter()->filter($text);
     }
-
 
     /**
      * Quote object setter
@@ -152,6 +158,14 @@ class Checkout extends \Magento\Framework\View\Element\Template
     public function getCouponCode()
     {
         return $this->getQuote()->getCouponCode();
+    }
+
+    /**
+     * @return array
+     */
+    public function getCheckoutConfig() : array
+    {
+        return $this->checkoutContext->getConfig();
     }
 
     /**
@@ -245,7 +259,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
         return sprintf($format, $this->escapeHtml($title), $price, $renderedInclTax);
     }
 
-
     /**
      * Getter for current shipping rate
      *
@@ -259,7 +272,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
         return "";
     }
-
 
     /**
      * Set controller path
@@ -300,7 +312,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
         );
     }
 
-
     public function getIframeSnippet()
     {
         return $this->iframeSnippet;
@@ -311,8 +322,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
         $this->iframeSnippet = $snippet;
     }
 
-
-
     /**
      * Retrieve payment method and assign additional template values
      *
@@ -321,7 +330,6 @@ class Checkout extends \Magento\Framework\View\Element\Template
      */
     protected function _beforeToHtml()
     {
-
         if (!$this->getQuote()->getIsVirtual()) {
 
             // prepare shipping rates
@@ -356,6 +364,4 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
         return parent::_beforeToHtml();
     }
-
 }
-
