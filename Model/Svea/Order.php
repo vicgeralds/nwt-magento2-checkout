@@ -317,6 +317,9 @@ class Order
 
         if ($payment->getCustomer()->getIsCompany()) {
             $data['company'] = $payment->getBillingAddress()->getFullName();
+            if ($data['firstname'] == ''){
+                $data['firstname'] = $data['company'];
+            }
         }
 
         return $data;
