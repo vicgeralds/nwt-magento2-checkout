@@ -57,7 +57,7 @@
                     <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.sidebar" as="sidebar"
                            template="Svea_Checkout::sidebar.phtml" cacheable="false">
 
-                        <block class="Magento\Reward\Block\Tooltip\Checkout" name="reward.tooltip.checkout.salesrule" template="Magento_Reward::tooltip.phtml">
+                        <block class="Magento\Reward\Block\Tooltip\Checkout" ifconfig="svea_checkout/layout/use_reward_points"  name="reward.tooltip.checkout.salesrule" template="Magento_Reward::tooltip.phtml">
                             <arguments>
                                 <argument name="reward_type" xsi:type="string">Magento\Reward\Model\Action\Salesrule</argument>
                             </arguments>

@@ -676,7 +676,7 @@ class Checkout extends Onepage
             ['order' => $order, 'quote' => $this->getQuote()]
         );
 
-        if ($order->getCanSendNewEmailFlag()) {
+        if ($this->getHelper()->isSendOrderEmail() && $order->getCanSendNewEmailFlag()) {
             try {
                 $this->orderSender->send($order);
             } catch (\Exception $e) {
