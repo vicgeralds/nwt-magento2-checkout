@@ -364,4 +364,12 @@ class Checkout extends \Magento\Framework\View\Element\Template
 
         return parent::_beforeToHtml();
     }
+
+    /**
+     * @return bool
+     */
+    public function isRewardEnabled()
+    {
+        return $this->helper->isRewardEnabled($this->_storeManager->getStore());
+    }
 }

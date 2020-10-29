@@ -43,18 +43,19 @@
                             "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
                             "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
                         }
-                    },
-                    "reward": {
-                        "component": "Magento_Reward/js/view/payment/reward",
-                        "displayArea": "reward"
-                    },
-                    "reward-tooltip": {
-                        "component": "Magento_Reward/js/view/authentication/tooltip",
-                        "displayArea": "authenticationPopup"
                     }
+                    <?php if ($block->isRewardEnabled()): ?>
+                        ,"reward": {
+                            "component": "Magento_Reward/js/view/payment/reward",
+                            "displayArea": "reward"
+                        },
+                        "reward-tooltip": {
+                            "component": "Magento_Reward/js/view/authentication/tooltip",
+                            "displayArea": "authenticationPopup"
+                        }
+                    <?php endif; ?>
                 }
             }
         }
-
     }
 </script>

@@ -473,8 +473,34 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return preg_split("#\s*[ ,;]\s*#", $values, null, PREG_SPLIT_NO_EMPTY);
     }
 
+    /**
+     * @param null $store
+     *
+     * @return mixed
+     */
+    public function isSendOrderEmail($store = null)
+    {
+        return $this->scopeConfig->getValue(
+            self::XML_PATH_SETTINGS . 'send_order_email',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
     public function getPartnerKey(): string
     {
-	return self::PARTNER_KEY;
+	    return self::PARTNER_KEY;
     }
+
+    /**
+     * Check if reward functionality is available
+     */
+     public function isRewardEnabled($store = null)
+     {
+         return $this->scopeConfig->isSetFlag(
+             self::XML_PATH_LAYOUT . 'use_reward_points',
+             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+             $store
+         );
+     }
 }
