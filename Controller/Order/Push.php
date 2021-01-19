@@ -46,7 +46,6 @@ class Push extends Checkout
             $this->checkoutSession->setOrderPushInProgress(false);
             return $result;
         } catch (\Exception $e) {
-            echo $e->getMessage();
             $this->checkoutSession->setOrderPushInProgress(false);
             $result->setHttpResponseCode(404);
             return $result;
@@ -78,6 +77,7 @@ class Push extends Checkout
      */
     public function tryToCreateOrder($orderId, $sveaHash)
     {
+
         try {
             $sveaOrder = $this->loadSveaOrder($orderId);
         } catch (\Exception $e) {

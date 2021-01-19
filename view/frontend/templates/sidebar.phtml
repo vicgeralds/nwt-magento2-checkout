@@ -4,14 +4,8 @@
 
 /** @var $block Svea\Checkout\Block\Checkout */
 ?>
-<script>
-    window.checkoutConfig = <?= json_encode($block->getCheckoutConfig()); ?>
-</script>
-
 <div class="svea-checkout-review" id="svea-checkout-review">
     <div class="svea-checkout-cart svea-checkout-section" id="svea-checkout-cart">
-
-        <?php echo $block->getChildHtml('reward.tooltip.checkout.salesrule'); ?>
         <div class="svea-checkout-section-content" data-role="content"
              aria-labelledby="svea-checkout-cart-heading">
             <?php echo $block->getChildHtml('cart'); ?>
@@ -32,11 +26,10 @@
 </span>
 <script type="text/x-magento-init">
     {
-        "*":
-        {
+        "*": {
             "Magento_Ui/js/core/app": {
                 "components": {
-                    "sveaCheckout" : {
+                    "sveaCheckout": {
                         "component": "sveaCheckout",
                         "config": {
                             "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
@@ -44,16 +37,6 @@
                             "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
                         }
                     }
-                    <?php if ($block->isRewardEnabled()): ?>
-                        ,"reward": {
-                            "component": "Magento_Reward/js/view/payment/reward",
-                            "displayArea": "reward"
-                        },
-                        "reward-tooltip": {
-                            "component": "Magento_Reward/js/view/authentication/tooltip",
-                            "displayArea": "authenticationPopup"
-                        }
-                    <?php endif; ?>
                 }
             }
         }

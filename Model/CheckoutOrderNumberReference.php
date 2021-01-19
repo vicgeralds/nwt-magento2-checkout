@@ -83,11 +83,11 @@ class CheckoutOrderNumberReference
 
     public function getClientOrderNumber()
     {
-        if (!$this->getQuote()->getSveaClientOrderNumber()) {
+        if (!$this->getQuote()->getData('svea_client_order_id')) {
             $this->generateClientOrderNumberToQuote();
         }
 
-        return $this->getQuote()->getSveaClientOrderNumber();
+        return $this->getQuote()->getData('svea_client_order_id');
     }
 
     /**
@@ -95,7 +95,11 @@ class CheckoutOrderNumberReference
      */
     public function generateClientOrderNumberToQuote()
     {
-        $this->getQuote()->setSveaClientOrderNumber($this->generateClientOrderNumber());
+        $this->getQuote()->setData(
+            'svea_client_order_id',
+            $this->generateClientOrderNumber()
+        );
+
         $this->quoteRepository->save($this->getQuote());
     }
 
@@ -114,7 +118,7 @@ class CheckoutOrderNumberReference
         }
 
         $cn = $cn . bin2hex(random_bytes(16));
-        return substr($cn, 0, 32);
+        return substr($cn, 0, 31);
     }
 
     /**

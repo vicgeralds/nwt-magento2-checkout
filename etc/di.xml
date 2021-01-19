@@ -31,4 +31,22 @@
     <type name="Magento\Checkout\Block\Cart">
         <plugin name="sveacheckout_url" type="Svea\Checkout\Plugin\Url" sortOrder="10" disabled="false"/>
     </type>
+
+    <type name="Svea\Checkout\Console\Command\FetchCampaigns">
+        <arguments>
+            <argument name="name" xsi:type="string">svea:campaign:fetch</argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="svea_campaigns_fetch" xsi:type="object">Svea\Checkout\Console\Command\FetchCampaigns</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <preference for="Svea\Checkout\Api\GetAvailablePartPaymentCampaigns" type="Svea\Checkout\Model\Campaign\CampaignManagement"/>
+    <preference for="Svea\Checkout\Api\CampaignInfoRepositoryInterface" type="Svea\Checkout\Model\Campaign\CampaignRepository"/>
+
 </config>

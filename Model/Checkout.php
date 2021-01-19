@@ -368,119 +368,95 @@ class Checkout extends Onepage
         if (!$quote->getReservedOrderId()) {
             $quote->reserveOrderId();
         }
+        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote); // this will also validate the quote!
 
-        // Check session for Svea Order Id
+        // a signature is a md5 hashed value of the customer quote. Using this we can store the hash in session and compare the values
+        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
+
+        //check session for Svea Order Id
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
-        // Check if we already have started a payment flow with svea
-        if (!$sveaOrderId) {
-            $this->updateSveaOrder($sveaOrderId);
+        // check if we already have started a payment flow with svea
+        if ($sveaOrderId) {
+            try {
+
+                // here we should check if we need to update the svea order!
+                if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getRefHelper()->getQuoteSignature())) {
+                    // try to update svea order data
+                    $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
+
+                    // Update new svea quote signature!
+                    $this->getRefHelper()->setQuoteSignature($newSignature);
+                } else {
+
+                    // if we should update the order, we also set the svea iframe here
+                    $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
+
+                    // do some validations!
+                    // if the svea order status is final, and the client order number matches with the current quote
+                    // we will cancel this svea order and throw an exception ( a new svea order will be created),
+                    $this->validateCheckoutSveaOrder($sveaOrder);
+                }
+            } catch (\Exception $e) {
+
+                // We log this!
+                $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
+                $this->getLogger()->error($e);
+                // If we couldn't update the svea order flow for any reason, we try to create an new one...
+
+                // remove sessions, remove client order number
+                $this->getRefHelper()->unsetSessions();
+
+                // will help us reassure client order number will be unique
+                $this->getRefHelper()->addToSequence();
+
+                try {
+                    // this will create an api call to svea and initiaze an new payment
+                    $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                    $sveaOrderId = $sveaOrder->getOrderId();
+
+                    //save the payment id and quote signature in checkout/session
+                    $this->getRefHelper()->setSveaOrderId($sveaOrderId);
+                    $this->getRefHelper()->setQuoteSignature($newSignature);
+                } catch (\Exception $e2) {
+                    $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
+                    $this->getLogger()->error($e2);
+
+                    $this->throwRedirectToCartException("An error occurred, try again.", $e2);
+                }
+            }
         } else {
-            $this->createSveaOrder();
-        }
+            // when a customer visits checkout first time
 
-        return $this;
-    }
-
-    /**
-     * @throws CheckoutException
-     * @throws LocalizedException
-     */
-    private function createSveaOrder()
-    {
-        $quote = $this->getQuote();
-        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote);
-
-        // A signature is a md5 hashed value of the customer quote.
-        // Using this we can store the hash in session and compare the values
-        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
-
-        try {
-            // this will create an api call to svea and initiaze a new payment
-            $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
-
-            // do some validations!
-            // if the svea order status is final, and the client order number matches with the current quote
-            // we will cancel this svea order and throw an exception ( a new svea order will be created),
-            $this->validateCheckoutSveaOrder($sveaOrder);
-
-            //Save svea uri in checkout/session
-            $sveaOrderId = $sveaOrder->getOrderId();
-            $this->getRefHelper()->setSveaOrderId($sveaOrderId);
-            $this->getRefHelper()->setQuoteSignature($newSignature);
-        } catch (\Exception $e) {
-            $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
-            $this->getLogger()->error($e);
-
-            // remove sessions, remove client order number
-            $this->getRefHelper()->unsetSessions();
-
-            // will help us reassure client order number will be unique
-            $this->getRefHelper()->addToSequence();
-
-            $this->throwRedirectToCartException("An error occurred, try again.", $e);
-        }
-    }
-
-    /**
-     * @param $sveaOrderId
-     *
-     * @throws CheckoutException
-     * @throws LocalizedException
-     */
-    private function updateSveaOrder($sveaOrderId)
-    {
-        $quote = $this->getQuote();
-        $sveaHandler = $this->getSveaPaymentHandler()->assignQuote($quote);
-
-        // A signature is a md5 hashed value of the customer quote.
-        // Using this we can store the hash in session and compare the values
-        $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
-
-        try {
-            // here we should check if we need to update the svea order!
-            if ($sveaHandler->checkIfPaymentShouldBeUpdated($newSignature, $this->getRefHelper()->getQuoteSignature())) {
-                // try to update svea order data
-                $sveaHandler->updateCheckoutPaymentByQuoteAndOrderId($quote, $sveaOrderId);
-
-                // Update new svea quote signature!
-                $this->getRefHelper()->setQuoteSignature($newSignature);
-            } else {
-                // if we should update the order, we also set the svea iframe here
-                $sveaOrder = $sveaHandler->loadSveaOrderById($sveaOrderId, true);
+            try {
+                // this will create an api call to svea and initiaze a new payment
+                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
 
                 // do some validations!
                 // if the svea order status is final, and the client order number matches with the current quote
                 // we will cancel this svea order and throw an exception ( a new svea order will be created),
                 $this->validateCheckoutSveaOrder($sveaOrder);
-            }
-        } catch (\Exception $e) {
-            // We log this!
-            $this->getLogger()->error("Trying to create an new order because we could not Update Svea Checkout Payment for ID: {$sveaOrderId}, Error: {$e->getMessage()} (see exception.log)");
-            $this->getLogger()->error($e);
-            // If we couldn't update the svea order flow for any reason, we try to create an new one...
 
-            // remove sessions, remove client order number
-            $this->getRefHelper()->unsetSessions();
 
-            // will help us reassure client order number will be unique
-            $this->getRefHelper()->addToSequence();
-
-            try {
-                // this will create an api call to svea and initiaze an new payment
-                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                //save svea uri in checkout/session
                 $sveaOrderId = $sveaOrder->getOrderId();
-
-                //save the payment id and quote signature in checkout/session
                 $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                 $this->getRefHelper()->setQuoteSignature($newSignature);
-            } catch (\Exception $e2) {
-                $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
-                $this->getLogger()->error($e2);
+            } catch (\Exception $e) {
+                $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
+                $this->getLogger()->error($e);
 
-                $this->throwRedirectToCartException("An error occurred, try again.", $e2);
+                // remove sessions, remove client order number
+                $this->getRefHelper()->unsetSessions();
+
+                // will help us reassure client order number will be unique
+                $this->getRefHelper()->addToSequence();
+
+                $this->throwRedirectToCartException("An error occurred, try again.", $e);
             }
         }
+
+        return $this;
     }
 
     /**

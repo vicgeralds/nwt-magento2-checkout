@@ -8,10 +8,6 @@
     <update handle="checkout_item_price_renderers"/>
     <body>
         <move element="breadcrumbs" destination="columns.top" after="page.main.title"/>
-        <referenceBlock name="head.additional">
-            <block class="Svea\Checkout\Block\Script" name="svea_checkout_script"
-                   template="Svea_Checkout::js/sveacheckout.phtml"/>
-        </referenceBlock>
 
         <referenceBlock name="head.components">
             <block class="Magento\Framework\View\Element\Js\Components" name="svea_checkout_head_components"
@@ -56,21 +52,6 @@
                            htmlTag="div" htmlId="svea_checkoutSidebar">
                     <block class="Svea\Checkout\Block\Checkout" name="svea_checkout.sidebar" as="sidebar"
                            template="Svea_Checkout::sidebar.phtml" cacheable="false">
-
-                        <block class="Magento\Reward\Block\Tooltip\Checkout" ifconfig="svea_checkout/layout/use_reward_points"  name="reward.tooltip.checkout.salesrule" template="Magento_Reward::tooltip.phtml">
-                            <arguments>
-                                <argument name="reward_type" xsi:type="string">Magento\Reward\Model\Action\Salesrule</argument>
-                            </arguments>
-                            <action method="setWrapperClass">
-                                <argument name="class" xsi:type="string">reward-checkout</argument>
-                            </action>
-                            <action method="setRewardMessage">
-                                <argument translate="true" name="message" xsi:type="string">Check out now and earn %1 for this order.</argument>
-                            </action>
-                            <action method="setIsGuestNote">
-                                <argument name="value" xsi:type="string">1</argument>
-                            </action>
-                        </block>
 
                         <!-- Shopping Cart -->
                         <block class="Svea\Checkout\Block\Checkout\Cart" name="svea_checkout.cart" as="cart"

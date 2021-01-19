@@ -5,6 +5,7 @@
         <tab id="svea" translate="label" sortOrder="999" class="svea-extensions-tab">
             <label>Svea</label>
         </tab>
+
         <section id="svea_checkout" translate="label" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Checkout</label>
             <tab>svea</tab>
@@ -120,6 +121,10 @@
                     <label>Use reward points? (Commerce only)</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="use_campaign_widget" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Use campaign widget functionality</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
                 <field id="display_discount" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Display Discount Form</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -153,6 +158,18 @@
                 </field>
                 <field id="crosssell_limit" type="text" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
                     <label>Number of Products</label>
+                </field>
+            </group>
+
+            <group id="campaign_widget" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Campaign widget</label>
+                <field id="enable" translate="label comment" type="select" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Display widgets on product pages?</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="campaign_collect" translate="label comment" type="button" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <frontend_model>Svea\Checkout\Block\Widget\System\Config\Collect</frontend_model>
+                    <label>Collect all available campaigns</label>
                 </field>
             </group>
         </section>

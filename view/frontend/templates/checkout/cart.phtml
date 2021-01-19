@@ -12,10 +12,6 @@
 // svea-checkout_cart id is mandatory (it's used into ajax update blocks part)
 
 ?>
-<div data-bind="scope:'authenticationPopup'">
-    <!-- ko template: getTemplate() --><!-- /ko -->
-</div>
-
 <div id="svea-checkout_cart" class="table-wrapper order-items">
     <table id="details-table" class="svea-checkout-review" cellspacing="0" cellpadding="0" border="0">
         <thead>
@@ -62,11 +58,6 @@
 
         </div>
         <?php echo $block->getChildHtml('newsletter'); ?>
-
-        <div data-bind="scope:'reward'">
-            <!-- ko template: getTemplate() --><!-- /ko -->
-        </div>
-
     </div>
     <div id="svea-checkout_cart_totals">
         <table cellspacing="0" cellpadding="0" border="0">
@@ -76,5 +67,3 @@
         </table>
     </div>
 </div>
-
-
