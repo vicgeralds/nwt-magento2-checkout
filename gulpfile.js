@@ -10,6 +10,10 @@ var config = {
     less: {
         source: './view/frontend/web/css/source/svea.less',
         dist: './view/frontend/web/css'
+    },
+    campaigns: {
+        source: './view/frontend/web/css/source/svea-campaigns.less',
+        dist: './view/frontend/web/css'
     }
 };
 
@@ -23,7 +27,22 @@ gulp.task('less', function () {
         .pipe(gulp.dest(config.less.dist));
 });
 
+gulp.task('campaigns', function () {
+    return gulp.src(config.campaigns.source)
+        .pipe(less().on('error', function(err) {
+            console.log(err);
+        }))
+        .pipe(autoPrefixer('last 2 versions'))
+        .pipe(cleanCss())
+        .pipe(gulp.dest(config.campaigns.dist));
+});
+
 
 gulp.task('watch', function(){
-    return gulp.watch('./view/frontend/web/css/source/**/*.less', gulp.series('less'));
+    return gulp.watch([
+        './view/frontend/web/css/source/**/*.less'
+    ], gulp.series([
+        'less',
+        'campaigns'
+    ]));
 });

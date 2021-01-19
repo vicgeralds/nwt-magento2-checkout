@@ -3,6 +3,7 @@ namespace Svea\Checkout\Helper;
 
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Payment;
+
 /**
  * Class Data
  * @package Svea\Checkout\Helper
@@ -29,6 +30,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const XML_PATH_LAYOUT = 'svea_checkout/layout/';
 
+
+    const XML_PATH_PRODUCT_CAMPAIGN = 'svea_checkout/campaign_widget/';
+
     /**
      * Svea Payment, test API url
      */
@@ -49,9 +53,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     const API_ADMIN_BASE_URL_TEST = 'https://paymentadminapistage.svea.com';
 
-   /**
-     * Svea Partner key
-     */
+    /**
+      * Svea Partner key
+      */
     const PARTNER_KEY = "2E999136-F4CC-465B-B5CB-873C28E93EEC";
 
     /**
@@ -132,7 +136,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
-
     public function getInvoiceFeeLabel($store = null)
     {
         return __("Invoice Fee");
@@ -189,6 +192,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function registerCustomerOnCheckout($store = null)
     {
         return $this->getStoreConfigFlag(self::XML_PATH_SETTINGS . 'register_customer', $store);
+    }
+
+    /**
+     * @param null $store
+     * @return bool
+     */
+    public function isCampaignWidgetActive($store = null)
+    {
+        return $this->getStoreConfigFlag(self::XML_PATH_PRODUCT_CAMPAIGN . 'enable', $store);
     }
 
     /**
@@ -298,8 +310,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
-
-
     public function showCouponLayout($store = null)
     {
         return $this->scopeConfig->isSetFlag(
@@ -341,7 +351,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $store
         );
     }
-
 
     public function getDefaultShippingMethod($store = null)
     {
@@ -391,7 +400,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
         return (int) $diff;
     }
-
 
     /**
      * This function returns a hash, we will use it to check for changes in the quote!
@@ -489,18 +497,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function getPartnerKey(): string
     {
-	    return self::PARTNER_KEY;
+        return self::PARTNER_KEY;
     }
 
     /**
      * Check if reward functionality is available
      */
-     public function isRewardEnabled($store = null)
-     {
-         return $this->scopeConfig->isSetFlag(
+    public function isRewardEnabled($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
              self::XML_PATH_LAYOUT . 'use_reward_points',
              \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
              $store
          );
-     }
+    }
 }

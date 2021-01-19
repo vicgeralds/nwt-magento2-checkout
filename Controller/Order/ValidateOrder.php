@@ -101,10 +101,10 @@ class ValidateOrder extends Update
         }
 
         // we log this as well!
-        $responseData = ['Valid' => true, 'ClientOrderNumber' => $quote->getReservedOrderId()];
-
+        $responseData = ['Valid' => true, 'ClientOrderNumber' => $quote->getData('svea_client_order_id')];
         $checkout->getLogger()->info("Validate Order: Successfully created order and push:");
         $checkout->getLogger()->info(json_encode($responseData));
+        $result->setHttpResponseCode(200);
 
         return $result->setData($responseData);
     }

@@ -216,6 +216,9 @@ class Order
         $sveaHash = $this->getRefHelper()->getSveaHash();
 
         $isTestMode = $this->helper->isTestMode();
+
+        // Always generate a new reference for new svea payment
+        $this->getRefHelper()->generateClientOrderNumberToQuote();
         $refId = $this->getRefHelper()->getClientOrderNumber();
 
         // generate items
