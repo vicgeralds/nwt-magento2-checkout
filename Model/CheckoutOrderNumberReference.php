@@ -103,21 +103,33 @@ class CheckoutOrderNumberReference
         $this->quoteRepository->save($this->getQuote());
     }
 
+    /**
+     *
+     */
     public function unsetClientOrderNumber()
     {
-        $this->getQuote()->setSveaClientOrderNumber(null);
-        $this->quoteRepository->save($this->getQuote());
+        $quote = $this->getQuote();
+        $quote->setSveaClientOrderNumber(null);
+        $this->quoteRepository->save($quote);
     }
 
+    /**
+     * @return false|string
+     */
     private function generateClientOrderNumber()
     {
         $sequence = $this->getSequence();
-        $cn = $this->getQuoteId();
+        $quote = $this->getQuote();
+
+        if (! $quote->getReservedOrderId()) {
+            $quote->reserveOrderId();
+        }
+
+        $cn = $quote->getReservedOrderId();
         if ($sequence > 1) {
             $cn = $cn . $sequence;
         }
 
-        $cn = $cn . bin2hex(random_bytes(16));
         return substr($cn, 0, 31);
     }
 

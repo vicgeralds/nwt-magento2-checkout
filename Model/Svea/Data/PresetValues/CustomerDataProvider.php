@@ -3,11 +3,17 @@
 namespace Svea\Checkout\Model\Svea\Data\PresetValues;
 
 use Magento\Customer\Model\Session;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\DataObject;
 use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 
 class CustomerDataProvider implements PresetValuesProviderInterface
 {
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
     /**
      * @var Session
      */
@@ -29,15 +35,18 @@ class CustomerDataProvider implements PresetValuesProviderInterface
      * @param Session $customer
      * @param DataObject $dataContainer
      * @param PresetValueFactory $presetValueFactory
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         Session $customer,
         DataObject $dataContainer,
-        PresetValueFactory $presetValueFactory
+        PresetValueFactory $presetValueFactory,
+        ScopeConfigInterface $scopeConfig
     ) {
         $this->customer = $customer;
         $this->dataContainer = $dataContainer;
         $this->presetValueFactory = $presetValueFactory;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -100,6 +109,28 @@ class CustomerDataProvider implements PresetValuesProviderInterface
     }
 
     /**
+     * @return mixed|string|null
+     */
+    public function getIsCompany() : PresetValue
+    {
+        $customerType = $this->scopeConfig->getValue('svea_checkout/settings/default_customer_type');
+        $customerTypes = $this->scopeConfig->getValue('svea_checkout/settings/customer_types');
+        $customerTypes = explode(',', $customerTypes);
+
+        $isB2B = $customerType == 'B2B';
+        $isB2C = in_array('B2C', $customerTypes);
+
+        $presetValue = new PresetValue();
+        $presetValue->setIsCompany($isB2B);
+        $presetValue->setValue($isB2B);
+        $presetValue->setIsReadOnly(
+            $isB2B ? !($isB2C) : !($isB2B)
+        );
+
+        return $presetValue;
+    }
+
+    /**
      * @return array
      */
     public function getData(): array
@@ -108,6 +139,7 @@ class CustomerDataProvider implements PresetValuesProviderInterface
             'EmailAddress'  => $this->getEmailAddress(),
             'PhoneNumber'   => $this->getPhoneNumber(),
             'PostalCode'    => $this->getPostalCode(),
+            'IsCompany'     => $this->getIsCompany(),
         ];
     }
 

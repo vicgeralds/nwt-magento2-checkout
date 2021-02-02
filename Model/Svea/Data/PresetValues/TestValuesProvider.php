@@ -7,6 +7,19 @@ use Svea\Checkout\Model\Client\DTO\Order\PresetValue;
 class TestValuesProvider implements PresetValuesProviderInterface
 {
     /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
+     * TestValuesProvider constructor.
+     */
+    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig)
+    {
+        $this->scopeConfig = $scopeConfig;
+    }
+
+    /**
      * @return string|null
      */
     public function getEmailAddress() : PresetValue
@@ -31,6 +44,28 @@ class TestValuesProvider implements PresetValuesProviderInterface
     /**
      * @return mixed|string|null
      */
+    public function getIsCompany() : PresetValue
+    {
+        $customerType = $this->scopeConfig->getValue('svea_checkout/settings/default_customer_type');
+        $customerTypes = $this->scopeConfig->getValue('svea_checkout/settings/customer_types');
+        $customerTypes = explode(',', $customerTypes);
+
+        $isB2B = $customerType == 'B2B';
+        $isB2C = in_array('B2C', $customerTypes);
+
+        $presetValue = new PresetValue();
+        $presetValue->setIsCompany($isB2B);
+        $presetValue->setValue($isB2B);
+        $presetValue->setIsReadOnly(
+            $isB2B ? !($isB2C) : !($isB2B)
+        );
+
+        return $presetValue;
+    }
+
+    /**
+     * @return mixed|string|null
+     */
     public function getPostalCode() : PresetValue
     {
         $presetValue = new PresetValue();
@@ -48,6 +83,7 @@ class TestValuesProvider implements PresetValuesProviderInterface
             'EmailAddress'  => $this->getEmailAddress(),
             'PhoneNumber'   => $this->getPhoneNumber(),
             'PostalCode'    => $this->getPostalCode(),
+            'IsCompany'     => $this->getIsCompany(),
         ];
     }
 }

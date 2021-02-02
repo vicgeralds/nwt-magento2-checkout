@@ -22,6 +22,11 @@ interface PresetValuesProviderInterface
     public function getPostalCode() : PresetValue;
 
     /**
+     * @return mixed
+     */
+    public function getIsCompany() : PresetValue;
+
+    /**
      * @return array
      */
     public function getData() : array;
