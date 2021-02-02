@@ -244,9 +244,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->getCheckoutUrl('confirmation', ['hash' => $hash, '_escape_params' => false]);
     }
 
+    /**
+     * @param $hash
+     *
+     * @return string
+     */
     public function getValidationUrl($hash)
     {
-        return $this->getCheckoutUrl('validateOrder', ['sid'=>'{checkout.order.uri}', 'hash' => $hash, '_escape_params' => false]);
+        $proxyDomain = $this->getDevProxyBaseUrl();
+
+        return is_null($proxyDomain)
+            ? $this->getCheckoutUrl('validateOrder', ['sid'=>'{checkout.order.uri}', 'hash' => $hash, '_escape_params' => false])
+            : "$proxyDomain/sveacheckout/order/validateOrder/sid/{checkout.order.uri}/hash/$hash";
     }
 
     /**
@@ -255,7 +264,19 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getPushUrl($hash)
     {
-        return $this->getCheckoutUrl('push', ['sid'=>'{checkout.order.uri}','hash' => $hash, '_escape_params' => false]);
+        $proxyDomain = $this->getDevProxyBaseUrl();
+
+        return is_null($proxyDomain)
+            ? $this->getCheckoutUrl('push', ['sid'=>'{checkout.order.uri}','hash' => $hash, '_escape_params' => false])
+            : "$proxyDomain/sveacheckout/order/push/sid/{checkout.order.uri}/$hash";
+    }
+
+    /**
+     * @return string|null
+     */
+    private function getDevProxyBaseUrl()
+    {
+        return $this->getStoreConfig('dev/svea/webhook_domain');
     }
 
     /**

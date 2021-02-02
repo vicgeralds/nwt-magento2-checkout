@@ -235,12 +235,6 @@ class Order
         $pushUri = $this->helper->getPushUrl($sveaHash);
         $validationUri = $this->helper->getValidationUrl($sveaHash);
 
-        // When developing in localhost, use a tunnel to redirect callbacks to your localhost magento server
-        //$baseTunnel = "https://a163997e.ngrok.io/sveacheckout/order";
-        //$pushUri = $baseTunnel . "/push/sid/{checkout.order.uri}/hash/" . $sveaHash;
-        //$validationUri = $baseTunnel . "/validateOrder/sid/{checkout.order.uri}/hash/" . $sveaHash;
-
-
         // set callback urls and confirmation url
         $merchantUrls->setConfirmationUri($confirmationUrl);
         $merchantUrls->setPushUri($pushUri);
@@ -260,13 +254,12 @@ class Order
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
 
-        if($partnerKey && !empty($partnerKey)){
+        if ($partnerKey && !empty($partnerKey)) {
             $paymentOrder->setPartnerKey($partnerKey);
         }
 
         $presetValuesProvider = $this->presetValuesProviderFactory->getProvider($isTestMode);
         $paymentOrder->setPresetValues($presetValuesProvider->getData());
-
 
         if ($reloadCredentials) {
             $this->checkoutApi->resetCredentials($quote->getStoreId());
@@ -320,7 +313,7 @@ class Order
 
         if ($payment->getCustomer()->getIsCompany()) {
             $data['company'] = $payment->getBillingAddress()->getFullName();
-            if ($data['firstname'] == ''){
+            if ($data['firstname'] == '') {
                 $data['firstname'] = $data['company'];
             }
         }
@@ -400,8 +393,6 @@ class Order
                             __('Could not cancel order. Not marked as cancelable in Svea, and its missing deliveries!')
                         );
                 }
-
-
             } else {
                 throw new LocalizedException(
                     __('Could not cancel order. Not marked as cancelable in Svea!')
@@ -429,7 +420,6 @@ class Order
         $payment = new CancelOrderAmount();
         $payment->setCancelledAmount($amount);
         $this->orderManagementApi->cancelOrderAmount($payment, $sveaOrderId);
-
     }
 
     protected function generateCancelOrderObject()
@@ -486,7 +476,6 @@ class Order
                 throw new LocalizedException(__('We can\'t do a full delivery on this particular order. Capture offline and please do it manually in Svea.'));
             }
 
-
             $paymentObj = new DeliverOrder();
             if ($isFullDelivery) {
                 $rowsToDeliver = [];
@@ -534,7 +523,7 @@ class Order
                             $item->setRowNumber($sveaItem->getRowNumber());
                             $rowsToDeliver[$key] = $item;
                         } catch (LocalizedException $e) {
-                          throw $e;
+                            throw $e;
                         } catch (\Exception $e) {
                             throw new LocalizedException(__("Could not to a partial delivery, couldn't update row at Svea. Please do it manually. %1", $e->getMessage()));
                         }
@@ -543,7 +532,6 @@ class Order
                     // here we loop and add all missing products!
                     $itemsToAdd = $this->items->getMissingItems($rowsToDeliver, $this->items->getCart());
                     foreach ($itemsToAdd as $item) {
-
                         try {
                             $addRow = new OrderRow();
                             $addRow->setName($item->getName())
@@ -561,11 +549,9 @@ class Order
                         } catch (\Exception $e) {
                             throw new LocalizedException(__("Could not to a partial delivery, couldn't add missing row at Svea. Please do it manually. Error %1", $e->getMessage()));
                         }
-
                     }
                 }
             }
-
 
             // capture/deliver it now!
             $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToDeliver));
@@ -574,8 +560,6 @@ class Order
             // save queue_id, we need it later! if a refund will be made
             $payment->setAdditionalInformation('svea_queue_id', $response->getQueueId());
             $payment->setTransactionId($response->getQueueId());
-
-
         } else {
             throw new LocalizedException(__('You need an svea payment ID to capture.'));
         }
@@ -625,7 +609,7 @@ class Order
                 foreach ($sveaOrder->getDeliveries() as $delivery) {
                     if ($delivery->getId() == $deliveryId) {
                         $deliveryToRefund = $delivery;
-                        breaK;
+                        break;
                     }
                 }
             }
@@ -634,7 +618,6 @@ class Order
             if (!$deliveryToRefund) {
                 throw new LocalizedException(__("Found no deliveries to refund on. Please refund offline, and do the rest manually in Svea."));
             }
-
 
             // the creditmemo from the payment/invoice
             /** @var Creditmemo $creditMemo */
@@ -650,7 +633,7 @@ class Order
             $creditAbleSveaRows = $deliveryToRefund->getCreditableItems();
 
             // when the delivery can't refund but can cancel
-            if (empty($creditAbleSveaRows) && (!$deliveryToRefund->canRefund() || $sveaOrder->canCancelAmount()))  {
+            if (empty($creditAbleSveaRows) && (!$deliveryToRefund->canRefund() || $sveaOrder->canCancelAmount())) {
                 // sometimes we can't know if its a full refund, since when you only can cancel amount, getCreditableItems will be empty!
                 $isFullRefund = $this->isFullRefund($this->items->getCart(), $deliveryToRefund->getCartItems());
             } else {
@@ -681,12 +664,11 @@ class Order
             $rowsToRefund = $this->items->getMatchingRows($deliveryToRefund->getCartItems(), $this->items->getCart());
 
             // if its a partial refund, containing discount!
-            if (!$isFullRefund && $this->items->containsDiscount($rowsToRefund))  {
+            if (!$isFullRefund && $this->items->containsDiscount($rowsToRefund)) {
 
                 // if we can count how much the maximum amount possible to credit in svea, then this could work, and it has the correct flags
                 $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
                 if ($deliveryToRefund->canDeliveryRefundByAmount() || $sveaOrder->canCancelAmount()) {
-
                     if ($deliveryToRefund->canDeliveryRefundByAmount()) {
                         $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
                     } else {
@@ -705,7 +687,6 @@ class Order
             try {
                 $itemQuantityMatching = $this->items->itemsMatching($rowsToRefund, $this->items->getCart(), true);
 
-
                 // if quantities are not matching, and we can refund amount, we do it!
                 if ($deliveryToRefund->canDeliveryRefundByAmount() && !$itemQuantityMatching) {
                     // we calculate the amount to send to svea, according to the rows existing in the svea delivery and magento!
@@ -722,7 +703,7 @@ class Order
                 }
 
                 // if we cant do a refund at all, but we can cancel amount, we do it!
-                if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount())  {
+                if (!$deliveryToRefund->canRefund() && $sveaOrder->canCancelAmount()) {
                     $amountToCancel = $this->items->getAmountByItems($rowsToRefund);
                     $this->cancelDeliveryAmount($sveaOrderId, $amountToCancel);
                     return;
@@ -735,33 +716,27 @@ class Order
                 if (!$itemQuantityMatching && !$deliveryToRefund->canDeliveryRefundByAmount()) {
                     throw new \Exception(__("Can't do a partial refund for this invoice."));
                 }
-
             } catch (\Exception $e) {
                 throw new LocalizedException(__($e->getMessage()));
             }
-
 
             if ($deliveryToRefund->canDeliveryRefundByAmount()) {
                 // we should refound amount
 
                 $amountToCredit = $this->fixPrice($creditMemo->getGrandTotal());
                 $this->tryToRefundByAmount($sveaOrderId, $deliveryToRefund, $amountToCredit, $this->items->getMaxVat());
-
-            } else if (!$deliveryToRefund->canDeliveryRefundByAmount() && $deliveryToRefund->canRefund()) {
+            } elseif (!$deliveryToRefund->canDeliveryRefundByAmount() && $deliveryToRefund->canRefund()) {
                 // we should refund rows;
                 $paymentObj = new RefundPayment();
                 $paymentObj->setOrderRowIds($this->items->getOrderRowNumbers($rowsToRefund));
 
                 // try to refund it now!
                 $this->orderManagementApi->refundPayment($paymentObj, $sveaOrderId, $deliveryToRefund->getId());
-
             } else {
                 throw new LocalizedException(
                     __('Could not refund invoice. This delivery is not marked as refundable in Svea.')
                 );
             }
-
-
         } else {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('Missing Svea ID or delivery id. Please handle this manually.')
@@ -804,18 +779,16 @@ class Order
      * @param $amount
      * @throws LocalizedException
      */
-    public function cancelDeliveryAmount($sveaOrderId,$amount)
+    public function cancelDeliveryAmount($sveaOrderId, $amount)
     {
         $paymentObj = new CancelOrderAmount();
         $paymentObj->setCancelledAmount($amount);
         try {
-
             $this->orderManagementApi->cancelOrderAmount($paymentObj, $sveaOrderId);
         } catch (\Exception $e) {
             throw new LocalizedException(__("Can't cancel delivery amount. Use the Offline button and do the rest manually in Svea."));
         }
     }
-
 
     /**
      * @param $creditMemoItems array
@@ -843,7 +816,6 @@ class Order
             if ($creditMemo->getQuantity() != $item->getQuantity()) {
                 return false;
             }
-
         }
 
         return true;
