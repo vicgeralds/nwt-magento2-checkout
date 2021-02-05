@@ -56,9 +56,13 @@ class TestValuesProvider implements PresetValuesProviderInterface
         $presetValue = new PresetValue();
         $presetValue->setIsCompany($isB2B);
         $presetValue->setValue($isB2B);
-        $presetValue->setIsReadOnly(
-            $isB2B ? !($isB2C) : !($isB2B)
-        );
+
+        $isReadOnly = true;
+        if (count($customerTypes) > 1) {
+            $isReadOnly = false;
+        }
+
+        $presetValue->setIsReadOnly($isReadOnly);
 
         return $presetValue;
     }
