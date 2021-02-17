@@ -38,10 +38,21 @@ class Index extends Checkout
             return;
         }
 
-        $resultPage = $this->resultPageFactory->create();
+        $resultPage = $this->createLayoutPage();
         $resultPage->getConfig()->getTitle()->set(__('Svea Checkout'));
         $resultPage->getLayout()->getBlock('svea_checkout.svea')->setIframeSnippet($checkout->getSveaPaymentHandler()->getIframeSnippet());
 
         return $resultPage;
+    }
+
+
+    /**
+     * Plugin extension point for extending the layout
+     *
+     * @return \Magento\Framework\View\Result\Page
+     */
+    public function createLayoutPage()
+    {
+        return $this->resultPageFactory->create();
     }
 }
