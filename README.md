@@ -1,7 +1,7 @@
 # Svea checkout settings and instructions
 ### How to install:
 Install it to via composer in your magento site:   
-``composer config repositories.svea_checkout vcs git@bitbucket.org:nordicwebteam/svea-checkout-m2.git``   
+``composer config repositories.svea_checkout vcs git@bitbucket.org:nordicwebteam/sveawebpay-nwt-magento2-checkout.git``   
 `` composer require --prefer-source 'sveawebpay/nwt-magento2-checkout:*'``   
 
 If you don't want to use composer, install it manually:download and copy all files into app/code/Svea/Checkout/ directory.   
