@@ -6,6 +6,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\DataObject;
 use Magento\Quote\Model\Quote\Item;
 use Magento\Quote\Model\Quote\Item\Processor as OriginalProcessor;
+use Magento\Quote\Api\Data\CartItemInterface;
 
 /**
  * Class Processor
