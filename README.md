@@ -31,6 +31,10 @@ To find the settings follow these steps: Store->Configuration or on the left sid
 **Step 3:**
 ![Conf3](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst4.png "Conf3")
 
+*Send order email:* If you’re having issues with double order e-mails being sent set this function to ”no”
+
+*Use reward points:* This is a function for magento commerce only.
+
 *Default Shipping Method:* If you want a specific shipping method to be chosen directly. 
 
 *Default Country:* This is only important if you allow payments from multiple countries. If only 1 country is in use it will automatically choose the one from "Allowed Payment Countries".
