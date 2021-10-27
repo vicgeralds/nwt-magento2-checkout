@@ -39,7 +39,7 @@ class Index extends Checkout
         }
 
         $resultPage = $this->createLayoutPage();
-        $resultPage->getConfig()->getTitle()->set(__('Svea Checkout'));
+        $resultPage->getConfig()->getTitle()->set(__('Checkout'));
         $resultPage->getLayout()->getBlock('svea_checkout.svea')->setIframeSnippet($checkout->getSveaPaymentHandler()->getIframeSnippet());
 
         return $resultPage;
