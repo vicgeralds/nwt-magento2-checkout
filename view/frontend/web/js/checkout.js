@@ -53,6 +53,9 @@ define([
 
         _checkIfCartWasUpdated: function () {
             var checkIfCartWasUpdated = setInterval((function () {
+                if (window.location.hash === '#showcart') {
+                    return;
+                }
                 if (!this.options.ctrkeyCheck) {
                     return true;
                 }
