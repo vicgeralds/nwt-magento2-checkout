@@ -128,26 +128,11 @@ class Checkout extends Onepage
         $selectedShippingMethod = $this->checkAndChangeShippingMethod();
 
         try {
-            $quote->setTotalsCollectedFlag(false)->collectTotals()->save(); //REQUIRED (maybe shipping amount was changed)
+            $quote->setTotalsCollectedFlag(false)->collectTotals(); //REQUIRED (maybe shipping amount was changed)
+            $this->quoteRepository->save($quote);
         } catch (\Exception $e) {
             // do nothing
         }
-
-        $billingAddress->save();
-        $shippingAddress->save();
-
-        $this->totalsCollector->collectAddressTotals($quote, $shippingAddress);
-        $this->totalsCollector->collectQuoteTotals($quote);
-
-        /**
-         * We need to reset shipping assignments before saving quote
-         * since they were changes
-         */
-        $repositoryLoadHandler = $this->getRepositoryLoadHandler();
-        $repositoryLoadHandler->load($quote);
-
-        $quote->collectTotals();
-        $this->quoteRepository->save($quote);
 
         if (($reloadIfCurrencyChanged && $currencyChanged) || ($reloadIfCountryChanged && $countryChanged)) {
             //not needed
@@ -612,6 +597,10 @@ class Checkout extends Onepage
 
         //set payment
         $payment = $quote->getPayment();
+        $customerReference = $sveaOrder->getCustomerReference();
+        if ($customerReference) {
+            $payment->setAdditionalInformation('svea_customer_reference', $customerReference);
+        }
 
         //force payment method
         if (!$payment->getMethod() || $payment->getMethod() != $this->_paymentMethod) {
