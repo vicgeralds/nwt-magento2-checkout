@@ -34,7 +34,8 @@
                         "config": {
                             "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
                             "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
-                            "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>"
+                            "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>",
+                            "sveaShippingActive": "<?php echo $block->isSveaShippingActive() ?>"
                         }
                     }
                 }

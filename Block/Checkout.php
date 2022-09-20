@@ -372,4 +372,12 @@ class Checkout extends \Magento\Framework\View\Element\Template
     {
         return $this->helper->isRewardEnabled($this->_storeManager->getStore());
     }
+
+    /**
+     * @return bool
+     */
+    public function isSveaShippingActive()
+    {
+        return $this->helper->getSveaShippingActive($this->_storeManager->getStore());
+    }
 }

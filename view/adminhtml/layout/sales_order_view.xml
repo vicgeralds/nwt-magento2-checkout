@@ -4,5 +4,12 @@
         <referenceContainer name="order_totals">
             <block class="Svea\Checkout\Block\Adminhtml\Sales\Totals" name="svea_invoice_fee"/>
         </referenceContainer>
+        <referenceBlock name="order_tab_info">
+            <block class="Magento\Sales\Block\Adminhtml\Order\AbstractOrder" name="order_shipping_view" template="Svea_Checkout::order/view/shipping/info.phtml">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Svea\Checkout\ViewModel\Adminhtml\Order\View\Shipping</argument>
+                </arguments>
+            </block>
+        </referenceBlock>
     </body>
 </page>

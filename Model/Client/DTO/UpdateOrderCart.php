@@ -3,6 +3,7 @@ namespace Svea\Checkout\Model\Client\DTO;
 
 
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\Order\ShippingInformation;
 
 class UpdateOrderCart extends AbstractRequest
 {
@@ -16,6 +17,11 @@ class UpdateOrderCart extends AbstractRequest
     /** @var $merchantData string */
     protected $merchantData;
 
+    /**
+     * @var ShippingInformation
+     */
+    private $shippingInformation;
+    
     /**
      * @return string
      */
@@ -68,11 +74,39 @@ class UpdateOrderCart extends AbstractRequest
             }
         }
 
-        return [
+        $array = [
             'cart' => ['Items' => $items],
             'merchantData' => $this->getMerchantData()
         ];
+
+        if ($this->getShippingInformation()) {
+            $array['ShippingInformation'] = $this->getShippingInformation()->toArray();
+        }
+
+        return $array;
     }
 
+    /**
+     * Get the value of shippingInformation
+     *
+     * @return ShippingInformation
+     */
+    public function getShippingInformation()
+    {
+        return $this->shippingInformation;
+    }
 
+    /**
+     * Set the value of shippingInformation
+     *
+     * @param ShippingInformation $shippingInformation
+     *
+     * @return self
+     */
+    public function setShippingInformation(ShippingInformation $shippingInformation)
+    {
+        $this->shippingInformation = $shippingInformation;
+
+        return $this;
+    }
 }

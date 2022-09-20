@@ -2,9 +2,12 @@
 namespace Svea\Checkout\Model\Client\DTO\Order;
 
 use Svea\Checkout\Model\Client\DTO\AbstractRequest;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow\ShippingInformation;
 
 class OrderRow extends AbstractRequest
 {
+    const ROW_TYPE_STANDARD = 'Row';
+    const ROW_TYPE_SHIPPINGFEE = 'ShippingFee';
 
     /**
      * Articlenumber as a string, can contain letters and numbers. ,
@@ -79,6 +82,18 @@ class OrderRow extends AbstractRequest
      * @var $MerchantData string
      */
     protected $MerchantData;
+
+    /**
+     * Row Type - 'Row' or 'ShippingFee'
+     *
+     * @var string
+     */
+    protected $RowType = self::ROW_TYPE_STANDARD;
+
+    /**
+     * @var ShippingInformation
+     */
+    protected $ShippingInformation;
 
     /**
      * @return string
@@ -260,6 +275,39 @@ class OrderRow extends AbstractRequest
         return $this;
     }
 
+    public function setRowTypeIsShippingFee()
+    {
+        $this->RowType = self::ROW_TYPE_SHIPPINGFEE;
+        return $this;
+    }
+
+    public function getRowType()
+    {
+        return $this->RowType;
+    }
+
+    /**
+     * Get the value of ShippingInformation
+     *
+     * @return  ShippingInformation
+     */
+    public function getShippingInformation()
+    {
+        return $this->ShippingInformation;
+    }
+
+    /**
+     * Set the value of ShippingInformation
+     *
+     * @param  ShippingInformation  $ShippingInformation
+     *
+     * @return  self
+     */
+    public function setShippingInformation(ShippingInformation $shippingInformation)
+    {
+        $this->ShippingInformation = $shippingInformation;
+        return $this;
+    }
 
     public function toJSON()
     {
@@ -274,7 +322,8 @@ class OrderRow extends AbstractRequest
             'Name' => $this->getName(),
             'Quantity' => $this->getQuantity(),
             'UnitPrice' => $this->getUnitPrice(),
-            'VatPercent' => $this->getVatPercent()
+            'VatPercent' => $this->getVatPercent(),
+            'RowType' => $this->getRowType()
         ];
 
         if ($this->getUnit()) {
@@ -297,8 +346,10 @@ class OrderRow extends AbstractRequest
             $data['MerchantData'] = $this->getMerchantData();
         }
 
+        if ($this->getShippingInformation()) {
+            $data['ShippingInformation'] = $this->getShippingInformation()->toArray();
+        }
+
         return $data;
     }
-
-
 }

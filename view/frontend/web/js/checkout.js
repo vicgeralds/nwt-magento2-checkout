@@ -8,12 +8,13 @@ define([
     "jquery",
     'Magento_Ui/js/modal/alert',
     "uiRegistry",
+    'mage/url',
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry) {
+], function (jQuery, alert, uiRegistry, mageurl) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -39,12 +40,14 @@ define([
             sveaShippingChange: false,
             hasInitFlag: false,
             shippingAjaxInProgress: false,
-            iframeOverlay: '#iframe-overlay'
+            iframeOverlay: '#iframe-overlay',
+            sveaShippingActive: false
         },
         _create: function () {
             jQuery.mage.cookies.set(this.options.ctrlcookie, this.options.ctrlkey);
             this._checkIfCartWasUpdated();
             this._bindEvents();
+            this._bindShipping();
             this.uiManipulate();
             this.toggleCouponContainer();
             this.toggleOrderCommentTextArea();
@@ -139,7 +142,7 @@ define([
                                         jQuery('.page.messages').append(errHtml);
                                     }
                                 }
-                                _this._ajaxSubmit(data_refresh_url);
+                                _this._ajaxSubmit(mageurl.build('sveacheckout/order/cart'));
                             }
                         });
                     }
@@ -221,6 +224,46 @@ define([
                 this.sveaApiChanges();
             }
 
+        },
+
+        _bindShipping: function () {
+            if (!this.options.sveaShippingActive) {
+                return;
+            }
+
+            const self = this;
+            document.addEventListener('sveaCheckout:shippingConfirmed', function (data) {
+                jQuery.ajax({
+                    type: "POST",
+                    url: mageurl.build('sveacheckout/order/confirmshipping'),
+                    data: jQuery.param(data.detail),
+                    success: function (response) {
+                        if (!response.success) {
+                            if (response.messages) {
+                                let alertConfig = {
+                                    content: response.messages
+                                };
+                                if (response.redirect) {
+                                    alertConfig.actions = {
+                                        always: function () {
+                                            window.location = mageurl.build(response.redirect);
+                                        }
+                                    };
+                                }
+
+                                alert(alertConfig);
+                            }
+                            return;
+                        }
+                        self._ajaxSubmit(mageurl.build('sveacheckout/order/cart'));
+                    },
+                    error: function () {
+                        alert({
+                            content: 'Unable to save shipping choice. Please try again. If the problem persists, contact an administrator.'
+                        });
+                    }
+                });
+            });
         },
 
         checkValueOfInputs: function (form) {
