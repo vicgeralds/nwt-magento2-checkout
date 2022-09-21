@@ -72,9 +72,12 @@ class ShippingInformation extends AbstractRequest
             'EnableShipping' => $this->getEnableShipping(),
             'EnforceFallback' => $this->getEnforceFallback(),
             'Weight' => $this->getWeight(),
-            'Tags' => $this->getTags()->toArray(),
             'FallbackOptions' => [],
         ];
+
+        if ($this->getTags() instanceof Tags) {
+            $array['Tags'] = $this->getTags()->toArray();
+        }
 
         foreach ($this->getFallbackOptions() as $fallbackOption) {
             $array['FallbackOptions'][] = $fallbackOption->toArray();
