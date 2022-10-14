@@ -245,4 +245,25 @@ class CheckoutOrderNumberReference
     {
         $this->getCheckoutSession()->unsetSveaQuoteSignature();
     }
+
+    /**
+     * Set timestamp of when payment session was created
+     *
+     * @param int $timestamp
+     * @return void
+     */
+    public function setSveaCreatedAt(int $timestamp): void
+    {
+        $this->getCheckoutSession()->setSveaCreatedAt($timestamp);
+    }
+
+    /**
+     * Get timestamp of when payment session was created
+     *
+     * @return int
+     */
+    public function getSveaCreatedAt(): int
+    {
+        return (int)$this->getCheckoutSession()->getSveaCreatedAt();
+    }
 }

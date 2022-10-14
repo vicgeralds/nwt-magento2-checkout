@@ -4,11 +4,9 @@ namespace Svea\Checkout\Model;
 
 use Magento\Checkout\Model\Type\Onepage;
 use Magento\Customer\Api\Data\GroupInterface;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteRepository\LoadHandler;
 use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
@@ -357,7 +355,7 @@ class Checkout extends Onepage
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
         // check if we already have started a payment flow with svea
-        if ($sveaOrderId) {
+        if ($sveaOrderId && !$this->paymentIsExpired()) {
             try {
 
                 // here we should check if we need to update the svea order!
@@ -398,6 +396,7 @@ class Checkout extends Onepage
                     //save the payment id and quote signature in checkout/session
                     $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                     $this->getRefHelper()->setQuoteSignature($newSignature);
+                    $this->getRefHelper()->setSveaCreatedAt(time());
                 } catch (\Exception $e2) {
                     $this->getLogger()->error("Could not create an new order again. " . $e2->getMessage());
                     $this->getLogger()->error($e2);
@@ -422,6 +421,7 @@ class Checkout extends Onepage
                 $sveaOrderId = $sveaOrder->getOrderId();
                 $this->getRefHelper()->setSveaOrderId($sveaOrderId);
                 $this->getRefHelper()->setQuoteSignature($newSignature);
+                $this->getRefHelper()->setSveaCreatedAt(time());
             } catch (\Exception $e) {
                 $this->getLogger()->error("Could not create an new order: " . $e->getMessage());
                 $this->getLogger()->error($e);
@@ -814,10 +814,14 @@ class Checkout extends Onepage
     }
 
     /**
-     * @return LoadHandler
+     * Check if current payment has expired
+     *
+     * @return boolean
      */
-    private function getRepositoryLoadHandler(): LoadHandler
+    private function paymentIsExpired(): bool
     {
-        return ObjectManager::getInstance()->create(LoadHandler::class);
+        $sveaCreatedAt = $this->getRefHelper()->getSveaCreatedAt();
+        $sessionLifetimeHours = $this->context->getSessionLifetimeHours();
+        return ($sveaCreatedAt <= strtotime(sprintf('-%s hours', $sessionLifetimeHours)));
     }
 }

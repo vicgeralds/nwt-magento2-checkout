@@ -186,16 +186,6 @@ class Order
         $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
     }
 
-    public function updateCountry($countryCode, $paymentId)
-    {
-        $payment = new UpdateOrderCart();
-        $payment->setMerchantData($this->generateMerchantData($quote));
-
-        $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
-
-        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
-    }
-
     /**
      * @param Quote $quote
      * @return string
