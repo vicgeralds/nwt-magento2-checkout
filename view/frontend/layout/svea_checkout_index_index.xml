@@ -139,6 +139,9 @@
                         <block class="Svea\Checkout\Block\Checkout" name="svea.checkout.comment" as="comment"
                                template="Svea_Checkout::checkout/comment.phtml"
                                ifconfig="svea_checkout/layout/display_comment"/>
+                        <arguments>
+                            <argument name="session_lifetime_seconds" xsi:type="helper" helper="Svea\Checkout\Model\CheckoutOrderNumberReference::getSessionLifetimeSeconds"></argument>
+                        </arguments>
                     </block>
                 </container>
                 <!-- CROSSSELL -->

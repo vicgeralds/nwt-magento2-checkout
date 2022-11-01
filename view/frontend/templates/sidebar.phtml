@@ -1,8 +1,11 @@
 <?php
 // @codingStandardsIgnoreFile
 
+/**
+ * @var Svea\Checkout\Block\Checkout $block
+ * @var Magento\Framework\Escaper $escaper
+ */
 
-/** @var $block Svea\Checkout\Block\Checkout */
 ?>
 <div class="svea-checkout-review" id="svea-checkout-review">
     <div class="svea-checkout-cart svea-checkout-section" id="svea-checkout-cart">
@@ -35,7 +38,9 @@
                             "ctrlkey": "<?php echo $block->generateHashSignatureByQuote(); ?>",
                             "ctrlcookie": "<?php echo $block->getCartCtrlKeyCookieName(); ?>",
                             "sveaShippingAddressChange": "<?php echo $block->getShippingAddressSubmitUrl(); ?>",
-                            "sveaShippingActive": "<?php echo $block->isSveaShippingActive() ?>"
+                            "sveaShippingActive": "<?php echo $block->isSveaShippingActive() ?>",
+                            "sveaCreatedAt": <?= $escaper->escapeJs($block->getSveaCreatedAt()) ?>,
+                            "sessionLifetimeSeconds": <?= $escaper->escapeJs($block->getSessionLifetimeSeconds()) ?>
                         }
                     }
                 }

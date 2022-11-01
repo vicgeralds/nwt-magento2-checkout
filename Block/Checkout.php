@@ -2,7 +2,9 @@
 namespace Svea\Checkout\Block;
 
 use Svea\Checkout\Model\Svea\Context;
-
+/**
+ * @method int getSessionLifetimeSeconds()
+ */
 class Checkout extends \Magento\Framework\View\Element\Template
 {
     /**
@@ -379,5 +381,13 @@ class Checkout extends \Magento\Framework\View\Element\Template
     public function isSveaShippingActive()
     {
         return $this->helper->getSveaShippingActive($this->_storeManager->getStore());
+    }
+
+    /**
+     * @return int
+     */
+    public function getSveaCreatedAt(): int
+    {
+        return (int)$this->getQuote()->getPayment()->getAdditionalInformation('svea_created_at');
     }
 }

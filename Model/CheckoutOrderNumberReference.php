@@ -31,15 +31,19 @@ class CheckoutOrderNumberReference
      */
     protected $_checkoutSession;
 
+    private $sessionLifetimeSeconds;
+
     /**
      * @param \Magento\Checkout\Model\Session $_checkoutSession
      */
     public function __construct(
         \Magento\Checkout\Model\Session $_checkoutSession,
-        \Magento\Quote\Api\CartRepositoryInterface $quoteRepository
+        \Magento\Quote\Api\CartRepositoryInterface $quoteRepository,
+        int $sessionLifetimeSeconds = 172800
     ) {
         $this->_checkoutSession = $_checkoutSession;
         $this->quoteRepository = $quoteRepository;
+        $this->sessionLifetimeSeconds = $sessionLifetimeSeconds;
     }
 
     /**
@@ -254,7 +258,8 @@ class CheckoutOrderNumberReference
      */
     public function setSveaCreatedAt(int $timestamp): void
     {
-        $this->getCheckoutSession()->setSveaCreatedAt($timestamp);
+        $this->getQuote()->getPayment()->setAdditionalInformation('svea_created_at', $timestamp);
+        $this->quoteRepository->save($this->getQuote());
     }
 
     /**
@@ -264,6 +269,27 @@ class CheckoutOrderNumberReference
      */
     public function getSveaCreatedAt(): int
     {
-        return (int)$this->getCheckoutSession()->getSveaCreatedAt();
+        return (int)$this->getQuote()->getPayment()->getAdditionalInformation('svea_created_at');
+    }
+
+    /**
+     * Check if current payment has expired
+     *
+     * @return boolean
+     */
+    public function paymentIsExpired(): bool
+    {
+        $sveaCreatedAt = $this->getSveaCreatedAt();
+        return ($sveaCreatedAt <= strtotime(sprintf('-%s seconds', $this->getSessionLifetimeSeconds())));
+    }
+
+    /**
+     * Return session lifetime seconds value
+     *
+     * @return integer
+     */
+    public function getSessionLifetimeSeconds(): int
+    {
+        return $this->sessionLifetimeSeconds;
     }
 }

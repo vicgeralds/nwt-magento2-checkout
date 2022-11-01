@@ -9,12 +9,13 @@ define([
     'Magento_Ui/js/modal/alert',
     "uiRegistry",
     'mage/url',
+    'Magento_Ui/js/modal/alert',
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry, mageurl) {
+], function (jQuery, alert, uiRegistry, mageurl, magealert) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -41,11 +42,14 @@ define([
             hasInitFlag: false,
             shippingAjaxInProgress: false,
             iframeOverlay: '#iframe-overlay',
-            sveaShippingActive: false
+            sveaShippingActive: false,
+            sveaCreatedAt: 0,
+            sessionLifetimeSeconds: 172800
         },
         _create: function () {
             jQuery.mage.cookies.set(this.options.ctrlcookie, this.options.ctrlkey);
             this._checkIfCartWasUpdated();
+            this._expiryCheck();
             this._bindEvents();
             this._bindShipping();
             this.uiManipulate();
@@ -72,6 +76,27 @@ define([
 
                 }
             }).bind(this), 1000);
+        },
+
+        /**
+         * Checks every 5 seconds if payment session is expired
+         */
+        _expiryCheck: function () {
+            const expiryCheck = setInterval((function () {
+                const sveaCreatedAt = new Date(this.options.sveaCreatedAt * 1000);
+                const expiresAt = new Date(sveaCreatedAt.getTime() + (this.options.sessionLifetimeSeconds * 1000));
+                if (new Date().getTime() >= expiresAt.getTime()) {
+                    clearInterval(expiryCheck);
+                    magealert({
+                        content: jQuery.mage.__('Your payment session has expired. The checkout will reload.'),
+                        actions: {
+                            always: function () {
+                                location.reload();
+                            }
+                        }
+                    });
+                }
+            }).bind(this), 5000);
         },
 
         _bindCartAjax: function () {

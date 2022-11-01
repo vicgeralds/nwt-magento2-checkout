@@ -55,11 +55,6 @@ class CheckoutContext
     private $orderCollectionFactory;
 
     /**
-     * @var int
-     */
-    private int $sessionLifetimeHours;
-
-    /**
      * Constructor
      *
      * @param \Svea\Checkout\Helper\Data $helper
@@ -83,8 +78,7 @@ class CheckoutContext
         \Magento\Newsletter\Model\Subscriber $subscriber,
         \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
         AddressInterfaceFactory $addressInterfaceFactory,
-        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory,
-        int $sessionLifetimeHours = 48
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory
     ) {
         $this->helper        = $helper;
         $this->logger = $logger;
@@ -97,7 +91,6 @@ class CheckoutContext
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->addressRepository = $addressRepository;
         $this->addressInterfaceFactory = $addressInterfaceFactory;
-        $this->sessionLifetimeHours = $sessionLifetimeHours;
     }
 
     /**
@@ -188,8 +181,8 @@ class CheckoutContext
     /**
      * @return integer
      */
-    public function getSessionLifetimeHours(): int
+    public function getSessionLifetimeSeconds(): int
     {
-        return $this->sessionLifetimeHours;
+        return $this->sessionLifetimeSeconds;
     }
 }

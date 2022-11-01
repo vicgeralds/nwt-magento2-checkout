@@ -355,7 +355,7 @@ class Checkout extends Onepage
         $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
 
         // check if we already have started a payment flow with svea
-        if ($sveaOrderId && !$this->paymentIsExpired()) {
+        if ($sveaOrderId && !$this->getRefHelper()->paymentIsExpired()) {
             try {
 
                 // here we should check if we need to update the svea order!
@@ -811,17 +811,5 @@ class Checkout extends Onepage
     public function getDoNotMarkCartDirty()
     {
         return $this->_doNotMarkCartDirty;
-    }
-
-    /**
-     * Check if current payment has expired
-     *
-     * @return boolean
-     */
-    private function paymentIsExpired(): bool
-    {
-        $sveaCreatedAt = $this->getRefHelper()->getSveaCreatedAt();
-        $sessionLifetimeHours = $this->context->getSessionLifetimeHours();
-        return ($sveaCreatedAt <= strtotime(sprintf('-%s hours', $sessionLifetimeHours)));
     }
 }

@@ -161,4 +161,5 @@ Title,Titel
 "Remove","Ta bort"
 "Tax","Moms"
 "Shipping","Frakt"
-"Partial payment from %s / month","Delbetalning från %s / månad"
+"Partial payment from %s / month","Delbetalning från %s / månad",
+"Your payment session has expired. The checkout will reload.","Din betalningssession har löpt ut. Kassan kommer att laddas om."
