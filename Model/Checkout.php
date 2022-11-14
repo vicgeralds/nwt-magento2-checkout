@@ -352,10 +352,12 @@ class Checkout extends Onepage
         $newSignature = $this->getHelper()->generateHashSignatureByQuote($quote);
 
         //check session for Svea Order Id
-        $sveaOrderId = $this->getRefHelper()->getSveaOrderId();
+        $sessionSveaOrderId = (int)$this->getRefHelper()->getSveaOrderId();
+        $sveaOrderId = $sessionSveaOrderId;
+        $quoteSveaOrderId = (int)$quote->getSveaOrderId();
 
         // check if we already have started a payment flow with svea
-        if ($sveaOrderId && !$this->getRefHelper()->paymentIsExpired()) {
+        if ($sveaOrderId && !$this->getRefHelper()->paymentIsExpired() && $sessionSveaOrderId === $quoteSveaOrderId) {
             try {
 
                 // here we should check if we need to update the svea order!

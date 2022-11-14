@@ -61,6 +61,8 @@ class CheckoutOrderNumberReference
     public function setSveaOrderId($sveaOrderId)
     {
         $this->getCheckoutSession()->setSveaOrderId($sveaOrderId);
+        $this->getQuote()->setSveaOrderId($sveaOrderId);
+        $this->quoteRepository->save($this->getQuote());
     }
 
     /**

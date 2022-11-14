@@ -4,6 +4,7 @@
     <head>
         <title>Success</title>
         <css src="Svea_Checkout::css/svea.css"/>
+        <script src="Svea_Checkout::js/action/success-actions.js" />
     </head>
 
     <body>
