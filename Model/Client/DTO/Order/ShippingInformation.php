@@ -4,12 +4,14 @@ namespace Svea\Checkout\Model\Client\DTO\Order;
 
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Api\ShippingMethodManagementInterface;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Svea\Checkout\Model\Client\DTO\AbstractRequest;
 use Svea\Checkout\Model\Client\DTO\Order\ShippingInformation\FallbackOptionFactory;
 use Svea\Checkout\Model\Client\DTO\Order\ShippingInformation\FallbackOption;
 use Svea\Checkout\Model\Shipping\Carrier;
 use Svea\Checkout\Helper\Data;
 use Svea\Checkout\Model\Client\DTO\Order\ShippingInformation\Tags;
+use Svea\Checkout\Model\Client\DTO\Order\ShippingInformation\TagsFactory;
 
 class ShippingInformation extends AbstractRequest
 {
@@ -22,6 +24,16 @@ class ShippingInformation extends AbstractRequest
      * @var FallbackOptionFactory
      */
     private $fallbackOptFactory;
+
+    /**
+     * @var TagsFactory
+     */
+    private TagsFactory $tagsFactory;
+
+    /**
+     * @var CollectionFactory
+     */
+    private CollectionFactory $productCollectionFactory;
 
     /**
      * @var Data
@@ -56,10 +68,14 @@ class ShippingInformation extends AbstractRequest
     public function __construct(
         ShippingMethodManagementInterface $shipMethodManagement,
         FallbackOptionFactory $fallbackOptFactory,
+        TagsFactory $tagsFactory,
+        CollectionFactory $productCollectionFactory,
         Data $helper
     ) {
         $this->shipMethodManagement = $shipMethodManagement;
         $this->fallbackOptFactory = $fallbackOptFactory;
+        $this->tagsFactory = $tagsFactory;
+        $this->productCollectionFactory = $productCollectionFactory;
         $this->helper = $helper;
     }
 
@@ -196,7 +212,17 @@ class ShippingInformation extends AbstractRequest
         $this->setEnableShipping($enableShipping);
         $this->setEnforceFallback($this->helper->getSveaShippingEnforceFallback());
         $this->setWeight($this->addZeroes($quote->getShippingAddress()->getWeight()));
+        $this->generateFallbackOptions($quote);
+        $this->generateDimensions($quote);
+        return $this;
+    }
 
+    /**
+     * @param Quote $quote
+     * @return self
+     */
+    private function generateFallbackOptions(Quote $quote): self
+    {
         try {
             $fallbackOptions = [];
             $methods = $this->shipMethodManagement->getList(
@@ -220,5 +246,54 @@ class ShippingInformation extends AbstractRequest
         } finally {
             return $this;
         }
+    }
+
+    private function generateDimensions(Quote $quote): void
+    {
+        if (!$this->helper->getSveaShippingDimensionsActive()) {
+            return;
+        }
+
+        // 1. Find the highest value of each dimension among the products. This will be packageDimensionX
+        // 2. Find the second highest value of each dimension among the products. This will be packageDimensionY
+        $productIds = $quote->getItemsCollection()->getColumnValues('product_id');
+        $productCollection = $this->productCollectionFactory->create();
+        $productCollection->addFieldToFilter('entity_id', ['in' => $productIds]);
+        $productCollection
+            ->addAttributeToSelect('height_cm')
+            ->addAttributeToSelect('length_cm')
+            ->addAttributeToSelect('width_cm')
+        ;
+        $maxDimensions = [
+            'height' => max($productCollection->getColumnValues('height_cm')),
+            'length' => max($productCollection->getColumnValues('length_cm')),
+            'width' => max($productCollection->getColumnValues('length_cm'))
+        ];
+        rsort($maxDimensions);
+        array_pop($maxDimensions);
+        $packageDimensionX = $maxDimensions[0];
+        $packageDimensionY = $maxDimensions[1];
+
+        // 3. Add the lowest dimension of each product together. This will be packageDimensionZ
+        $packageDimensionZ = 0;
+        foreach ($productCollection as $product) {
+            $item = $quote->getItemByProduct($product);
+            if (!$item) {
+                continue;
+            }
+            $itemDimensions = [];
+            $itemDimensions['height'] = $product->getHeightCm();
+            $itemDimensions['length'] = $product->getLengthCm();
+            $itemDimensions['width'] = $product->getWidthCm();
+            sort($itemDimensions);
+            $packageDimensionZ += $itemDimensions[0] * $item->getQty();
+        }
+
+        /** @var Tags $tags */
+        $tags = $this->tagsFactory->create();
+        $tags->addTag('heigh_cm', $packageDimensionY);
+        $tags->addTag('length_cm', $packageDimensionX);
+        $tags->addTag('width_cm', $packageDimensionZ);
+        $this->setTags($tags);
     }
 }

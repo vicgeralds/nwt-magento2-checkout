@@ -396,6 +396,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
+    public function getSveaShippingDimensionsActive($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SETTINGS . 'dimensions_active',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
     public function getDefaultShippingMethod($store = null)
     {
         return $this->scopeConfig->getValue(
