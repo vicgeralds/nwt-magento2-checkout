@@ -239,7 +239,7 @@ class ShippingInformation extends AbstractRequest
                     ->setId($method->getMethodCode())
                     ->setCarrier($method->getCarrierCode())
                     ->setName(__($method->getCarrierTitle())->getText())
-                    ->setPrice($method->getAmount())
+                    ->setShippingFee($this->addZeroes($method->getAmount()))
                 ;
             }
             $this->setFallbackOptions($fallbackOptions);
@@ -267,7 +267,7 @@ class ShippingInformation extends AbstractRequest
         $maxDimensions = [
             'height' => max($productCollection->getColumnValues('height_cm')),
             'length' => max($productCollection->getColumnValues('length_cm')),
-            'width' => max($productCollection->getColumnValues('length_cm'))
+            'width' => max($productCollection->getColumnValues('width_cm'))
         ];
         rsort($maxDimensions);
         array_pop($maxDimensions);
