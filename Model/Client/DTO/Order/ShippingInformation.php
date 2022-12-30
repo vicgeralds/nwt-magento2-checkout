@@ -85,11 +85,21 @@ class ShippingInformation extends AbstractRequest
     public function toArray()
     {
         $array = [
-            'EnableShipping' => $this->getEnableShipping(),
-            'EnforceFallback' => $this->getEnforceFallback(),
-            'Weight' => $this->getWeight(),
-            'FallbackOptions' => [],
+            'EnableShipping' => $this->getEnableShipping()
         ];
+
+        if (!$this->getEnableShipping()) {
+            return $array;
+        }
+
+        array_merge(
+            $array,
+            [
+                'EnforceFallback' => $this->getEnforceFallback(),
+                'Weight' => $this->getWeight(),
+                'FallbackOptions' => [],
+            ]
+        );
 
         if ($this->getTags() instanceof Tags) {
             $array['Tags'] = $this->getTags()->toArray();
@@ -99,7 +109,7 @@ class ShippingInformation extends AbstractRequest
             $array['FallbackOptions'][] = $fallbackOption->toArray();
         }
 
-        return array_filter($array);
+        return $array;
     }
 
     /**
