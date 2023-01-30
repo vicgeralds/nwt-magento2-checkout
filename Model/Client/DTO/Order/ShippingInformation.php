@@ -84,16 +84,16 @@ class ShippingInformation extends AbstractRequest
      */
     public function toArray()
     {
-        $array = [
+        $partialData = [
             'EnableShipping' => $this->getEnableShipping()
         ];
 
         if (!$this->getEnableShipping()) {
-            return $array;
+            return $partialData;
         }
 
-        array_merge(
-            $array,
+        $completeData = array_merge(
+            $partialData,
             [
                 'EnforceFallback' => $this->getEnforceFallback(),
                 'Weight' => $this->getWeight(),
@@ -102,14 +102,14 @@ class ShippingInformation extends AbstractRequest
         );
 
         if ($this->getTags() instanceof Tags) {
-            $array['Tags'] = $this->getTags()->toArray();
+            $completeData['Tags'] = $this->getTags()->toArray();
         }
 
         foreach ($this->getFallbackOptions() as $fallbackOption) {
-            $array['FallbackOptions'][] = $fallbackOption->toArray();
+            $completeData['FallbackOptions'][] = $fallbackOption->toArray();
         }
 
-        return $array;
+        return $completeData;
     }
 
     /**
