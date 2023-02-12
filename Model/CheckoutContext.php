@@ -178,4 +178,11 @@ class CheckoutContext
         return $this->orderCollectionFactory;
     }
 
+    /**
+     * @return integer
+     */
+    public function getSessionLifetimeSeconds(): int
+    {
+        return $this->sessionLifetimeSeconds;
+    }
 }

@@ -17,6 +17,7 @@ use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\Order\ShippingInformationFactory;
 use Svea\Checkout\Model\Client\DTO\RefundNewCreditRow;
 use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
@@ -67,6 +68,11 @@ class Order
     private $presetValuesProviderFactory;
 
     /**
+     * @var ShippingInformationFactory
+     */
+    private $shippingInfoFactory;
+
+    /**
      * Order constructor.
      *
      * @param \Svea\Checkout\Model\Client\Api\OrderManagement $orderManagementApi
@@ -86,7 +92,8 @@ class Order
         \Magento\Directory\Model\CountryFactory $countryFactory,
         PresetValuesFactory $presetValuesProviderFactory,
         Items $itemsHandler,
-        Locale $locale
+        Locale $locale,
+        ShippingInformationFactory $shippingInfoFactory
     ) {
         $this->helper = $helper;
         $this->items = $itemsHandler;
@@ -96,6 +103,7 @@ class Order
         $this->_countryFactory  = $countryFactory;
         $this->_locale = $locale;
         $this->presetValuesProviderFactory = $presetValuesProviderFactory;
+        $this->shippingInfoFactory = $shippingInfoFactory;
     }
 
     /** @var $_quote Quote */
@@ -168,16 +176,10 @@ class Order
         $payment = new UpdateOrderCart();
         $payment->setItems($items);
         $payment->setMerchantData($this->generateMerchantData($quote));
-
-        $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
-
-        $this->setIframeSnippet($paymentResponse->getGui()->getSnippet());
-    }
-
-    public function updateCountry($countryCode, $paymentId)
-    {
-        $payment = new UpdateOrderCart();
-        $payment->setMerchantData($this->generateMerchantData($quote));
+        if ($this->helper->getSveaShippingActive($quote->getStore()->getId())) {
+            $info = $this->shippingInfoFactory->create()->generateFromQuote($quote);
+            $payment->setShippingInformation($info);
+        }
 
         $paymentResponse = $this->checkoutApi->updateOrder($payment, $paymentId);
 
@@ -253,6 +255,10 @@ class Order
         $paymentOrder->setMerchantData($this->generateMerchantData($quote));
         $paymentOrder->setMerchantSettings($merchantUrls);
         $paymentOrder->setCartItems($items);
+        if ($this->helper->getSveaShippingActive($quote->getStoreId())) {
+            $info = $this->shippingInfoFactory->create()->generateFromQuote($quote);
+            $paymentOrder->setShippingInformation($info);
+        }
 
         if ($partnerKey && !empty($partnerKey)) {
             $paymentOrder->setPartnerKey($partnerKey);
@@ -468,13 +474,16 @@ class Order
                     $payment->setAdditionalInformation('svea_delivery_id', $delivery->getId());
                     $payment->setTransactionId($delivery->getId());
                     $invoice->setTransactionId($delivery->getId());
+                    return;
                 }
 
-                return;
-            }
-
-            if ($isFullDelivery && !$sveaOrder->canDeliver()) {
-                throw new LocalizedException(__('We can\'t do a full delivery on this particular order. Capture offline and please do it manually in Svea.'));
+                // If no delivery exists then this order is currently not deliverable for other reasons,
+                // Likely payment review is required due to high invoice amount
+                throw new LocalizedException(
+                    __(
+                        'Can not capture. Svea has not marked the order as Deliverable. Review the order in Svea.'
+                    )
+                );
             }
 
             $paymentObj = new DeliverOrder();

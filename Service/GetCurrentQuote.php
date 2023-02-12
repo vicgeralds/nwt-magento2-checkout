@@ -3,6 +3,7 @@
 
 namespace Svea\Checkout\Service;
 
+use Magento\Quote\Model\Quote;
 
 class GetCurrentQuote
 {
@@ -20,7 +21,10 @@ class GetCurrentQuote
         $this->checkoutSession = $checkoutSession;
     }
 
-    public function getQuote()
+    /**
+     * @return Quote
+     */
+    public function getQuote(): Quote
     {
         if ($this->currentQuote === null) {
             return $this->checkoutSession->getQuote();

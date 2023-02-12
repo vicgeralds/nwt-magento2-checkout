@@ -39,6 +39,9 @@ class CreateOrder extends AbstractRequest
     /** @var $merchantData string */
     protected $merchantData;
 
+    /** @var Order\ShippingInformation */
+    protected $shippingInformation;
+
     /**
      * @return string
      */
@@ -266,6 +269,32 @@ class CreateOrder extends AbstractRequest
             $data['presetValues'] = $presetValues;
         }
 
+        if ($this->getShippingInformation()) {
+            $data['ShippingInformation'] = $this->getShippingInformation()->toArray();
+        }
+
         return $data;
+    }
+
+    /**
+     * Get the value of shippingInformation
+     *
+     * @return Order\ShippingInformation
+     */
+    public function getShippingInformation()
+    {
+        return $this->shippingInformation;
+    }
+
+    /**
+     * Set the value of shippingInformation
+     *
+     * @param Order\ShippingInformation $shippingInformation
+     * @return self
+     */
+    public function setShippingInformation(Order\ShippingInformation $shippingInformation)
+    {
+        $this->shippingInformation = $shippingInformation;
+        return $this;
     }
 }

@@ -7,6 +7,7 @@ use Magento\Quote\Model\Quote;
 use Magento\Sales\Model\Order;
 use Svea\Checkout\Model\CheckoutException;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\Order\OrderRow\ShippingInformation;
 
 /**
  * Svea (Checkout) Order Items Model
@@ -240,9 +241,18 @@ class Items
                     ->setArticleNumber($sku)
                     ->setName($item->getName() . " " . ($comment ? "({$comment})" : ""))
                     ->setUnit("st") // TODO! We need to map these somehow!
-                    ->setQuantity($this->addZeroes(round($qty, 0)))
+                    ->setQuantity($this->addZeroes($qty, 0))
                     ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
                     ->setUnitPrice($unitPriceInclTaxes); // incl. tax price per item
+                
+                if ($this->_helper->getSveaShippingActive()) {
+                    $shippingInformation = new ShippingInformation();
+                    $shippingInformation->setWeight(0);
+                    if (null !== $item->getShippingAddress()) {
+                        $shippingInformation->setWeight($item->getShippingAddress()->getWeight());
+                    }
+                    $orderItem->setShippingInformation($shippingInformation);
+                }
 
                 // add to array
                 $this->_cart[$sku] = $orderItem;
@@ -320,7 +330,8 @@ class Items
             ->setUnit("st") // TODO! We need to map these somehow!
             ->setQuantity($this->addZeroes(1))
             ->setVatPercent($this->addZeroes($vat)) // the tax rate i.e 25% (2500)
-            ->setUnitPrice($this->addZeroes($inclTax)); // incl. tax price per item
+            ->setUnitPrice($this->addZeroes($inclTax)) // incl. tax price per item
+            ->setRowTypeIsShippingFee();
 
         // add to array!
         $this->_cart['shipping_fee'] = $orderItem;

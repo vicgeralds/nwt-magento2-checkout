@@ -8,12 +8,14 @@ define([
     "jquery",
     'Magento_Ui/js/modal/alert',
     "uiRegistry",
+    'mage/url',
+    'Magento_Ui/js/modal/alert',
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry) {
+], function (jQuery, alert, uiRegistry, mageurl, magealert) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -39,12 +41,17 @@ define([
             sveaShippingChange: false,
             hasInitFlag: false,
             shippingAjaxInProgress: false,
-            iframeOverlay: '#iframe-overlay'
+            iframeOverlay: '#iframe-overlay',
+            sveaShippingActive: false,
+            sveaCreatedAt: 0,
+            sessionLifetimeSeconds: 172800
         },
         _create: function () {
             jQuery.mage.cookies.set(this.options.ctrlcookie, this.options.ctrlkey);
             this._checkIfCartWasUpdated();
+            this._expiryCheck();
             this._bindEvents();
+            this._bindShipping();
             this.uiManipulate();
             this.toggleCouponContainer();
             this.toggleOrderCommentTextArea();
@@ -74,6 +81,27 @@ define([
             }).bind(this), 1000);
         },
 
+        /**
+         * Checks every 5 seconds if payment session is expired
+         */
+        _expiryCheck: function () {
+            const expiryCheck = setInterval((function () {
+                const sveaCreatedAt = new Date(this.options.sveaCreatedAt * 1000);
+                const expiresAt = new Date(sveaCreatedAt.getTime() + (this.options.sessionLifetimeSeconds * 1000));
+                if (new Date().getTime() >= expiresAt.getTime()) {
+                    clearInterval(expiryCheck);
+                    magealert({
+                        content: jQuery.mage.__('Your payment session has expired. The checkout will reload.'),
+                        actions: {
+                            always: function () {
+                                location.reload();
+                            }
+                        }
+                    });
+                }
+            }).bind(this), 5000);
+        },
+
         _bindCartAjax: function () {
         },
 
@@ -85,7 +113,7 @@ define([
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
             }
             if (!block || block == 'shipping_method') {
-                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').live('change', jQuery.proxy(this._changeShippingMethod, this));
+                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
             }
             if (!block || block == 'newsletter') {
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change',function(){
@@ -113,6 +141,46 @@ define([
                 this.sveaApiChanges();
             }
 
+        },
+
+        _bindShipping: function () {
+            if (!this.options.sveaShippingActive) {
+                return;
+            }
+
+            const self = this;
+            document.addEventListener('sveaCheckout:shippingConfirmed', function (data) {
+                jQuery.ajax({
+                    type: "POST",
+                    url: mageurl.build('sveacheckout/order/confirmshipping'),
+                    data: jQuery.param(data.detail),
+                    success: function (response) {
+                        if (!response.success) {
+                            if (response.messages) {
+                                let alertConfig = {
+                                    content: response.messages
+                                };
+                                if (response.redirect) {
+                                    alertConfig.actions = {
+                                        always: function () {
+                                            window.location = mageurl.build(response.redirect);
+                                        }
+                                    };
+                                }
+
+                                alert(alertConfig);
+                            }
+                            return;
+                        }
+                        self._ajaxSubmit(mageurl.build('sveacheckout/order/cart'));
+                    },
+                    error: function () {
+                        alert({
+                            content: 'Unable to save shipping choice. Please try again. If the problem persists, contact an administrator.'
+                        });
+                    }
+                });
+            });
         },
 
         checkValueOfInputs: function (form) {

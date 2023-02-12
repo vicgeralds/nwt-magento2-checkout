@@ -20,8 +20,8 @@ class FetchCampaigns extends Command
      * @param CheckPendingPayments $checkPendingPaymentsAction
      */
     public function __construct(
-        ?string $name = null,
-        CheckPendingPayments $checkPendingPaymentsAction
+        CheckPendingPayments $checkPendingPaymentsAction,
+        ?string $name = null
     ) {
         $this->fetchCampaignsCron = $checkPendingPaymentsAction;
         parent::__construct($name);

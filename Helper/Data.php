@@ -378,6 +378,24 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
+    public function getSveaShippingActive($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            'carriers/svea_nshift/active',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
+    public function getSveaShippingEnforceFallback($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SETTINGS . 'enforce_fallback',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
     public function getDefaultShippingMethod($store = null)
     {
         return $this->scopeConfig->getValue(
@@ -504,7 +522,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     protected function splitStringToArray($values)
     {
-        return preg_split("#\s*[ ,;]\s*#", $values, null, PREG_SPLIT_NO_EMPTY);
+        return preg_split("#\s*[ ,;]\s*#", $values, -1, PREG_SPLIT_NO_EMPTY);
     }
 
     /**
