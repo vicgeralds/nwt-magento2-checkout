@@ -284,6 +284,10 @@ class ShippingInformation extends AbstractRequest
         $packageDimensionX = $maxDimensions[0];
         $packageDimensionY = $maxDimensions[1];
 
+        if ((int)$packageDimensionX === 0) {
+            return;
+        }
+
         // 3. Add the lowest dimension of each product together. This will be packageDimensionZ
         $packageDimensionZ = 0;
         foreach ($productCollection as $product) {
