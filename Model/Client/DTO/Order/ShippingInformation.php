@@ -301,9 +301,9 @@ class ShippingInformation extends AbstractRequest
 
         /** @var Tags $tags */
         $tags = $this->tagsFactory->create();
-        $tags->addTag('heigh_cm', $packageDimensionY);
-        $tags->addTag('length_cm', $packageDimensionX);
-        $tags->addTag('width_cm', $packageDimensionZ);
+        $tags->addTag('height_cm', (int)ceil($packageDimensionY));
+        $tags->addTag('length_cm', (int)ceil($packageDimensionX));
+        $tags->addTag('width_cm', (int)ceil($packageDimensionZ));
         $this->setTags($tags);
     }
 }
