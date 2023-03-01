@@ -17,7 +17,7 @@ class Locale
 
 
     protected $allowedCountries = [
-        "SE","NO","DK","FI"
+        "SE","NO","DK","FI","DE","NL"
     ];
 
     protected $locales = [
@@ -56,6 +56,22 @@ class Locale
                 "PostalCode" => "370",
             ]
         ],
+        "DE" => [
+            "locale" => "de-DE",
+            "currency" => "EUR",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PostalCode" => "13591",
+            ],
+        ],
+        "NL" => [
+            "locale" => "en-US",
+            "currency" => "EUR",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PostalCode" => "1111 CD",
+            ],
+        ]
     ];
 
 
@@ -85,7 +101,7 @@ class Locale
             return $this->locales[$countryCode]['locale'];
         }
 
-        return "en-UK";
+        return "en-US";
     }
 
     /**
