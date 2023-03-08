@@ -24,7 +24,7 @@ class FallbackOption extends AbstractRequest
     /**
      * @var int
      */
-    private $price;
+    private $shippingFee;
 
     /**
      * Get the value of id
@@ -103,21 +103,21 @@ class FallbackOption extends AbstractRequest
      *
      * @return  int
      */
-    public function getPrice()
+    public function getShippingFee()
     {
-        return $this->price;
+        return $this->shippingFee;
     }
 
     /**
      * Set the value of price
      *
-     * @param  int  $price
+     * @param  int|float  $price
      *
      * @return  self
      */
-    public function setPrice(int $price)
+    public function setShippingFee($price)
     {
-        $this->price = $price;
+        $this->shippingFee = $price;
 
         return $this;
     }
@@ -128,7 +128,7 @@ class FallbackOption extends AbstractRequest
             'Id' => $this->getId(),
             'Carrier' => $this->getCarrier(),
             'Name' => $this->getName(),
-            'Price' => $this->getPrice()
+            'ShippingFee' => $this->getShippingFee()
         ];
     }
 }

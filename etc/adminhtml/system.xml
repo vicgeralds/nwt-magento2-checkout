@@ -51,6 +51,14 @@
                         <field id="svea_shipping_active">1</field>
                     </depends>
                 </field>
+                <field id="dimensions_active" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="26">
+                    <label>Activate Dimensions Calculations</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Include parameters height_cm, width_cm, length_cm to nShift</comment>
+                    <depends>
+                        <field id="svea_shipping_active">1</field>
+                    </depends>
+                </field>
                 <field id="default_shipping_method" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
                     <label>Default Shipping Method</label>
                     <source_model>Svea\Checkout\Model\System\Config\Source\AllowedShippingMethods</source_model>
