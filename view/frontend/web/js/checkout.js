@@ -442,7 +442,7 @@ define([
                             for (var block in blocks) {
                                 if (blocks.hasOwnProperty(block)) {
                                     div = jQuery('#svea-checkout_' + block);
-                                    if (div.size() > 0) {
+                                    if (div.length > 0) {
                                         div.replaceWith(blocks[block]);
                                         this._bindEvents(block);
                                     }
