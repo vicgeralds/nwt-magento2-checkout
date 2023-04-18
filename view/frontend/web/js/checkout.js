@@ -10,12 +10,13 @@ define([
     "uiRegistry",
     'mage/url',
     'Magento_Ui/js/modal/alert',
+    "Svea_Checkout/js/model/bind-select-shipping",
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry, mageurl, magealert) {
+], function (jQuery, alert, uiRegistry, mageurl, magealert, bindSelectShipping) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -218,10 +219,12 @@ define([
 
             block = block ? block : null;
             if (!block || block == 'shipping') {
+                bindSelectShipping.setCallback(jQuery.proxy(this._changeShippingMethod, this));
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
             }
             if (!block || block == 'shipping_method') {
-                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
+                bindSelectShipping.setCallback(jQuery.proxy(this._changeShippingMethod, this));
+                bindSelectShipping.execute();
             }
             if (!block || block == 'newsletter') {
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change',function(){
@@ -522,7 +525,7 @@ define([
         },
         uiManipulate: function () {
             var t = this;
-            jQuery(window).resize(function () {
+            jQuery(window).on('resize', function () {
                 t.fiddleSidebar();
             });
             jQuery(document).ready(function () {
@@ -534,7 +537,7 @@ define([
             var target = this.options.couponFormContainer,
                 toggler = this.options.couponToggler;
 
-            jQuery(toggler).change(function () {
+            jQuery(toggler).on('change', function () {
                 if (this.checked)
                     jQuery(target).addClass('visible');
                 else
