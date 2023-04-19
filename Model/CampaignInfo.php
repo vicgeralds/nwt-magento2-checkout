@@ -32,11 +32,10 @@ class CampaignInfo extends AbstractModel implements CampaignInfoInterface
     public function __construct(
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
+        PriceCurrencyInterface $priceCurrency,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
-        PriceCurrencyInterface $priceCurrency,
         array $data = []
-
     ) {
         $this->priceCurrency = $priceCurrency;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);

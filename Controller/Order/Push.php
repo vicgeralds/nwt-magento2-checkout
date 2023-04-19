@@ -90,7 +90,6 @@ class Push extends Checkout
             $orderIdExists = $push->getOrderId() ? true : false;
         }catch (\Exception $e) {
             // ignore
-            $this->getSveaCheckout()->getLogger()->error("Svea Push: Found no push.");
 
             return true;
         }

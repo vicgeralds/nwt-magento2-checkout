@@ -12,6 +12,7 @@
         <arguments>
             <argument name="name" xsi:type="string">svea</argument>
             <argument name="handlers"  xsi:type="array">
+                <item name="error" xsi:type="object">Svea\Checkout\Logger\Handler\Error</item>
                 <item name="system" xsi:type="object">Svea\Checkout\Logger\Handler</item>
             </argument>
         </arguments>
