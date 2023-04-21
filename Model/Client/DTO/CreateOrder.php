@@ -240,7 +240,7 @@ class CreateOrder extends AbstractRequest
 
         $flags = $this->getIdentityFlags();
         if ($flags instanceof IdentityFlags) {
-            $data['identityFlags'] = $flags;
+            $data['identityFlags'] = $flags->toArray();
         }
 
         if ($this->getPartnerKey()) {
