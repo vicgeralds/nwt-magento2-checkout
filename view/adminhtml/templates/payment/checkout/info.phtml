@@ -24,4 +24,12 @@ use Magento\Framework\Escaper;
             <td><?= $escaper->escapeHtml($block->getSveaCustomerReference()) ?>
         </tr>
     <?php endif ?>
+    <?php foreach ($block->getSveaBillingReferences() as $billingReference): ?>
+        <tr>
+            <th><?= $escaper->escapeHtml($billingReference->getType()) ?>:</th>
+            <td>
+                <?= $escaper->escapeHtml($billingReference->getValue()) ?>
+            </td>
+        </tr>
+    <?php endforeach ?>
 </table>

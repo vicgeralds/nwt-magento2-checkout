@@ -611,6 +611,7 @@ class Checkout extends Onepage
         $paymentData = new DataObject([
             'svea_order_id' => $sveaOrder->getOrderId(),
             'country_id' => $shippingAddress->getCountryId(),
+            'is_company' => $sveaOrder->getCustomer()->getIsCompany()
         ]);
 
         /** @var \Svea\Checkout\Model\Payment\Method\Checkout $method */

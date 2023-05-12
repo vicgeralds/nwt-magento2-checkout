@@ -51,4 +51,11 @@
     <preference for="Svea\Checkout\Api\CampaignInfoRepositoryInterface" type="Svea\Checkout\Model\Campaign\CampaignRepository"/>
 
     <preference for="Svea\Checkout\Api\GetQtyIncrementConfigInterface" type="Svea\Checkout\Service\GetQtyIncrementConfig" />
+    <type name="Svea\Checkout\Block\Payment\Checkout\Info">
+        <arguments>
+            <argument name="data" xsi:type="array">
+                <item name="svea_order_management" xsi:type="object">Svea\Checkout\Model\Client\Api\OrderManagement</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

@@ -13,6 +13,7 @@ use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
+use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
