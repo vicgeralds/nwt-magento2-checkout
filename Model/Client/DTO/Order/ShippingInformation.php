@@ -221,7 +221,7 @@ class ShippingInformation extends AbstractRequest
         $enableShipping = !$quote->getIsVirtual();
         $this->setEnableShipping($enableShipping);
         $this->setEnforceFallback($this->helper->getSveaShippingEnforceFallback());
-        $this->setWeight($this->addZeroes($quote->getShippingAddress()->getWeight()));
+        $this->setWeight($this->kilogramsToGrams($quote->getShippingAddress()->getWeight()));
         $this->generateFallbackOptions($quote);
         $this->generateDimensions($quote);
         return $this;
@@ -309,5 +309,14 @@ class ShippingInformation extends AbstractRequest
         $tags->addTag('length_cm', (int)ceil($packageDimensionX));
         $tags->addTag('width_cm', (int)ceil($packageDimensionZ));
         $this->setTags($tags);
+    }
+
+    /**
+     * @param float $amount
+     * @return int
+     */
+    private function kilogramsToGrams($weight): int
+    {
+        return (int)round($weight * 1000);
     }
 }
