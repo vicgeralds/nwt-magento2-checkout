@@ -1,65 +1,75 @@
+![Config](docs/svealogo.png "Svea Logo")
 # Svea checkout settings and instructions
-### How to install:
+## How to install:
 Install it to via composer in your magento site:   
 ```
-composer config repositories.svea_checkout vcs git@github.com:sveawebpay/nwt-magento2-checkout.git   
-composer require sveawebpay/nwt-magento2-checkout
+composer config repositories.svea_checkout vcs  
+composer require --prefer-source sveawebpay/nwt-magento2-checkout
 ```
 
-If you don't want to use composer, install it manually:download and copy all files into app/code/Svea/Checkout/ directory.   
+If you don't want to use composer, install it manually:  
+download and copy all files into app/code/Svea/Checkout/ directory.   
 ### Enable it in Magento:
 ` php bin/magento module:enable --clear-static-content Svea_Checkout`   
-` php bin/magento setup:upgrade`
+` php bin/magento setup:upgrade`   
+` php bin/magento setup:di:compile`
 ## Settings and instructions:
-These instructions and guides are for the Svea checkout module to Magento 2.
-To activate it as a option follow these steps:
-Stores->Configuration->Sales->Payment methods->Svea Checkout.
-![Config](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst1.png "Config")
-**Step 1:**
-To find the settings follow these steps: Store->Configuration or on the left side in the panel.Then you can find the settings under: Svea->Checkout.
-![Navigation](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst2.png "Navigation")
+To find the settings follow these steps: Store->Configuration or on the left side in the panel.  
+Then you can find the settings under: Svea->Checkout.  
 
-**Step 2:**
-![Conf2](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst3.png "Conf2")
+![Navigation](docs/navigation.png "Navigation")  
+![Connection Config](docs/config-connection.png "Connection Config")
 
 *Enabled*:  Yes/No, If you want to enable the checkout choose "Yes", if not choose "No".
 
 *Testmode:*  Before you go live it's always good to test the checkout. Choose "Yes" to put the module in test mode so you can check if everything works as it should. When that is done, put the setting as "No" for live mode.
 
-*Checkout key and Secret key*: Merchant identifier, needed for it to work. Svea sends this out when you get registered as a client.
+*Merchant ID and Shared Secret:* Merchant identifier for testing purpose see this:  
+[https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-payments-partners.pdf](https://www.svea.com/globalassets/sweden/foretag/betallosningar/e-handel/integrationspaket-logos-and-doc.-integration-test-instructions-webpay/test-instructions-payments-partners.pdf)  
 
-**Step 3:**
-![Conf3](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst4.png "Conf3")
+For production credentials you need to contact Svea.
 
-*Send order email:* If you’re having issues with double order e-mails being sent set this function to ”no”
+![General Config Part 1](docs/config-general1.png)
 
-*Use reward points:* This is a function for magento commerce only.
+*Send order email:* This will prompt Magento to send out order e-mails
 
-*Default Shipping Method:* If you want a specific shipping method to be chosen directly. 
+*Activate Svea Shipping:* A shipping service with third party TA nShift. Needs to be setup by Svea and nShift.
+
+*Enforce Fallback Shipping Options:* Only shown if "Activate Svea Shipping" is enabled. Enforce the use of fallback shipping options in the Svea nShift solution. Leave this off unless specifically testing fallbacks.
+
+*Activate Dimensions Calculations:* Only shown if "Activate Svea Shipping" is enabled. Parameters height_cm, width_cm, length_cm to nShift, calculated from product attributes with those same attribute codes.
+
+*Default Shipping Method:* If you want a specific shipping method to be chosen directly.
 
 *Default Country:* This is only important if you allow payments from multiple countries. If only 1 country is in use it will automatically choose the one from "Allowed Payment Countries".
 
+![General Config Part 2](docs/config-general2.png)
+
 *Allowed Payment Countries:* If you allow more than 1 payment country choose which oneshere.
 
-*Capture/Refund payment*: If you want to enable capturing/refunding payments online. I.e when a client creates an invoice, do you want it to be charged at Svea automatically?
+*Checkout allowed customer types:* If you want to have both B2C and B2B in your checkout.
 
-*Can capture partial:* This enables/disables the option to make partial invoices or refunds.
+*Checkout default customer type:* Chooses which of either to be setup as default.
 
-**Settings continuation:**
-![Conf4](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst5.png "Conf4")
+![General Config Part 3](docs/config-general3.png)
 
-*Subscribe Newsletter* checked by default: When reaching checkout, this decides if the checkbox for subscription to newsletter is marked or not.
+*Capture/Refund payment:* Allows you to capture and refund from Magento admin.
 
-*Register Guest Customers*: If you want to register not logged in customers when the order is placed.
+*Can capture partial:* Allows you to make partial captures/refunds.
 
-*Url for terms page*: This is where you choose what page the "Terms and agreements" link incheckout should lead to.
+*Subscribe Newsletter checked by default:* When reaching checkout, this decides if the checkbox for subscription to newsletter is marked or not.
+
+*Register Guest Customers:* If you want to register not logged in customers when the order is placed.
+
+*Url for terms page*: This is where you choose what page the "Terms and agreements" link in checkout should lead to.
 
 *Replace checkout url with Svea Checkout:* "Yes/No", "Yes" means that Go to checkout in minicart will lead to Svea.
 
-**Steps 4:**
-![Conf5](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst6.png "Conf5")
+![Layout Config](docs/config-layout.png "Layout Config")
 
 *Display Newsletter checkbox*: Simple "Yes/No", yes to display the checkbox, no to hide it.
+
+*Use reward points? (Commerce only):* Use Adobe Commerce reward points function.
 
 *Display Discount Form:* Simple "Yes/No", yes to display the discount form, no to hide it.
 
@@ -71,8 +81,7 @@ To find the settings follow these steps: Store->Configuration or on the left sid
 
 *Additional block Content*: This is where you choose what to show in the additional block.
 
-**Step 5:**
-![Conf6](https://raw.githubusercontent.com/sveawebpay/nwt-magento2-checkout/master/docs/sveainst7.png "Conf6")
+![Crossell Config](docs/config-crossell.png "Crossell Config")
 
 *Display Crossell Products:* Simple "Yes/No", Yes to show crossell products.
 
