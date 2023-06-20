@@ -37,28 +37,6 @@
 
             <group id="settings" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Settings</label>
-                <field id="svea_shipping_active" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
-                    <label>Activate Svea Shipping</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Use Svea Checkout's built-in nShift shipping solution</comment>
-                    <config_path>carriers/svea_nshift/active</config_path>
-                </field>
-                <field id="enforce_fallback" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="25">
-                    <label>Enforce Fallback Shipping Options</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Enforce the use of fallback shipping options in the Svea nShift solution. Leave this off unless specifically testing fallbacks.</comment>
-                    <depends>
-                        <field id="svea_shipping_active">1</field>
-                    </depends>
-                </field>
-                <field id="dimensions_active" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="26">
-                    <label>Activate Dimensions Calculations</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Include parameters height_cm, width_cm, length_cm to nShift</comment>
-                    <depends>
-                        <field id="svea_shipping_active">1</field>
-                    </depends>
-                </field>
                 <field id="default_shipping_method" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
                     <label>Default Shipping Method</label>
                     <source_model>Svea\Checkout\Model\System\Config\Source\AllowedShippingMethods</source_model>
@@ -144,6 +122,41 @@
                     <label>Send order email</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <group id="svea_shipping_settings" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1" translate="label">
+                    <label>Svea Shipping Settings</label>
+                    <field id="svea_shipping_active" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="1">
+                        <label>Activate Svea Shipping</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>Use Svea Checkout's built-in nShift shipping solution</comment>
+                        <config_path>carriers/svea_nshift/active</config_path>
+                    </field>
+                    <field id="enforce_fallback" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="10">
+                        <label>Enforce Fallback Shipping Options</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>Enforce the use of fallback shipping options in the Svea nShift solution. Leave this off unless specifically testing fallbacks.</comment>
+                        <depends>
+                            <field id="svea_shipping_active">1</field>
+                        </depends>
+                        <config_path>svea_checkout/settings/enforce_fallback</config_path>
+                    </field>
+                    <field id="dimensions_active" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
+                        <label>Activate Dimensions Calculations</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>Include parameters height_cm, width_cm, length_cm to nShift</comment>
+                        <depends>
+                            <field id="svea_shipping_active">1</field>
+                        </depends>
+                        <config_path>svea_checkout/settings/dimensions_active</config_path>
+                    </field>
+                    <field id="admin_show_shipping_address_with_shipping_info" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Show Shipping Address with Shipping Method Info</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>In Admin Order view, show shipping address info together with the shipping method info.</comment>
+                        <depends>
+                            <field id="svea_shipping_active">1</field>
+                        </depends>
+                    </field>
+                </group>
             </group>
 
             <group id="layout" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
