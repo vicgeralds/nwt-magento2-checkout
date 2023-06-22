@@ -3,11 +3,10 @@
 namespace Svea\Checkout\ViewModel\Adminhtml\Order\View;
 
 use Magento\Sales\Model\Order;
-use Magento\Sales\Model\Order\AddressFactory;
 use Magento\Sales\Model\Order\Address;
 use Magento\Framework\DataObjectFactory;
 use Magento\Framework\DataObject;
-use Svea\Checkout\Helper\SveaShippingConfig;
+use Svea\Checkout\Service\SveaShippingInfo;
 
 class Shipping implements \Magento\Framework\View\Element\Block\ArgumentInterface
 {
@@ -17,9 +16,9 @@ class Shipping implements \Magento\Framework\View\Element\Block\ArgumentInterfac
     private DataObjectFactory $dataObjectFactory;
 
     /**
-     * @var AddressFactory
+     * @var SveaShippingInfo
      */
-    private AddressFactory $addressFactory;
+    private SveaShippingInfo $sveaShippingInfo;
 
     /**
      * @var DataObject|null
@@ -30,18 +29,17 @@ class Shipping implements \Magento\Framework\View\Element\Block\ArgumentInterfac
 
     public function __construct(
         DataObjectFactory $dataObjectFactory,
-        AddressFactory $addressFactory
+        SveaShippingInfo $sveaShippingInfo
     ) {
         $this->dataObjectFactory = $dataObjectFactory;
-        $this->addressFactory = $addressFactory;
+        $this->sveaShippingInfo = $sveaShippingInfo;
     }
 
     public function getShippingLocationInfo(Order $order): DataObject
     {
         if (!$this->locationObj) {
-            $shipInfo = $order->getPayment()->getAdditionalInformation()['svea_shipping_info'] ?? [];
-            $dataObj = $this->dataObjectFactory->create()->setData($shipInfo);
-            $locationData = $dataObj->getLocation();
+            $shipInfo = $this->sveaShippingInfo->getFromOrder($order);
+            $locationData = $shipInfo->getLocation();
             $this->locationObj = $this->dataObjectFactory->create()->setData($locationData);
         }
         return $this->locationObj;
@@ -97,16 +95,7 @@ class Shipping implements \Magento\Framework\View\Element\Block\ArgumentInterfac
             $this->sourcedAddress = $address;
             return $this->sourcedAddress;
         }
-        $address = $this->addressFactory->create();
-        $locationAddress = $locationInfo->getAddress();
-        $address->setCountryId($locationAddress['countryCode']);
-        $address->setPostcode($locationAddress['postalCode']);
-        $address->setCity($locationAddress['city']);
-        $street = [$locationAddress['streetAddress']];
-        if (isset($locationAddress['streetAddress2']) && !empty($locationAddress['streetAddress2'])) {
-            $street[] = $locationAddress['streetAddress2'];
-        }
-        $address->setStreet($street);
+        $address = $this->sveaShippingInfo->createOrderAddressFromLocation($locationInfo);
         $this->sourcedAddress = $address;
         return $this->sourcedAddress;
     }
