@@ -9,14 +9,13 @@ define([
     'Magento_Ui/js/modal/alert',
     "uiRegistry",
     'mage/url',
-    'Magento_Ui/js/modal/alert',
     "Svea_Checkout/js/model/bind-select-shipping",
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry, mageurl, magealert, bindSelectShipping) {
+], function (jQuery, alert, uiRegistry, mageurl, bindSelectShipping) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -88,7 +87,7 @@ define([
                 const expiresAt = new Date(sveaCreatedAt.getTime() + (this.options.sessionLifetimeSeconds * 1000));
                 if (new Date().getTime() >= expiresAt.getTime()) {
                     clearInterval(expiryCheck);
-                    magealert({
+                    alert({
                         content: jQuery.mage.__('Your payment session has expired. The checkout will reload.'),
                         actions: {
                             always: function () {
@@ -411,7 +410,7 @@ define([
                     _this._ajaxComplete();
                 },
                 success: function (response) {
-                    if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
+                    if (typeof response === 'object' && !jQuery.isEmptyObject(response)) {
 
                         if (response.reload || response.redirect) {
                             this.loadWaiting = false; //prevent that resetLoadWaiting hiding loader
@@ -494,12 +493,10 @@ define([
                 return
             }
 
-            var self = this;
             window.scoApi.observeEvent("identity.postalCode", function (data) {
-                console.log("postalCode changed to %s.", data.value);
-            });
-
-
+                // Will check for updated Tax and Totals due to changed postal code
+                this._ajaxSubmit(mageurl.build('sveacheckout/order/updatePostcode'), {postcode: data.value}, 'post');
+            }.bind(this));
         },
 
         /**
