@@ -86,6 +86,7 @@ class UpdatePostcode implements \Magento\Framework\App\Action\HttpPostActionInte
             // Update Svea order
             $this->sveaCheckout->setCheckoutContext($this->sveaCheckoutContext);
             $this->sveaCheckout->updateSveaPayment($quote->getSveaOrderId());
+            $responseData['ctrlkey'] = $this->sveaCheckout->getQuoteSignature();
 
             // Load updated blocks
             $page = $this->pageFactory->create();
