@@ -14,7 +14,8 @@ $taxHelper = $block->getData('taxHelper');
 $viewModel = $block->getViewModel();
 
 $order = $block->getOrder();
-$locationInfo = $viewModel->getShippingLocationInfo($order)
+$locationInfo = $viewModel->getShippingLocationInfo($order);
+$addressBlock = $block->getChildBlock('address');
 
 ?>
 <?php if ($order->getIsVirtual()):
@@ -58,6 +59,9 @@ endif; ?>
             </p>
             <?php if ($locationInfo->getName()): ?>
                 <p><strong><?= $escaper->escapeHtml($locationInfo->getName()) ?></strong></p>
+            <?php endif; ?>
+            <?php if ($addressBlock): ?>
+                <?= $addressBlock->toHtml() ?>
             <?php endif; ?>
         <?php else: ?>
             <?= $escaper->escapeHtml(__('No shipping information available')) ?>
