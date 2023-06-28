@@ -12,6 +12,10 @@ use Svea\Checkout\Service\SveaShippingInfo;
 
 class EmailOrderSetTemplateVarsBefore implements ObserverInterface
 {
+    const SVEA_VARIABLE_NAME = 'sveaShippingDestinationAddress';
+
+    const DEFAULT_VARIABLE_NAME = 'formattedShippingAddress';
+
     /**
      * @var Renderer
      */
@@ -64,19 +68,19 @@ class EmailOrderSetTemplateVarsBefore implements ObserverInterface
 
         $address = $this->addressFactory->create();
         $shipInfo = $this->sveaShippingInfo->getFromOrder($order);
+        if (null === $shipInfo) {
+            return $this->populateWithShippingAddress($transportObject);
+        }
+
         $locationData = $shipInfo->getLocation();
         $locationObj = $this->dataObjectFactory->create()->setData($locationData);
         if (!$locationObj->getName()) {
-            $transportObject->setData(
-                'sveaShippingDestinationAddress',
-                $transportObject->getFormattedShippingAddress()
-            );
-            return;
+            return $this->populateWithShippingAddress($transportObject);
         }
 
         $address = $this->sveaShippingInfo->createOrderAddressFromLocation($locationObj);
         $formattedAddress = $this->renderer->format($address, 'html');
-        $transportObject->setData('sveaShippingDestinationAddress', $formattedAddress);
+        $transportObject->setData(self::SVEA_VARIABLE_NAME, $formattedAddress);
     }
 
     /**
@@ -86,5 +90,17 @@ class EmailOrderSetTemplateVarsBefore implements ObserverInterface
     private function getOrderFromTransportObject(DataObject $transportObject): ?Order
     {
         return $transportObject->getOrder();
+    }
+
+    /**
+     * @param DataObject $transportObject
+     * @return void
+     */
+    private function populateWithShippingAddress(DataObject $transportObject): void
+    {
+        $transportObject->setData(
+            self::SVEA_VARIABLE_NAME,
+            $transportObject->getData(self::DEFAULT_VARIABLE_NAME)
+        );
     }
 }
