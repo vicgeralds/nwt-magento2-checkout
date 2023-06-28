@@ -3,7 +3,6 @@
 
 namespace Svea\Checkout\Model\Svea;
 
-
 class Locale
 {
 
@@ -15,9 +14,8 @@ class Locale
       "SEK","NOK","DKK","EUR"
     ];
 
-
     protected $allowedCountries = [
-        "SE","NO","DK","FI","DE","NL"
+        "SE","NO","DK","FI","DE","NL","SJ"
     ];
 
     protected $locales = [
@@ -71,9 +69,16 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PostalCode" => "1111 CD",
             ],
+        ],
+        "SJ" => [
+            "locale" => "nn-NO",
+            "currency" => "NOK",
+            "test" => [
+                "EmailAddress" => "test@example.com",
+                "PostalCode" => "9170",
+            ],
         ]
     ];
-
 
     /**
      * @return array
