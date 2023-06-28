@@ -77,7 +77,6 @@ class EmailOrderSetTemplateVarsBefore implements ObserverInterface
         $address = $this->sveaShippingInfo->createOrderAddressFromLocation($locationObj);
         $formattedAddress = $this->renderer->format($address, 'html');
         $transportObject->setData('sveaShippingDestinationAddress', $formattedAddress);
-        $transportObject->unsetData('formattedShippingAddress');
     }
 
     /**
