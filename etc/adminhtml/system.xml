@@ -41,9 +41,9 @@
                     <label>Default Shipping Method</label>
                     <source_model>Svea\Checkout\Model\System\Config\Source\AllowedShippingMethods</source_model>
                     <comment>Choose a default shipping method.</comment>
-                    <can_be_empty>0</can_be_empty>
+                    <can_be_empty>1</can_be_empty>
                     <depends>
-                        <field id="svea_shipping_active">0</field>
+                        <field id="svea_checkout/settings/svea_shipping_settings/svea_shipping_active">0</field>
                     </depends>
                 </field>
 

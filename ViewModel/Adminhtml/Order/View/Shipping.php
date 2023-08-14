@@ -39,7 +39,10 @@ class Shipping implements \Magento\Framework\View\Element\Block\ArgumentInterfac
     {
         if (!$this->locationObj) {
             $shipInfo = $this->sveaShippingInfo->getFromOrder($order);
-            $locationData = $shipInfo->getLocation();
+            $locationData = [];
+            if (null !== $shipInfo) {
+                $locationData = $shipInfo->getLocation();
+            }
             $this->locationObj = $this->dataObjectFactory->create()->setData($locationData);
         }
         return $this->locationObj;
