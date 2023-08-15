@@ -107,6 +107,15 @@ class Checkout extends Onepage
             $countryChanged = true;
         }
 
+        // Set a default postcode to get correct tax rates
+        if (!$shippingAddress->getPostcode()) {
+            $countryId = $shippingAddress->getCountryId();
+            $localeHelper =  $this->context->getSveaLocale();
+            $defaultData = $localeHelper->getDefaultDataByCountryCode($countryId);
+            $defaultPostcode = $defaultData['PostalCode'] ?? '';
+            $shippingAddress->setPostcode($defaultPostcode);
+        }
+
         $currencyChanged = false;
         $payment = $quote->getPayment();
 
