@@ -14,7 +14,7 @@ class Shipping extends DefaultTotal
      */
     public function toHtml()
     {
-        $service = $this->getShippingTotalService();
+        $service = $this->getShippingTotalViewModel();
         $configHelper = $service->getConfigHelper();
         $checkoutSession = $service->getCheckoutSession();
 
@@ -28,13 +28,36 @@ class Shipping extends DefaultTotal
 
         // If Svea Shipping is active but option isn't selected yet, hide the shipping
         $shippingAddress = $checkoutSession->getQuote()->getShippingAddress();
-        $shippingMethod = $shippingAddress->getShippingMethod();
         $carrierCode = Carrier::CODE;
+        $shippingMethod = $shippingAddress->getShippingMethod();
         if (strpos($shippingMethod, $carrierCode) !== false) {
-            return parent::toHtml();
+            return $this->handleSveaShippingInfo();
         }
 
         return '';
+    }
+
+    /**
+     * Check if data is placeholder, if so return empty string
+     *
+     * @return string
+     */
+    private function handleSveaShippingInfo(): string
+    {
+        $viewModel = $this->getShippingTotalViewModel();
+        $service = $viewModel->getSveaShippingInfoService();
+        $checkoutSession = $viewModel->getCheckoutSession();
+        $quote = $checkoutSession->getQuote();
+        $sveaShippingInfo = $service->getFromQuote($quote);
+        if (!$sveaShippingInfo) {
+            return '';
+        }
+
+        if ($sveaShippingInfo->getName() === Carrier::PLACEHOLDER_NAME) {
+            return '';
+        }
+
+        return parent::toHtml();
     }
 
     /**
@@ -42,7 +65,7 @@ class Shipping extends DefaultTotal
      *
      * @return ShippingTotalViewModel
      */
-    private function getShippingTotalService(): ShippingTotalViewModel
+    private function getShippingTotalViewModel(): ShippingTotalViewModel
     {
         $viewModel = $this->getData('view_model');
         if (!($viewModel instanceof ShippingTotalViewModel)) {

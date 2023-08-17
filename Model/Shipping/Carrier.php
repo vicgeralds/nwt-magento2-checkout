@@ -21,6 +21,10 @@ class Carrier extends AbstractCarrier implements CarrierInterface
 {
     const CODE = 'svea_nshift';
 
+    const PLACEHOLDER_NAME = 'placeholder_name';
+
+    const PLACEHOLDER_CARRIER = 'placeholder_carrier';
+
     /**
      * @var ResultFactory
      */
