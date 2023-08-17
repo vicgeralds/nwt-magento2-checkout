@@ -48,6 +48,8 @@ class Push extends Checkout
         } catch (\Exception $e) {
             $this->checkoutSession->setOrderPushInProgress(false);
             $result->setHttpResponseCode(404);
+            $this->getSveaCheckout()->getLogger()->error('Push Controller exception when creating Magento order:');
+            $this->getSveaCheckout()->getLogger()->error($e);
             return $result;
         }
     }
