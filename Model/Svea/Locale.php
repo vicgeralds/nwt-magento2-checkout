@@ -26,6 +26,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PhoneNumber" => "0811111111",
                 "PostalCode" => "99999",
+            ],
+            "default" => [
+                "PostalCode" => "111 22"
             ]
         ],
         "NO" => [
@@ -35,6 +38,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PhoneNumber" => "21222222",
                 "PostalCode" => "0359",
+            ],
+            "default" => [
+                "PostalCode" => "0010"
             ]
         ],
         "DK" => [
@@ -44,6 +50,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PhoneNumber" => "22222222",
                 "PostalCode" => "2100",
+            ],
+            "default" => [
+                "PostalCode" => "1000"
             ]
         ],
         "FI" => [
@@ -52,6 +61,9 @@ class Locale
             "test" => [
                 "EmailAddress" => "test@example.com",
                 "PostalCode" => "370",
+            ],
+            "default" => [
+                "PostalCode" => "00100"
             ]
         ],
         "DE" => [
@@ -61,6 +73,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PostalCode" => "13591",
             ],
+            "default" => [
+                "PostalCode" => "10117"
+            ]
         ],
         "NL" => [
             "locale" => "en-US",
@@ -69,6 +84,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PostalCode" => "1111 CD",
             ],
+            "default" => [
+                "PostalCode" => "1011 AA"
+            ]
         ],
         "SJ" => [
             "locale" => "nn-NO",
@@ -77,6 +95,9 @@ class Locale
                 "EmailAddress" => "test@example.com",
                 "PostalCode" => "9170",
             ],
+            "default" => [
+                "PostalCode" => "9170"
+            ]
         ]
     ];
 
@@ -117,6 +138,15 @@ class Locale
     {
         if (isset($this->locales[$countryCode]['test'])) {
             return $this->locales[$countryCode]['test'];
+        }
+
+        return [];
+    }
+
+    public function getDefaultDataByCountryCode($countryCode)
+    {
+        if (isset($this->locales[$countryCode]['default'])) {
+            return $this->locales[$countryCode]['default'];
         }
 
         return [];

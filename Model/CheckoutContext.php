@@ -3,6 +3,7 @@
 namespace Svea\Checkout\Model;
 
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
+use Svea\Checkout\Service\SveaShippingInfo;
 
 /**
  * Class CheckoutContext
@@ -54,6 +55,8 @@ class CheckoutContext
      */
     private $orderCollectionFactory;
 
+    private SveaShippingInfo $sveaShippingInfoService;
+
     /**
      * Constructor
      *
@@ -78,7 +81,8 @@ class CheckoutContext
         \Magento\Newsletter\Model\Subscriber $subscriber,
         \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
         AddressInterfaceFactory $addressInterfaceFactory,
-        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory,
+        SveaShippingInfo $sveaShippingInfoService,
     ) {
         $this->helper        = $helper;
         $this->logger = $logger;
@@ -91,6 +95,7 @@ class CheckoutContext
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->addressRepository = $addressRepository;
         $this->addressInterfaceFactory = $addressInterfaceFactory;
+        $this->sveaShippingInfoService = $sveaShippingInfoService;
     }
 
     /**
@@ -178,11 +183,8 @@ class CheckoutContext
         return $this->orderCollectionFactory;
     }
 
-    /**
-     * @return integer
-     */
-    public function getSessionLifetimeSeconds(): int
+    public function getSveaShippingInfoService(): SveaShippingInfo
     {
-        return $this->sessionLifetimeSeconds;
+        return $this->sveaShippingInfoService;
     }
 }

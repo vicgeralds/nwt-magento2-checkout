@@ -12,6 +12,7 @@ use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Helper\Data as SveaHelper;
 use \Exception as BaseException;
+use Svea\Checkout\Model\Shipping\Carrier;
 
 class Checkout extends Onepage
 {
@@ -105,6 +106,15 @@ class Checkout extends Onepage
         if (!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
             $this->changeCountry($shippingAddress->getCountryId(), $save = false);
             $countryChanged = true;
+        }
+
+        // Set a default postcode to get correct tax rates
+        if (!$shippingAddress->getPostcode()) {
+            $countryId = $shippingAddress->getCountryId();
+            $localeHelper =  $this->context->getSveaLocale();
+            $defaultData = $localeHelper->getDefaultDataByCountryCode($countryId);
+            $defaultPostcode = $defaultData['PostalCode'] ?? '';
+            $shippingAddress->setPostcode($defaultPostcode);
         }
 
         $currencyChanged = false;
@@ -269,6 +279,11 @@ class Checkout extends Onepage
             return true;
         }
 
+        // Svea shipping is handled later on instead
+        if ($this->context->getHelper()->getSveaShippingActive()) {
+            return true;
+        }
+
         //this is needed by shipping method with minimum amount
         $shipping = $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates();
         $allRates = $shipping->getAllShippingRates();
@@ -393,7 +408,8 @@ class Checkout extends Onepage
 
                 try {
                     // this will create an api call to svea and initiaze an new payment
-                    $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                    $sveaOrder = $this->initValidOrder($quote);
+                    $this->setSveaShippingDefault();
                     $sveaOrderId = $sveaOrder->getOrderId();
 
                     //save the payment id and quote signature in checkout/session
@@ -469,6 +485,7 @@ class Checkout extends Onepage
             // Rerun the function
             $sveaOrder = $this->initValidOrder($quote);
         }
+        $this->setSveaShippingDefault();
         return $sveaOrder;
     }
 
@@ -845,5 +862,36 @@ class Checkout extends Onepage
     public function getDoNotMarkCartDirty()
     {
         return $this->_doNotMarkCartDirty;
+    }
+
+    /**
+     * Sets placeholder Svea Shipping data in quote if Svea Shipping is active
+     *
+     * @return void
+     */
+    private function setSveaShippingDefault(): void
+    {
+        if (!$this->context->getHelper()->getSveaShippingActive()) {
+            return;
+        }
+
+        $quote = $this->getQuote();
+        $shippingAddress = $quote->getShippingAddress();
+        $shippingMethod = (string)$shippingAddress->getShippingMethod();
+
+        if (strpos($shippingMethod, Carrier::CODE) !== false) {
+            return;
+        }
+
+        $quote->getShippingAddress()->setShippingMethod(Carrier::CODE . '_' . Carrier::PLACEHOLDER_CARRIER);
+        $quote->getShippingAddress()->setShippingAmount(0);
+        $quote->getShippingAddress()->setBaseShippingAmount(0);
+        $sveaShippingInfoService = $this->context->getSveaShippingInfoService();
+        $placeholderData = [
+            'carrier' => Carrier::PLACEHOLDER_CARRIER,
+            'name' => Carrier::PLACEHOLDER_NAME,
+            'price' => 0
+        ];
+        $sveaShippingInfoService->setInQuote($quote, $placeholderData);
     }
 }
