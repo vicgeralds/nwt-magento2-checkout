@@ -58,4 +58,9 @@
             </argument>
         </arguments>
     </type>
+    <type name="Svea\Checkout\Model\Checkout">
+        <arguments>
+            <argument name="logger" xsi:type="object">Svea\Checkout\Logger\Logger</argument>
+        </arguments>
+    </type>
 </config>
