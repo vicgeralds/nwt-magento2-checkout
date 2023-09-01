@@ -182,11 +182,13 @@
                     </block>
                 </container>
             </block>
-            <block name="shipping_total_renderer" class="Svea\Checkout\Block\Total\Shipping">
-                <arguments>
-                    <argument name="view_model" xsi:type="object">Svea\Checkout\ViewModel\Total\Shipping</argument>
-                </arguments>
-            </block>
+            <container name="svea.shipping.total.wrapper" htmlTag="div" htmlClass="svea-hidden">
+                <block name="shipping_total_renderer" class="Svea\Checkout\Block\Total\Shipping">
+                    <arguments>
+                        <argument name="view_model" xsi:type="object">Svea\Checkout\ViewModel\Total\Shipping</argument>
+                    </arguments>
+                </block>
+            </container>
         </referenceContainer>
     </body>
 </page>
