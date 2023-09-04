@@ -237,7 +237,7 @@ class Order
 
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
 
-        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash);
+        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash, $quote->getId());
         $pushUri = $this->helper->getPushUrl($sveaHash);
         $validationUri = $this->helper->getValidationUrl($sveaHash);
 
