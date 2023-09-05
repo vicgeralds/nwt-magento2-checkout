@@ -81,6 +81,8 @@ abstract class Checkout extends Action
             $customerRepository,
             $accountManagement
         );
+
+        $sveaCheckoutContext->getSveaShippingInfoService()->setExcludeSveaShipping(false);
     }
 
     /**

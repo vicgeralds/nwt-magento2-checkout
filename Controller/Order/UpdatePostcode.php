@@ -64,6 +64,7 @@ class UpdatePostcode implements \Magento\Framework\App\Action\HttpPostActionInte
             return $redirect;
         }
 
+        $this->sveaCheckoutContext->getSveaShippingInfoService()->setExcludeSveaShipping(false);
         $postcode = $this->request->getParam('postcode', false);
         $quote = $this->checkoutSession->getQuote();
         $calculationAddress = $quote->getShippingAddress();

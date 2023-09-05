@@ -27,6 +27,13 @@ class SveaShippingInfo
      */
     private $addressFactory;
 
+    /**
+     * Read by Carrier model, excludes Svea Shipping as a listed shipping option if set to true
+     *
+     * @var bool
+     */
+    private $excludeSveaShipping = true;
+
     public function __construct(
         Json $jsonSerializer,
         DataObjectFactory $dataObjectFactory,
@@ -121,5 +128,15 @@ class SveaShippingInfo
         }
         $address->setStreet($street);
         return $address;
+    }
+
+    public function setExcludeSveaShipping(bool $exclude): void
+    {
+        $this->excludeSveaShipping = $exclude;
+    }
+
+    public function getExcludeSveaShipping(): bool
+    {
+        return $this->excludeSveaShipping;
     }
 }
