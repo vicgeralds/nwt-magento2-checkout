@@ -12,6 +12,7 @@ class Cart extends Update
             'cart',
             'coupon',
             'shipping',
+            'shipping_method',
             'messages',
             'svea'
         ], true);
