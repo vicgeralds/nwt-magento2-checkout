@@ -3,6 +3,9 @@
 namespace Svea\Checkout\Controller\Order;
 
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Svea\Checkout\Model\CheckoutException;
 
 class Confirmation extends Push
 {
@@ -18,20 +21,34 @@ class Confirmation extends Push
         // needed by extended class (Push)
         $this->pushRepo = $this->pushRepositoryFactory->create();
 
+        $sveaOrderId = $checkout->getRefHelper()->getSveaOrderId();
+        $orderId = null;
 
-        // it seems like we dont have quote information here, so we try to load everything with the svea_order_id instead!
-        if (!$sveaOrderId = $checkout->getRefHelper()->getSveaOrderId()) {
-            $checkout->getLogger()->error(sprintf("Confirmation Error: Svea Order Not found. Svea Order ID %s.", $sveaOrderId));
-            $this->messageManager->addErrorMessage(sprintf("Missing Svea Order ID. Please try again."));
-            return $this->_redirect('*');
+        // Svea Order ID missing in session? Try to load quote
+        if (!$sveaOrderId) {
+            $quoteId = $this->getRequest()->getParam('quote_id');
+            if (!$quoteId) {
+                return $this->returnMissingIdError();
+            }
+
+            try {
+                $quote = $this->loadQuote($quoteId);
+            } catch (CheckoutException $e) {
+                return $this->returnMissingIdError(null, $quoteId);
+            }
+
+            $sveaOrderId = $quote->getSveaOrderId();
+            $orderId = $quote->getReservedOrderId();
         }
 
+        if (!$sveaOrderId) {
+            return $this->returnMissingIdError($orderId, $quoteId);
+        }
 
-        $pushRepo = $this->pushRepositoryFactory->create();
         $push = null;
         for ($i = 0; $i<4;$i++) {
             try {
-                $push = $pushRepo->get($sveaOrderId);
+                $push = $this->pushRepo->get($sveaOrderId);
                 if ($push->getOrderId()) {
                    break;
                 }
@@ -62,7 +79,7 @@ class Confirmation extends Push
             try {
                 $lastOrderId = $this->tryToCreateOrder($sveaOrderId, $sveaHash);
                 if (!$lastOrderId) {
-                    throw new \Exception("Could not create order.");
+                    throw new LocalizedException(__('Could not create order'));
                 }
             } catch (\Exception $e) {
                 $checkout->getLogger()->error(sprintf("Confirmation Error: Could not create order, push id: %s svea order id: %s. Error: %s", $push->getId(), $sveaOrderId, $e->getMessage()));
@@ -119,6 +136,37 @@ class Confirmation extends Push
             ->load();
 
         return $orderCollection->count() ? $orderCollection->getFirstItem()->getId() : null;
+    }
+
+    /**
+     * @param string|null $orderId
+     * @param int|null $quoteId
+     * @return ResponseInterface
+     */
+    private function returnMissingIdError($orderId = null, $quoteId = null)
+    {
+        $checkout = $this->getSveaCheckout();
+        $logMessage = 'Confirmation Error: Svea Order ID not found.';
+
+        if (null !== $orderId) {
+            $logMessage .= sprintf(' Order ID: %s', $orderId);
+        }
+
+        if (null !== $quoteId) {
+            $logMessage .= sprintf(' Quote ID: %s', $quoteId);
+        }
+
+        $checkout->getLogger()->error($logMessage);
+        $customerMessage =
+            'We are sorry, there may have been a problem with your order. Please contact our customer support.';
+
+        if (null !== $orderId) {
+            $customerMessage = rtrim($customerMessage, '.');
+            $customerMessage .= sprintf(' with this order id: %s', $orderId);
+        }
+
+        $this->messageManager->addErrorMessage($customerMessage);
+        return $this->_redirect('*');
     }
 
     /**

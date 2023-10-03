@@ -357,6 +357,7 @@ class Checkout extends Onepage
     public function initSveaCheckout()
     {
         $quote = $this->getQuote();
+        $this->setSveaShippingDefault();
 
         // we need a reserved order id, since we need to send the order id to svea in validateOrder.
         if (!$quote->getReservedOrderId()) {
@@ -485,7 +486,6 @@ class Checkout extends Onepage
             // Rerun the function
             $sveaOrder = $this->initValidOrder($quote);
         }
-        $this->setSveaShippingDefault();
         return $sveaOrder;
     }
 
@@ -871,11 +871,11 @@ class Checkout extends Onepage
      */
     private function setSveaShippingDefault(): void
     {
-        if (!$this->context->getHelper()->getSveaShippingActive()) {
+        $quote = $this->getQuote();
+        if (!$this->context->getHelper()->getSveaShippingActive() || $quote->isVirtual()) {
             return;
         }
 
-        $quote = $this->getQuote();
         $shippingAddress = $quote->getShippingAddress();
         $shippingMethod = (string)$shippingAddress->getShippingMethod();
 
@@ -886,6 +886,8 @@ class Checkout extends Onepage
         $quote->getShippingAddress()->setShippingMethod(Carrier::CODE . '_' . Carrier::PLACEHOLDER_CARRIER);
         $quote->getShippingAddress()->setShippingAmount(0);
         $quote->getShippingAddress()->setBaseShippingAmount(0);
+        $defaultCountry = $this->context->getHelper()->getDefaultCountry();
+        $quote->getShippingAddress()->setCountryId($defaultCountry);
         $sveaShippingInfoService = $this->context->getSveaShippingInfoService();
         $placeholderData = [
             'carrier' => Carrier::PLACEHOLDER_CARRIER,
@@ -893,5 +895,6 @@ class Checkout extends Onepage
             'price' => 0
         ];
         $sveaShippingInfoService->setInQuote($quote, $placeholderData);
+        $this->quoteRepository->save($quote);
     }
 }

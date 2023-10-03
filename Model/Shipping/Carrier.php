@@ -61,7 +61,7 @@ class Carrier extends AbstractCarrier implements CarrierInterface
      */
     public function collectRates(RateRequest $request)
     {
-        if (!$this->getConfigFlag('active')) {
+        if (!$this->getConfigFlag('active') || $this->shippingInfoService->getExcludeSveaShipping()) {
             return false;
         }
 

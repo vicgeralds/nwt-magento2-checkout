@@ -73,6 +73,7 @@ class Confirmshipping implements HttpPostActionInterface
         $quote = $this->checkoutSession->getQuote();
         $content = $this->request->getPost()->toArray();
         $carrier = $content['carrier'];
+        $this->shipInfoService->setExcludeSveaShipping(false);
 
         try {
             $this->shipInfoService->setInQuote($quote, $content);
