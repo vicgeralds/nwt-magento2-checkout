@@ -82,7 +82,7 @@ class CheckoutContext
         \Magento\Customer\Api\AddressRepositoryInterface $addressRepository,
         AddressInterfaceFactory $addressInterfaceFactory,
         \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory,
-        SveaShippingInfo $sveaShippingInfoService,
+        SveaShippingInfo $sveaShippingInfoService
     ) {
         $this->helper        = $helper;
         $this->logger = $logger;
