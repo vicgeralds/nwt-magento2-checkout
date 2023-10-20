@@ -233,6 +233,7 @@ class Order
 
         // set merchant settings, urls
         $merchantUrls = new MerchantSettings();
+        $merchantUrls->setStoreId($quote->getStoreId());
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
 
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
@@ -841,8 +842,12 @@ class Order
      * @return GetOrderResponse
      * @throws ClientException
      */
-    public function loadSveaOrderById($paymentId, $saveIframe = false)
+    public function loadSveaOrderById($paymentId, $saveIframe = false, $storeId = null)
     {
+        if ($storeId) {
+            $this->checkoutApi->resetCredentials($storeId);
+        }
+
         $order =  $this->checkoutApi->getOrder($paymentId);
         if ($saveIframe) {
             $this->setIframeSnippet($order->getGui()->getSnippet());
