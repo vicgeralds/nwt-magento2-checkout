@@ -9,6 +9,17 @@
                 <arguments>
                     <argument name="view_model" xsi:type="object">Svea\Checkout\ViewModel\Adminhtml\Order\View\Shipping</argument>
                 </arguments>
+                <block
+                    class="Magento\Sales\Block\Adminhtml\Order\AbstractOrder"
+                    name="order_shipping_view_address"
+                    as="address"
+                    template="Svea_Checkout::order/view/shipping/info/address.phtml"
+                    ifconfig="svea_checkout/settings/svea_shipping_settings/admin_show_shipping_address_with_shipping_info"
+                >
+                    <arguments>
+                        <argument name="view_model" xsi:type="object">Svea\Checkout\ViewModel\Adminhtml\Order\View\Shipping</argument>
+                    </arguments>
+                </block>
             </block>
         </referenceBlock>
     </body>

@@ -9,13 +9,13 @@ define([
     'Magento_Ui/js/modal/alert',
     "uiRegistry",
     'mage/url',
-    'Magento_Ui/js/modal/alert',
+    "Svea_Checkout/js/model/bind-select-shipping",
     "jquery/ui",
     "mage/translate",
     "mage/mage",
     "mage/validation",
     "Magento_Customer/js/customer-data"
-], function (jQuery, alert, uiRegistry, mageurl, magealert) {
+], function (jQuery, alert, uiRegistry, mageurl, bindSelectShipping) {
     "use strict";
     jQuery.widget('mage.nwtsveaCheckout', {
         options: {
@@ -90,7 +90,7 @@ define([
                 const expiresAt = new Date(sveaCreatedAt.getTime() + (this.options.sessionLifetimeSeconds * 1000));
                 if (new Date().getTime() >= expiresAt.getTime()) {
                     clearInterval(expiryCheck);
-                    magealert({
+                    alert({
                         content: jQuery.mage.__('Your payment session has expired. The checkout will reload.'),
                         actions: {
                             always: function () {
@@ -110,10 +110,12 @@ define([
 
             block = block ? block : null;
             if (!block || block == 'shipping') {
+                bindSelectShipping.setCallback(jQuery.proxy(this._changeShippingMethod, this));
                 jQuery(this.options.shippingMethodLoaderSelector).on('submit', jQuery.proxy(this._loadShippingMethod, this));
             }
             if (!block || block == 'shipping_method') {
-                jQuery(this.options.shippingMethodFormSelector).find('input[type=radio]').on('change', jQuery.proxy(this._changeShippingMethod, this));
+                bindSelectShipping.setCallback(jQuery.proxy(this._changeShippingMethod, this));
+                bindSelectShipping.execute();
             }
             if (!block || block == 'newsletter') {
                 jQuery(this.options.newsletterFormSelector).find('input[type=checkbox]').on('change',function(){
@@ -300,7 +302,7 @@ define([
                     _this._ajaxComplete();
                 },
                 success: function (response) {
-                    if (jQuery.type(response) === 'object' && !jQuery.isEmptyObject(response)) {
+                    if (typeof response === 'object' && !jQuery.isEmptyObject(response)) {
 
                         if (response.reload || response.redirect) {
                             this.loadWaiting = false; //prevent that resetLoadWaiting hiding loader
@@ -334,7 +336,7 @@ define([
                             for (var block in blocks) {
                                 if (blocks.hasOwnProperty(block)) {
                                     div = jQuery('#svea-checkout_' + block);
-                                    if (div.size() > 0) {
+                                    if (div.length > 0) {
                                         div.replaceWith(blocks[block]);
                                         this._bindEvents(block);
                                     }
@@ -383,12 +385,10 @@ define([
                 return
             }
 
-            var self = this;
             window.scoApi.observeEvent("identity.postalCode", function (data) {
-                console.log("postalCode changed to %s.", data.value);
-            });
-
-
+                // Will check for updated Tax and Totals due to changed postal code
+                this._ajaxSubmit(mageurl.build('sveacheckout/order/updatePostcode'), {postcode: data.value}, 'post');
+            }.bind(this));
         },
 
         /**
@@ -414,7 +414,7 @@ define([
         },
         uiManipulate: function () {
             var t = this;
-            jQuery(window).resize(function () {
+            jQuery(window).on('resize', function () {
                 t.fiddleSidebar();
             });
             jQuery(document).ready(function () {
@@ -426,7 +426,7 @@ define([
             var target = this.options.couponFormContainer,
                 toggler = this.options.couponToggler;
 
-            jQuery(toggler).change(function () {
+            jQuery(toggler).on('change', function () {
                 if (this.checked)
                     jQuery(target).addClass('visible');
                 else

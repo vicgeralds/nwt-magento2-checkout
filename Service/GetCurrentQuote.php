@@ -27,7 +27,7 @@ class GetCurrentQuote
     public function getQuote(): Quote
     {
         if ($this->currentQuote === null) {
-            return $this->checkoutSession->getQuote();
+            $this->currentQuote = $this->checkoutSession->getQuote();
         }
 
         return $this->currentQuote;

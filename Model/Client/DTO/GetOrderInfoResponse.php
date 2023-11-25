@@ -8,6 +8,7 @@ use Svea\Checkout\Model\Client\DTO\Order\Gui;
 use Svea\Checkout\Model\Client\DTO\Order\IdentityFlags;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
+use Svea\Checkout\Model\Client\DTO\OrderInfo\BillingReference;
 use Svea\Checkout\Helper\Data as SveaHelper;
 
 class GetOrderInfoResponse
@@ -77,6 +78,8 @@ class GetOrderInfoResponse
     /** @var OrderRow[] $cartItems */
     protected $cartItems;
 
+    /** @var BillingReference[] */
+    protected array $billingReferences = [];
 
     /**
      * CreatePaymentResponse constructor.
@@ -141,6 +144,16 @@ class GetOrderInfoResponse
         }
 
         $this->setDeliveries($deliveries);
+
+        $billingReferences = $this->get("BillingReferences");
+        $billingReferences = is_array($billingReferences) ? $billingReferences : [];
+
+        foreach ($billingReferences as $billingReference) {
+            $referenceObject = new BillingReference();
+            $referenceObject->setType($billingReference['Type']);
+            $referenceObject->setValue($billingReference['Value']);
+            $this->billingReferences[] = $referenceObject;
+        }
     }
 
     /**
@@ -381,4 +394,11 @@ class GetOrderInfoResponse
         return $this->_data;
     }
 
+    /**
+     * @return BillingReference[]
+     */
+    public function getBillingReferences(): array
+    {
+        return $this->billingReferences;
+    }
 }

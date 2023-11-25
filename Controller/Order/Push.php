@@ -48,6 +48,8 @@ class Push extends Checkout
         } catch (\Exception $e) {
             $this->checkoutSession->setOrderPushInProgress(false);
             $result->setHttpResponseCode(404);
+            $this->getSveaCheckout()->getLogger()->error('Push Controller exception when creating Magento order:');
+            $this->getSveaCheckout()->getLogger()->error($e);
             return $result;
         }
     }
@@ -90,7 +92,6 @@ class Push extends Checkout
             $orderIdExists = $push->getOrderId() ? true : false;
         }catch (\Exception $e) {
             // ignore
-            $this->getSveaCheckout()->getLogger()->error("Svea Push: Found no push.");
 
             return true;
         }
@@ -134,7 +135,8 @@ class Push extends Checkout
     {
         $checkout = $this->getSveaCheckout();
         try {
-            $sveaOrder = $checkout->getSveaPaymentHandler()->loadSveaOrderById($sveaOrderId);
+            $storeId = $this->getRequest()->getParam('store_id');
+            $sveaOrder = $checkout->getSveaPaymentHandler()->loadSveaOrderById($sveaOrderId, false, $storeId);
         } catch (ClientException $e) {
             if ($e->getHttpStatusCode() == 404) {
                 $checkout->getLogger()->error("Push: The svea order with ID: " . $sveaOrderId . " was not found in svea.");

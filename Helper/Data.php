@@ -244,9 +244,23 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->getCheckoutUrl('success');
     }
 
-    public function getConfirmationUrl($hash)
+    /**
+     * Generate confirmation URI
+     *
+     * @param string $hash
+     * @param integer $quoteId
+     * @return void
+     */
+    public function getConfirmationUrl($hash, $quoteId)
     {
-        return $this->getCheckoutUrl('confirmation', ['hash' => $hash, '_escape_params' => false]);
+        return $this->getCheckoutUrl(
+            'confirmation',
+            [
+                'hash' => $hash,
+                'quote_id' => $quoteId,
+                '_escape_params' => false
+            ]
+        );
     }
 
     /**
@@ -391,6 +405,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_SETTINGS . 'enforce_fallback',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $store
+        );
+    }
+
+    public function getSveaShippingDimensionsActive($store = null)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_SETTINGS . 'dimensions_active',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );

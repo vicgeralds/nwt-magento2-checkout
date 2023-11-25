@@ -11,5 +11,12 @@
                 <value id="svea" type="host">https://*.svea.com</value>
             </values>
         </policy>
+        <policy id="form-action">
+            <values>
+                <value id="svea" type="host">https://*.svea.com</value>
+                <value id="vipps" type="host">https://*.vipps.no</value>
+                <value id="trustly" type="host">https://*.trustly.com</value>
+            </values>
+        </policy>
     </policies>
 </csp_whitelist>

@@ -2,7 +2,11 @@
 
 namespace Svea\Checkout\Block\Payment\Checkout;
 
+use Svea\Checkout\Model\Client\Api\OrderManagement;
 
+/**
+ * @method OrderManagement getSveaOrderManagement()
+ */
 class Info extends \Magento\Payment\Block\Info
 {
     /**
@@ -34,6 +38,26 @@ class Info extends \Magento\Payment\Block\Info
             return $this->getInfo()->getAdditionalInformation('svea_order_id');
         } catch (\Exception $e) {
             return "";
+        }
+    }
+
+    public function getSveaBillingReferences(): array
+    {
+        // Only company orders paid with invoice has billing references
+        // We skip the API call to check for them in other cases
+        $isCompany = $this->getInfo()->getAdditionalInformation('is_company');
+        $isInvoicePayment = ('INVOICE' === $this->getSveaPaymentMethod());
+        if (!$isCompany || !$isInvoicePayment) {
+            return [];
+        }
+
+        $handler = $this->getSveaOrderManagement();
+        $handler->resetCredentials($this->getMethod()->getStore());
+        try {
+            $sveaOrder = $handler->getOrder($this->getSveaCheckoutId());
+            return $sveaOrder->getBillingReferences();
+        } catch (\Exception $e) {
+            return [];
         }
     }
 

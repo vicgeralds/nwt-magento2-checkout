@@ -11,6 +11,8 @@ use Svea\Checkout\Model\Client\ClientException;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\OrderRow;
 use Svea\Checkout\Helper\Data as SveaHelper;
+use \Exception as BaseException;
+use Svea\Checkout\Model\Shipping\Carrier;
 
 class Checkout extends Onepage
 {
@@ -66,7 +68,7 @@ class Checkout extends Onepage
     public function initCheckout($reloadIfCurrencyChanged = true, $reloadIfCountryChanged = false)
     {
         if (!($this->context instanceof CheckoutContext)) {
-            throw new \Exception("Svea Context must be set first!");
+            throw new BaseException("Svea Context must be set first!");
         }
 
         $quote  = $this->getQuote();
@@ -104,6 +106,15 @@ class Checkout extends Onepage
         if (!$billingAddress->getCountryId() || $billingAddress->getCountryId() != $shippingAddress->getCountryId()) {
             $this->changeCountry($shippingAddress->getCountryId(), $save = false);
             $countryChanged = true;
+        }
+
+        // Set a default postcode to get correct tax rates
+        if (!$shippingAddress->getPostcode()) {
+            $countryId = $shippingAddress->getCountryId();
+            $localeHelper =  $this->context->getSveaLocale();
+            $defaultData = $localeHelper->getDefaultDataByCountryCode($countryId);
+            $defaultPostcode = $defaultData['PostalCode'] ?? '';
+            $shippingAddress->setPostcode($defaultPostcode);
         }
 
         $currencyChanged = false;
@@ -271,6 +282,11 @@ class Checkout extends Onepage
             return true;
         }
 
+        // Svea shipping is handled later on instead
+        if ($this->context->getHelper()->getSveaShippingActive()) {
+            return true;
+        }
+
         //this is needed by shipping method with minimum amount
         $shipping = $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates();
         $allRates = $shipping->getAllShippingRates();
@@ -344,6 +360,7 @@ class Checkout extends Onepage
     public function initSveaCheckout()
     {
         $quote = $this->getQuote();
+        $this->setSveaShippingDefault();
 
         // we need a reserved order id, since we need to send the order id to svea in validateOrder.
         if (!$quote->getReservedOrderId()) {
@@ -395,7 +412,8 @@ class Checkout extends Onepage
 
                 try {
                     // this will create an api call to svea and initiaze an new payment
-                    $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+                    $sveaOrder = $this->initValidOrder($quote);
+                    $this->setSveaShippingDefault();
                     $sveaOrderId = $sveaOrder->getOrderId();
 
                     //save the payment id and quote signature in checkout/session
@@ -413,14 +431,7 @@ class Checkout extends Onepage
             // when a customer visits checkout first time
 
             try {
-                // this will create an api call to svea and initiaze a new payment
-                $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
-
-                // do some validations!
-                // if the svea order status is final, and the client order number matches with the current quote
-                // we will cancel this svea order and throw an exception ( a new svea order will be created),
-                $this->validateCheckoutSveaOrder($sveaOrder);
-
+                $sveaOrder = $this->initValidOrder($quote);
 
                 //save svea uri in checkout/session
                 $sveaOrderId = $sveaOrder->getOrderId();
@@ -445,8 +456,45 @@ class Checkout extends Onepage
     }
 
     /**
+     * @param Quote $quote
+     * @throws ClientException
+     * @throws BaseException
+     */
+    private function initAndValidateSveaOrder(Quote $quote): GetOrderResponse
+    {
+        $sveaHandler = $this->getSveaPaymentHandler();
+        // this will create an api call to svea and initiaze a new payment
+        $sveaOrder = $sveaHandler->initNewSveaCheckoutPaymentByQuote($quote);
+        $this->validateCheckoutSveaOrder($sveaOrder);
+        return $sveaOrder;
+    }
+
+    /**
+     * Runs recursively until we have a valid order
+     *
+     * @param Quote $quote
+     * @return GetOrderResponse
+     * @throws ClientException
+     * @throws BaseException
+     */
+    private function initValidOrder(Quote $quote): GetOrderResponse
+    {
+        try {
+            $sveaOrder = $this->initAndValidateSveaOrder($quote);
+        } catch (OrderValidationException $e) {
+            // remove sessions, remove client order number
+            $this->getRefHelper()->unsetSessions();
+            // will help us reassure client order number will be unique
+            $this->getRefHelper()->addToSequence();
+            // Rerun the function
+            $sveaOrder = $this->initValidOrder($quote);
+        }
+        return $sveaOrder;
+    }
+
+    /**
      * @param $sveaOrder GetOrderResponse
-     * @throws \Exception
+     * @throws OrderValidationException
      */
     private function validateCheckoutSveaOrder($sveaOrder)
     {
@@ -459,11 +507,11 @@ class Checkout extends Onepage
                 }
             }
 
-            throw new \Exception("This order is already placed in Svea. Creating a new.");
+            throw new OrderValidationException(__("This order is already placed in Svea. Creating a new."));
         }
 
         if ($sveaOrder->getStatus() === "Cancelled") {
-            throw new \Exception("This order is already placed in Svea and has been cancelled.");
+            throw new OrderValidationException(__("This order is already placed in Svea and has been cancelled."));
         }
     }
 
@@ -531,7 +579,7 @@ class Checkout extends Onepage
      * @param GetOrderResponse $sveaOrder
      * @param Quote $quote
      * @return mixed
-     * @throws \Exception
+     * @throws BaseException
      */
     public function placeOrder(GetOrderResponse $sveaOrder, Quote $quote)
     {
@@ -614,6 +662,7 @@ class Checkout extends Onepage
         $paymentData = new DataObject([
             'svea_order_id' => $sveaOrder->getOrderId(),
             'country_id' => $shippingAddress->getCountryId(),
+            'is_company' => $sveaOrder->getCustomer()->getIsCompany()
         ]);
 
         /** @var \Svea\Checkout\Model\Payment\Method\Checkout $method */
@@ -700,7 +749,7 @@ class Checkout extends Onepage
     /**
      * @param \Magento\Sales\Model\Order $order
      * @return bool
-     * @throws \Exception
+     * @throws BaseException
      */
     protected function orderSubscribeToNewsLetter(\Magento\Sales\Model\Order $order)
     {
@@ -816,5 +865,39 @@ class Checkout extends Onepage
     public function getDoNotMarkCartDirty()
     {
         return $this->_doNotMarkCartDirty;
+    }
+
+    /**
+     * Sets placeholder Svea Shipping data in quote if Svea Shipping is active
+     *
+     * @return void
+     */
+    private function setSveaShippingDefault(): void
+    {
+        $quote = $this->getQuote();
+        if (!$this->context->getHelper()->getSveaShippingActive() || $quote->isVirtual()) {
+            return;
+        }
+
+        $shippingAddress = $quote->getShippingAddress();
+        $shippingMethod = (string)$shippingAddress->getShippingMethod();
+
+        if (strpos($shippingMethod, Carrier::CODE) !== false) {
+            return;
+        }
+
+        $quote->getShippingAddress()->setShippingMethod(Carrier::CODE . '_' . Carrier::PLACEHOLDER_CARRIER);
+        $quote->getShippingAddress()->setShippingAmount(0);
+        $quote->getShippingAddress()->setBaseShippingAmount(0);
+        $defaultCountry = $this->context->getHelper()->getDefaultCountry();
+        $quote->getShippingAddress()->setCountryId($defaultCountry);
+        $sveaShippingInfoService = $this->context->getSveaShippingInfoService();
+        $placeholderData = [
+            'carrier' => Carrier::PLACEHOLDER_CARRIER,
+            'name' => Carrier::PLACEHOLDER_NAME,
+            'price' => 0
+        ];
+        $sveaShippingInfoService->setInQuote($quote, $placeholderData);
+        $this->quoteRepository->save($quote);
     }
 }

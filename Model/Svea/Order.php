@@ -13,6 +13,7 @@ use Svea\Checkout\Model\Client\DTO\CancelOrderAmount;
 use Svea\Checkout\Model\Client\DTO\CreateOrder;
 use Svea\Checkout\Model\Client\DTO\DeliverOrder;
 use Svea\Checkout\Model\Client\DTO\GetDeliveryResponse;
+use Svea\Checkout\Model\Client\DTO\GetOrderInfoResponse;
 use Svea\Checkout\Model\Client\DTO\GetOrderResponse;
 use Svea\Checkout\Model\Client\DTO\Order\Address;
 use Svea\Checkout\Model\Client\DTO\Order\MerchantSettings;
@@ -23,6 +24,7 @@ use Svea\Checkout\Model\Client\DTO\RefundPayment;
 use Svea\Checkout\Model\Client\DTO\RefundPaymentAmount;
 use Svea\Checkout\Model\Client\DTO\UpdateOrderCart;
 use Svea\Checkout\Model\Svea\Data\PresetValues\Factory as PresetValuesFactory;
+use \Exception as BaseException;
 
 class Order
 {
@@ -131,7 +133,8 @@ class Order
     /**
      * @param Quote $quote
      * @return GetOrderResponse
-     * @throws \Exception
+     * @throws ClientException
+     * @throws BaseException
      */
     public function initNewSveaCheckoutPaymentByQuote(\Magento\Quote\Model\Quote $quote)
     {
@@ -207,12 +210,13 @@ class Order
      * @param bool $reloadCredentials
      * @return GetOrderResponse
      * @throws ClientException
+     * @throws BaseException
      */
     protected function createNewSveaPayment(Quote $quote, $reloadCredentials = false)
     {
         $countryCode = $quote->getBillingAddress()->getCountryId();
         if (!in_array($countryCode, $this->getLocale()->getAllowedCountries())) {
-            throw new \Exception("The country is not supported.");
+            throw new BaseException("The country is not supported.");
         }
 
         $sveaHash = $this->getRefHelper()->getSveaHash();
@@ -229,11 +233,12 @@ class Order
 
         // set merchant settings, urls
         $merchantUrls = new MerchantSettings();
+        $merchantUrls->setStoreId($quote->getStoreId());
         $merchantUrls->setCheckoutUri($this->helper->getCheckoutUrl());
 
         $merchantUrls->setTermsUri($this->helper->getTermsUrl());
 
-        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash);
+        $confirmationUrl = $this->helper->getConfirmationUrl($sveaHash, $quote->getId());
         $pushUri = $this->helper->getPushUrl($sveaHash);
         $validationUri = $this->helper->getValidationUrl($sveaHash);
 
@@ -721,11 +726,11 @@ class Order
                 }
 
                 if (!$deliveryToRefund->canRefund() && !$sveaOrder->canCancelAmount()) {
-                    throw new \Exception(__("Can't refund this invoice, found o refund or cancel flag. Please refund offline, and do the rest manually in Svea."));
+                    throw new BaseException(__("Can't refund this invoice, found o refund or cancel flag. Please refund offline, and do the rest manually in Svea."));
                 }
 
                 if (!$itemQuantityMatching && !$deliveryToRefund->canDeliveryRefundByAmount()) {
-                    throw new \Exception(__("Can't do a partial refund for this invoice."));
+                    throw new BaseException(__("Can't do a partial refund for this invoice."));
                 }
             } catch (\Exception $e) {
                 throw new LocalizedException(__($e->getMessage()));
@@ -837,8 +842,12 @@ class Order
      * @return GetOrderResponse
      * @throws ClientException
      */
-    public function loadSveaOrderById($paymentId, $saveIframe = false)
+    public function loadSveaOrderById($paymentId, $saveIframe = false, $storeId = null)
     {
+        if ($storeId) {
+            $this->checkoutApi->resetCredentials($storeId);
+        }
+
         $order =  $this->checkoutApi->getOrder($paymentId);
         if ($saveIframe) {
             $this->setIframeSnippet($order->getGui()->getSnippet());

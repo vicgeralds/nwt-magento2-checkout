@@ -1,0 +1,21 @@
+<?php
+/**
+ * @var \Magento\Sales\Block\Adminhtml\Order\AbstractOrder $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+/** @var \Svea\Checkout\ViewModel\Adminhtml\Order\View\Shipping $viewModel */
+$viewModel = $block->getViewModel();
+
+$order = $block->getOrder();
+$streetAddressLines = $viewModel->getStreetAddressLines($order);
+$postalAddressLine = $viewModel->getPostalAddressLine($order);
+?>
+
+<div class="admin__page-section-item order-shipping-method-address">
+    <?php foreach ($streetAddressLines as $streetAddressLine): ?>
+        <span><?= $escaper->escapeHtml($streetAddressLine) ?></span>
+        <br />
+    <?php endforeach; ?>
+    <span><?= $escaper->escapeHtml($postalAddressLine) ?></span>
+</div>

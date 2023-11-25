@@ -12,6 +12,7 @@
         <arguments>
             <argument name="name" xsi:type="string">svea</argument>
             <argument name="handlers"  xsi:type="array">
+                <item name="error" xsi:type="object">Svea\Checkout\Logger\Handler\Error</item>
                 <item name="system" xsi:type="object">Svea\Checkout\Logger\Handler</item>
             </argument>
         </arguments>
@@ -50,4 +51,16 @@
     <preference for="Svea\Checkout\Api\CampaignInfoRepositoryInterface" type="Svea\Checkout\Model\Campaign\CampaignRepository"/>
 
     <preference for="Svea\Checkout\Api\GetQtyIncrementConfigInterface" type="Svea\Checkout\Service\GetQtyIncrementConfig" />
+    <type name="Svea\Checkout\Block\Payment\Checkout\Info">
+        <arguments>
+            <argument name="data" xsi:type="array">
+                <item name="svea_order_management" xsi:type="object">Svea\Checkout\Model\Client\Api\OrderManagement</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Svea\Checkout\Model\Checkout">
+        <arguments>
+            <argument name="logger" xsi:type="object">Svea\Checkout\Logger\Logger</argument>
+        </arguments>
+    </type>
 </config>
