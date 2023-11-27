@@ -60,7 +60,7 @@ define([
 
         _checkIfCartWasUpdated: function () {
             var checkIfCartWasUpdated = setInterval((function () {
-                if (window.location.hash === '#showcart') {
+                if (jQuery('.block-minicart').modal('option').isOpen) {
                     return;
                 }
                 if (!this.options.ctrkeyCheck) {
