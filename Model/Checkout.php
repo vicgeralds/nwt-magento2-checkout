@@ -302,10 +302,10 @@ class Checkout extends Onepage
         }
 
         // check if selected shipping method exists
-        $method = $shipping->getShippingMethod();
-        if ($method && isset($rates[$method])) {
-            return $method;
-        }
+        //$method = $shipping->getShippingMethod();
+        //if ($method && isset($rates[$method])) {
+        //    return $method;
+        //}
 
         // check if default shipping method exists, use it then!
         $method = $this->getHelper()->getDefaultShippingMethod();
