@@ -375,6 +375,10 @@ class Order
                 $this->cancelSveaPaymentByIdAndAmount($sveaOrderId, $sveaOrder->getOrderAmount());
             }
         } else {
+            $orderStatus = $sveaOrder->getOrderStatus();
+            if ($orderStatus == 'Cancelled' || $orderStatus == 'Expired') {
+                return;
+            }
 
             // NOT ALL orders are cancelable, direct payments which gets an delivery directly in their system must be refunded instead!
 
